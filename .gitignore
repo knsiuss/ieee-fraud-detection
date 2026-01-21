@@ -1,0 +1,27 @@
+# Data and artifacts
+/data/
+*.csv
+*.parquet
+*.pkl
+*.pickle
+*.joblib
+*.h5
+*.npy
+*.npz
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Editor/IDE
+.virtual_documents/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.env
+
+# OS
+.DS_Store
+Thumbs.db
