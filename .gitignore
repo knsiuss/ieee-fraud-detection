@@ -1,27 +1,99 @@
-# Data and artifacts
-/data/
+# Dataset & Data Files
+data/raw/
+data/interim/
+data/processed/
+dataset/
+raw_data/
 *.csv
 *.parquet
+*.zip
+*.gz
+*.tar
+*.h5
+*.hdf5
 *.pkl
 *.pickle
-*.joblib
-*.h5
-*.npy
-*.npz
+*.feather
 
-# Jupyter
+# Keep data structure but ignore actual data
+!data/.gitkeep
+!data/metadata/
+
+# Jupyter Notebook
 .ipynb_checkpoints/
-
-# Editor/IDE
-.virtual_documents/
+*/.ipynb_checkpoints/*
+*.ipynb_checkpoints
 
 # Python
 __pycache__/
 *.py[cod]
-.venv/
-venv/
+*$py.class
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+*.whl
+
+# Virtual Environments
 .env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+*.env
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# PyCharm
+.idea/
+*.iml
+*.iws
+
+# VS Code
+.vscode/
+*.code-workspace
+
+# Models & Outputs
+models/
+*.h5
+*.keras
+*.model
+*.pth
+*.pt
+*.onnx
+checkpoints/
+logs/
+tensorboard/
+mlruns/
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+*.cover
+
+# Documentation
+docs/_build/
+site/
 
 # OS
 .DS_Store
 Thumbs.db
+desktop.ini
+
+# Misc
+*.log
+*.bak
+*.tmp
+*.temp
+.cache/
