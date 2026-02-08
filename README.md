@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://img.shields.io/badge/Status-COMPLETED-brightgreen?style=for-the-badge" alt="Status: Completed"/>
+  <img src="https://img.shields.io/badge/Status-IN%20PROGRESS-yellow?style=for-the-badge" alt="Status: In Progress"/>
   <img src="https://img.shields.io/badge/Python-3.10+-3776AB?style=for-the-badge&logo=python&logoColor=white" alt="Python"/>
   <img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge" alt="License"/>
   <img src="https://img.shields.io/badge/Task-Binary%20Classification-blueviolet?style=for-the-badge" alt="Task"/>
@@ -9,7 +9,7 @@
 
 > **End-to-end machine learning pipeline for detecting fraudulent e-commerce transactions using the IEEE-CIS / Vesta Corporation dataset from Kaggle.**
 
-> **End-to-end machine learning pipeline for fraud detection — from data exploration to model evaluation.**
+> **End-to-end machine learning pipeline for fraud detection — currently in the modeling phase.**
 
 ---
 
@@ -92,14 +92,7 @@ FraudDetection/
     ├── 05_target_distribution_imbalance.ipynb # Target distribution & imbalance study
     ├── 06_feature_correlation_analysis.ipynb  # Feature correlation analysis
     ├── 07_feature_engineering_exploration.ipynb # Feature engineering experiments
-    ├── 08_feature_importance_selection.ipynb   # Feature importance & selection
-    ├── 09_baseline_model_logistic.ipynb       # Logistic regression baseline
-    ├── 10_model_lightgbm.ipynb               # LightGBM model training
-    ├── 11_model_xgboost.ipynb                # XGBoost model training
-    ├── 12_model_catboost.ipynb               # CatBoost model training
-    ├── 13_hyperparameter_tuning.ipynb        # Hyperparameter optimization
-    ├── 14_model_ensemble_stacking.ipynb      # Ensemble stacking approach
-    └── 15_error_analysis.ipynb               # Model error analysis
+    └── 08_feature_importance_selection.ipynb   # Feature importance & selection
 ```
 
 ---
@@ -146,10 +139,7 @@ The analysis follows a structured, sequential notebook pipeline:
 07 Feature Engineering ──► 08 Feature Importance
         │
         ▼
-09 Logistic Baseline ──► 10 LightGBM ──► 11 XGBoost ──► 12 CatBoost
-        │
-        ▼
-13 Hyperparameter Tuning ──► 14 Ensemble Stacking ──► 15 Error Analysis
+    [Modeling Phase - Upcoming]
 ```
 
 | # | Notebook | Status | Description |
@@ -162,13 +152,6 @@ The analysis follows a structured, sequential notebook pipeline:
 | 06 | Feature Correlation Analysis | Done | Identify correlated & redundant feature groups |
 | 07 | Feature Engineering Exploration | Done | Create new features, transformations |
 | 08 | Feature Importance Selection | Done | LightGBM-based importance, select top features |
-| 09 | Baseline Model — Logistic | Done | Logistic regression baseline model |
-| 10 | Model — LightGBM | Done | LightGBM gradient boosting model |
-| 11 | Model — XGBoost | Done | XGBoost gradient boosting model |
-| 12 | Model — CatBoost | Done | CatBoost gradient boosting model |
-| 13 | Hyperparameter Tuning | Done | Optimize hyperparameters across models |
-| 14 | Model Ensemble — Stacking | Done | Stacking ensemble of best models |
-| 15 | Error Analysis | Done | Analyze model errors and failure cases |
 
 ---
 
@@ -248,7 +231,7 @@ python data_prep.py
 jupyter notebook notebook/
 ```
 
-Navigate notebooks in order (`01` → `15`) for the complete end-to-end machine learning pipeline.
+Navigate notebooks in order (`01` → `08`) for the analysis and feature engineering pipeline. Modeling notebooks are upcoming.
 
 ---
 
@@ -261,13 +244,13 @@ Navigate notebooks in order (`01` → `15`) for the complete end-to-end machine 
 - [x] Feature correlation analysis
 - [x] Feature engineering exploration
 - [x] Feature importance & selection
-- [x] Full data preprocessing pipeline
-- [x] Baseline model (Logistic Regression)
-- [x] Advanced models (LightGBM, XGBoost, CatBoost)
-- [x] Hyperparameter tuning
-- [x] Ensemble stacking approach
-- [x] Model evaluation & comparison
-- [x] Error analysis
+- [ ] Full data preprocessing pipeline
+- [ ] Baseline model (Logistic Regression)
+- [ ] Advanced models (LightGBM, XGBoost, CatBoost)
+- [ ] Hyperparameter tuning
+- [ ] Ensemble methods
+- [ ] Model evaluation & comparison
+- [ ] Error analysis
 - [ ] Documentation & final report
 
 ---
@@ -285,5 +268,5 @@ This project is licensed under the **MIT License** — see the [LICENSE](LICENSE
 ---
 
 <p align="center">
-  <i>Complete end-to-end ML pipeline demonstrating best practices in fraud detection modeling.</i>
+  <i>Work in progress — EDA and feature engineering completed, moving to modeling phase.</i>
 </p>
