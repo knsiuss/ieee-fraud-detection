@@ -14,8 +14,6 @@ raw_data/
 *.pkl
 *.pickle
 *.feather
-
-# Keep data structure but ignore actual data
 !data/.gitkeep
 !data/metadata/
 
@@ -45,23 +43,6 @@ env.bak/
 venv.bak/
 *.env
 
-# IDEs
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
-.DS_Store
-
-# PyCharm
-.idea/
-*.iml
-*.iws
-
-# VS Code
-.vscode/
-*.code-workspace
-
 # Models & Outputs
 models/
 *.h5
@@ -81,10 +62,6 @@ mlruns/
 htmlcov/
 .tox/
 *.cover
-
-# Documentation
-docs/_build/
-site/
 
 # OS
 .DS_Store
