@@ -2,6 +2,7 @@
 data/raw/
 data/interim/
 data/processed/
+data/models/
 dataset/
 raw_data/
 *.csv
@@ -21,6 +22,9 @@ raw_data/
 .ipynb_checkpoints/
 */.ipynb_checkpoints/*
 *.ipynb_checkpoints
+
+# VS Code auto-generated
+.virtual_documents/
 
 # Python
 __pycache__/
@@ -45,7 +49,6 @@ venv.bak/
 
 # Models & Outputs
 models/
-*.h5
 *.keras
 *.model
 *.pth
@@ -62,11 +65,23 @@ mlruns/
 htmlcov/
 .tox/
 *.cover
+.benchmarks/
+.hypothesis/
 
 # OS
 .DS_Store
 Thumbs.db
 desktop.ini
+
+# IDE
+.idea/
+.vs/
+
+# Docs build output
+docs/build/
+
+# Dashboard (future)
+dashboard/
 
 # Misc
 *.log
@@ -74,3 +89,6 @@ desktop.ini
 *.tmp
 *.temp
 .cache/
+.ruff_cache/
+.mypy_cache/
+.dmypy.json
