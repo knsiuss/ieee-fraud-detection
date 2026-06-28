@@ -217,6 +217,7 @@ The analysis follows a structured, sequential notebook pipeline:
 | 13 | Model Evaluation & Comparison | Done | ROC, PR, threshold, McNemar's test |
 | 14 | Error Analysis | Done | Segmentation, shift, FP/FN analysis |
 | 15 | Final Summary | Done | Pipeline recap & final results |
+
 ---
 
 ## Key Findings
