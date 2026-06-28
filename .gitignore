@@ -81,7 +81,7 @@ desktop.ini
 docs/build/
 
 # Dashboard (future)
-dashboard/
+# dashboard/
 
 # Misc
 *.log
