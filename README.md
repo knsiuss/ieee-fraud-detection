@@ -239,7 +239,7 @@ Based on LightGBM feature importance analysis:
 | 10 | `TransactionAmt` | 8,404 |
 
 ### Missing Value Strategy
-- **132 redundant features** identified and flagged for removal
+- **130 redundant features** identified and flagged for removal
 - Imputation strategies defined per column based on missing percentage and data type
 - Features with >90% missing → indicator-only approach
 - Features with moderate missingness → median imputation + missing indicator
