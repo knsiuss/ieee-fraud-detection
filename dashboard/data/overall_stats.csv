@@ -1,0 +1,10 @@
+metric,value
+total_rows,590540.0
+total_cols,434.0
+fraud_count,20663.0
+fraud_rate,3.4990009144173126
+nonfraud_count,569877.0
+imbalance_ratio,27.0
+identity_coverage_pct,24.42391709283029
+nunique_card1,13553.0
+vesta_features,339.0
