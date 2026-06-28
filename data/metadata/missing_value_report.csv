@@ -1,0 +1,435 @@
+column,missing_pct,dtype,strategy
+TransactionID,0.0,int32,None needed
+isFraud,0.0,int8,None needed
+TransactionDT,0.0,int32,None needed
+TransactionAmt,0.0,float32,None needed
+ProductCD,0.0,category,None needed
+card1,0.0,int16,None needed
+card2,1.5126833068039423,float32,Median
+card3,0.26501168422122123,float32,Median
+card4,0.267043722694483,category,Mode + Indicator
+card5,0.7212043214684865,float32,Median
+card6,0.26602770345785215,category,Mode + Indicator
+addr1,11.12642666034477,float32,Median + Indicator
+addr2,11.12642666034477,float32,Median + Indicator
+dist1,59.6523520845328,float32,Median + Indicator
+dist2,93.62837403054831,float32,Indicator only
+P_emaildomain,15.99485216920107,category,Mode + Indicator
+R_emaildomain,76.75161716395164,category,Indicator only
+C1,0.0,float32,None needed
+C2,0.0,float32,None needed
+C3,0.0,float32,None needed
+C4,0.0,float32,None needed
+C5,0.0,float32,None needed
+C6,0.0,float32,None needed
+C7,0.0,float32,None needed
+C8,0.0,float32,None needed
+C9,0.0,float32,None needed
+C10,0.0,float32,None needed
+C11,0.0,float32,None needed
+C12,0.0,float32,None needed
+C13,0.0,float32,None needed
+C14,0.0,float32,None needed
+D1,0.21488806854743114,float32,Median
+D2,47.54919226470688,float32,Median + Indicator
+D3,44.514850814508755,float32,Median + Indicator
+D4,28.60466691502693,float32,Median + Indicator
+D5,52.4674027161581,float32,Median + Indicator
+D6,87.60676668811597,float32,Indicator only
+D7,93.40992989467267,float32,Indicator only
+D8,87.31229044603245,float32,Indicator only
+D9,87.31229044603245,float32,Indicator only
+D10,12.873302401192129,float32,Median + Indicator
+D11,47.29349409015477,float32,Median + Indicator
+D12,89.04104717715988,float32,Indicator only
+D13,89.50926270870728,float32,Indicator only
+D14,89.46946862193924,float32,Indicator only
+D15,15.09008703898127,float32,Median + Indicator
+M1,45.90713584177194,category,Mode + Indicator
+M2,45.90713584177194,category,Mode + Indicator
+M3,45.90713584177194,category,Mode + Indicator
+M4,47.658753005723575,category,Mode + Indicator
+M5,59.34940901547736,category,Mode + Indicator
+M6,28.678836319300977,category,Mode + Indicator
+M7,58.63531682866528,category,Mode + Indicator
+M8,58.633115453652586,category,Mode + Indicator
+M9,58.633115453652586,category,Mode + Indicator
+V1,47.29349409015477,float32,Median + Indicator
+V2,47.29349409015477,float32,Median + Indicator
+V3,47.29349409015477,float32,Median + Indicator
+V4,47.29349409015477,float32,Median + Indicator
+V5,47.29349409015477,float32,Median + Indicator
+V6,47.29349409015477,float32,Median + Indicator
+V7,47.29349409015477,float32,Median + Indicator
+V8,47.29349409015477,float32,Median + Indicator
+V9,47.29349409015477,float32,Median + Indicator
+V10,47.29349409015477,float32,Median + Indicator
+V11,47.29349409015477,float32,Median + Indicator
+V12,12.881938564703491,float32,Median + Indicator
+V13,12.881938564703491,float32,Median + Indicator
+V14,12.881938564703491,float32,Median + Indicator
+V15,12.881938564703491,float32,Median + Indicator
+V16,12.881938564703491,float32,Median + Indicator
+V17,12.881938564703491,float32,Median + Indicator
+V18,12.881938564703491,float32,Median + Indicator
+V19,12.881938564703491,float32,Median + Indicator
+V20,12.881938564703491,float32,Median + Indicator
+V21,12.881938564703491,float32,Median + Indicator
+V22,12.881938564703491,float32,Median + Indicator
+V23,12.881938564703491,float32,Median + Indicator
+V24,12.881938564703491,float32,Median + Indicator
+V25,12.881938564703491,float32,Median + Indicator
+V26,12.881938564703491,float32,Median + Indicator
+V27,12.881938564703491,float32,Median + Indicator
+V28,12.881938564703491,float32,Median + Indicator
+V29,12.881938564703491,float32,Median + Indicator
+V30,12.881938564703491,float32,Median + Indicator
+V31,12.881938564703491,float32,Median + Indicator
+V32,12.881938564703491,float32,Median + Indicator
+V33,12.881938564703491,float32,Median + Indicator
+V34,12.881938564703491,float32,Median + Indicator
+V35,28.612625732380533,float32,Median + Indicator
+V36,28.612625732380533,float32,Median + Indicator
+V37,28.612625732380533,float32,Median + Indicator
+V38,28.612625732380533,float32,Median + Indicator
+V39,28.612625732380533,float32,Median + Indicator
+V40,28.612625732380533,float32,Median + Indicator
+V41,28.612625732380533,float32,Median + Indicator
+V42,28.612625732380533,float32,Median + Indicator
+V43,28.612625732380533,float32,Median + Indicator
+V44,28.612625732380533,float32,Median + Indicator
+V45,28.612625732380533,float32,Median + Indicator
+V46,28.612625732380533,float32,Median + Indicator
+V47,28.612625732380533,float32,Median + Indicator
+V48,28.612625732380533,float32,Median + Indicator
+V49,28.612625732380533,float32,Median + Indicator
+V50,28.612625732380533,float32,Median + Indicator
+V51,28.612625732380533,float32,Median + Indicator
+V52,28.612625732380533,float32,Median + Indicator
+V53,13.055169844549056,float32,Median + Indicator
+V54,13.055169844549056,float32,Median + Indicator
+V55,13.055169844549056,float32,Median + Indicator
+V56,13.055169844549056,float32,Median + Indicator
+V57,13.055169844549056,float32,Median + Indicator
+V58,13.055169844549056,float32,Median + Indicator
+V59,13.055169844549056,float32,Median + Indicator
+V60,13.055169844549056,float32,Median + Indicator
+V61,13.055169844549056,float32,Median + Indicator
+V62,13.055169844549056,float32,Median + Indicator
+V63,13.055169844549056,float32,Median + Indicator
+V64,13.055169844549056,float32,Median + Indicator
+V65,13.055169844549056,float32,Median + Indicator
+V66,13.055169844549056,float32,Median + Indicator
+V67,13.055169844549056,float32,Median + Indicator
+V68,13.055169844549056,float32,Median + Indicator
+V69,13.055169844549056,float32,Median + Indicator
+V70,13.055169844549056,float32,Median + Indicator
+V71,13.055169844549056,float32,Median + Indicator
+V72,13.055169844549056,float32,Median + Indicator
+V73,13.055169844549056,float32,Median + Indicator
+V74,13.055169844549056,float32,Median + Indicator
+V75,15.098723202492634,float32,Median + Indicator
+V76,15.098723202492634,float32,Median + Indicator
+V77,15.098723202492634,float32,Median + Indicator
+V78,15.098723202492634,float32,Median + Indicator
+V79,15.098723202492634,float32,Median + Indicator
+V80,15.098723202492634,float32,Median + Indicator
+V81,15.098723202492634,float32,Median + Indicator
+V82,15.098723202492634,float32,Median + Indicator
+V83,15.098723202492634,float32,Median + Indicator
+V84,15.098723202492634,float32,Median + Indicator
+V85,15.098723202492634,float32,Median + Indicator
+V86,15.098723202492634,float32,Median + Indicator
+V87,15.098723202492634,float32,Median + Indicator
+V88,15.098723202492634,float32,Median + Indicator
+V89,15.098723202492634,float32,Median + Indicator
+V90,15.098723202492634,float32,Median + Indicator
+V91,15.098723202492634,float32,Median + Indicator
+V92,15.098723202492634,float32,Median + Indicator
+V93,15.098723202492634,float32,Median + Indicator
+V94,15.098723202492634,float32,Median + Indicator
+V95,0.053171673383682734,float32,Median
+V96,0.053171673383682734,float32,Median
+V97,0.053171673383682734,float32,Median
+V98,0.053171673383682734,float32,Median
+V99,0.053171673383682734,float32,Median
+V100,0.053171673383682734,float32,Median
+V101,0.053171673383682734,float32,Median
+V102,0.053171673383682734,float32,Median
+V103,0.053171673383682734,float32,Median
+V104,0.053171673383682734,float32,Median
+V105,0.053171673383682734,float32,Median
+V106,0.053171673383682734,float32,Median
+V107,0.053171673383682734,float32,Median
+V108,0.053171673383682734,float32,Median
+V109,0.053171673383682734,float32,Median
+V110,0.053171673383682734,float32,Median
+V111,0.053171673383682734,float32,Median
+V112,0.053171673383682734,float32,Median
+V113,0.053171673383682734,float32,Median
+V114,0.053171673383682734,float32,Median
+V115,0.053171673383682734,float32,Median
+V116,0.053171673383682734,float32,Median
+V117,0.053171673383682734,float32,Median
+V118,0.053171673383682734,float32,Median
+V119,0.053171673383682734,float32,Median
+V120,0.053171673383682734,float32,Median
+V121,0.053171673383682734,float32,Median
+V122,0.053171673383682734,float32,Median
+V123,0.053171673383682734,float32,Median
+V124,0.053171673383682734,float32,Median
+V125,0.053171673383682734,float32,Median
+V126,0.053171673383682734,float32,Median
+V127,0.053171673383682734,float32,Median
+V128,0.053171673383682734,float32,Median
+V129,0.053171673383682734,float32,Median
+V130,0.053171673383682734,float32,Median
+V131,0.053171673383682734,float32,Median
+V132,0.053171673383682734,float32,Median
+V133,0.053171673383682734,float32,Median
+V134,0.053171673383682734,float32,Median
+V135,0.053171673383682734,float32,Median
+V136,0.053171673383682734,float32,Median
+V137,0.053171673383682734,float32,Median
+V138,86.12371727571374,float32,Indicator only
+V139,86.12371727571374,float32,Indicator only
+V140,86.12371727571374,float32,Indicator only
+V141,86.12371727571374,float32,Indicator only
+V142,86.12371727571374,float32,Indicator only
+V143,86.12270125647711,float32,Indicator only
+V144,86.12270125647711,float32,Indicator only
+V145,86.12270125647711,float32,Indicator only
+V146,86.12371727571374,float32,Indicator only
+V147,86.12371727571374,float32,Indicator only
+V148,86.12371727571374,float32,Indicator only
+V149,86.12371727571374,float32,Indicator only
+V150,86.12270125647711,float32,Indicator only
+V151,86.12270125647711,float32,Indicator only
+V152,86.12270125647711,float32,Indicator only
+V153,86.12371727571374,float32,Indicator only
+V154,86.12371727571374,float32,Indicator only
+V155,86.12371727571374,float32,Indicator only
+V156,86.12371727571374,float32,Indicator only
+V157,86.12371727571374,float32,Indicator only
+V158,86.12371727571374,float32,Indicator only
+V159,86.12270125647711,float32,Indicator only
+V160,86.12270125647711,float32,Indicator only
+V161,86.12371727571374,float32,Indicator only
+V162,86.12371727571374,float32,Indicator only
+V163,86.12371727571374,float32,Indicator only
+V164,86.12270125647711,float32,Indicator only
+V165,86.12270125647711,float32,Indicator only
+V166,86.12270125647711,float32,Indicator only
+V167,76.35536966166559,float32,Indicator only
+V168,76.35536966166559,float32,Indicator only
+V169,76.32353439225116,float32,Indicator only
+V170,76.32353439225116,float32,Indicator only
+V171,76.32353439225116,float32,Indicator only
+V172,76.35536966166559,float32,Indicator only
+V173,76.35536966166559,float32,Indicator only
+V174,76.32353439225116,float32,Indicator only
+V175,76.32353439225116,float32,Indicator only
+V176,76.35536966166559,float32,Indicator only
+V177,76.35536966166559,float32,Indicator only
+V178,76.35536966166559,float32,Indicator only
+V179,76.35536966166559,float32,Indicator only
+V180,76.32353439225116,float32,Indicator only
+V181,76.35536966166559,float32,Indicator only
+V182,76.35536966166559,float32,Indicator only
+V183,76.35536966166559,float32,Indicator only
+V184,76.32353439225116,float32,Indicator only
+V185,76.32353439225116,float32,Indicator only
+V186,76.35536966166559,float32,Indicator only
+V187,76.35536966166559,float32,Indicator only
+V188,76.32353439225116,float32,Indicator only
+V189,76.32353439225116,float32,Indicator only
+V190,76.35536966166559,float32,Indicator only
+V191,76.35536966166559,float32,Indicator only
+V192,76.35536966166559,float32,Indicator only
+V193,76.35536966166559,float32,Indicator only
+V194,76.32353439225116,float32,Indicator only
+V195,76.32353439225116,float32,Indicator only
+V196,76.35536966166559,float32,Indicator only
+V197,76.32353439225116,float32,Indicator only
+V198,76.32353439225116,float32,Indicator only
+V199,76.35536966166559,float32,Indicator only
+V200,76.32353439225116,float32,Indicator only
+V201,76.32353439225116,float32,Indicator only
+V202,76.35536966166559,float32,Indicator only
+V203,76.35536966166559,float32,Indicator only
+V204,76.35536966166559,float32,Indicator only
+V205,76.35536966166559,float32,Indicator only
+V206,76.35536966166559,float32,Indicator only
+V207,76.35536966166559,float32,Indicator only
+V208,76.32353439225116,float32,Indicator only
+V209,76.32353439225116,float32,Indicator only
+V210,76.32353439225116,float32,Indicator only
+V211,76.35536966166559,float32,Indicator only
+V212,76.35536966166559,float32,Indicator only
+V213,76.35536966166559,float32,Indicator only
+V214,76.35536966166559,float32,Indicator only
+V215,76.35536966166559,float32,Indicator only
+V216,76.35536966166559,float32,Indicator only
+V217,77.91343516103905,float32,Indicator only
+V218,77.91343516103905,float32,Indicator only
+V219,77.91343516103905,float32,Indicator only
+V220,76.0531039387679,float32,Indicator only
+V221,76.0531039387679,float32,Indicator only
+V222,76.0531039387679,float32,Indicator only
+V223,77.91343516103905,float32,Indicator only
+V224,77.91343516103905,float32,Indicator only
+V225,77.91343516103905,float32,Indicator only
+V226,77.91343516103905,float32,Indicator only
+V227,76.0531039387679,float32,Indicator only
+V228,77.91343516103905,float32,Indicator only
+V229,77.91343516103905,float32,Indicator only
+V230,77.91343516103905,float32,Indicator only
+V231,77.91343516103905,float32,Indicator only
+V232,77.91343516103905,float32,Indicator only
+V233,77.91343516103905,float32,Indicator only
+V234,76.0531039387679,float32,Indicator only
+V235,77.91343516103905,float32,Indicator only
+V236,77.91343516103905,float32,Indicator only
+V237,77.91343516103905,float32,Indicator only
+V238,76.0531039387679,float32,Indicator only
+V239,76.0531039387679,float32,Indicator only
+V240,77.91343516103905,float32,Indicator only
+V241,77.91343516103905,float32,Indicator only
+V242,77.91343516103905,float32,Indicator only
+V243,77.91343516103905,float32,Indicator only
+V244,77.91343516103905,float32,Indicator only
+V245,76.0531039387679,float32,Indicator only
+V246,77.91343516103905,float32,Indicator only
+V247,77.91343516103905,float32,Indicator only
+V248,77.91343516103905,float32,Indicator only
+V249,77.91343516103905,float32,Indicator only
+V250,76.0531039387679,float32,Indicator only
+V251,76.0531039387679,float32,Indicator only
+V252,77.91343516103905,float32,Indicator only
+V253,77.91343516103905,float32,Indicator only
+V254,77.91343516103905,float32,Indicator only
+V255,76.0531039387679,float32,Indicator only
+V256,76.0531039387679,float32,Indicator only
+V257,77.91343516103905,float32,Indicator only
+V258,77.91343516103905,float32,Indicator only
+V259,76.0531039387679,float32,Indicator only
+V260,77.91343516103905,float32,Indicator only
+V261,77.91343516103905,float32,Indicator only
+V262,77.91343516103905,float32,Indicator only
+V263,77.91343516103905,float32,Indicator only
+V264,77.91343516103905,float32,Indicator only
+V265,77.91343516103905,float32,Indicator only
+V266,77.91343516103905,float32,Indicator only
+V267,77.91343516103905,float32,Indicator only
+V268,77.91343516103905,float32,Indicator only
+V269,77.91343516103905,float32,Indicator only
+V270,76.0531039387679,float32,Indicator only
+V271,76.0531039387679,float32,Indicator only
+V272,76.0531039387679,float32,Indicator only
+V273,77.91343516103905,float32,Indicator only
+V274,77.91343516103905,float32,Indicator only
+V275,77.91343516103905,float32,Indicator only
+V276,77.91343516103905,float32,Indicator only
+V277,77.91343516103905,float32,Indicator only
+V278,77.91343516103905,float32,Indicator only
+V279,0.0020320384732617604,float32,Median
+V280,0.0020320384732617604,float32,Median
+V281,0.21488806854743114,float32,Median
+V282,0.21488806854743114,float32,Median
+V283,0.21488806854743114,float32,Median
+V284,0.0020320384732617604,float32,Median
+V285,0.0020320384732617604,float32,Median
+V286,0.0020320384732617604,float32,Median
+V287,0.0020320384732617604,float32,Median
+V288,0.21488806854743114,float32,Median
+V289,0.21488806854743114,float32,Median
+V290,0.0020320384732617604,float32,Median
+V291,0.0020320384732617604,float32,Median
+V292,0.0020320384732617604,float32,Median
+V293,0.0020320384732617604,float32,Median
+V294,0.0020320384732617604,float32,Median
+V295,0.0020320384732617604,float32,Median
+V296,0.21488806854743114,float32,Median
+V297,0.0020320384732617604,float32,Median
+V298,0.0020320384732617604,float32,Median
+V299,0.0020320384732617604,float32,Median
+V300,0.21488806854743114,float32,Median
+V301,0.21488806854743114,float32,Median
+V302,0.0020320384732617604,float32,Median
+V303,0.0020320384732617604,float32,Median
+V304,0.0020320384732617604,float32,Median
+V305,0.0020320384732617604,float32,Median
+V306,0.0020320384732617604,float32,Median
+V307,0.0020320384732617604,float32,Median
+V308,0.0020320384732617604,float32,Median
+V309,0.0020320384732617604,float32,Median
+V310,0.0020320384732617604,float32,Median
+V311,0.0020320384732617604,float32,Median
+V312,0.0020320384732617604,float32,Median
+V313,0.21488806854743114,float32,Median
+V314,0.21488806854743114,float32,Median
+V315,0.21488806854743114,float32,Median
+V316,0.0020320384732617604,float32,Median
+V317,0.0020320384732617604,float32,Median
+V318,0.0020320384732617604,float32,Median
+V319,0.0020320384732617604,float32,Median
+V320,0.0020320384732617604,float32,Median
+V321,0.0020320384732617604,float32,Median
+V322,86.05496664070174,float32,Indicator only
+V323,86.05496664070174,float32,Indicator only
+V324,86.05496664070174,float32,Indicator only
+V325,86.05496664070174,float32,Indicator only
+V326,86.05496664070174,float32,Indicator only
+V327,86.05496664070174,float32,Indicator only
+V328,86.05496664070174,float32,Indicator only
+V329,86.05496664070174,float32,Indicator only
+V330,86.05496664070174,float32,Indicator only
+V331,86.05496664070174,float32,Indicator only
+V332,86.05496664070174,float32,Indicator only
+V333,86.05496664070174,float32,Indicator only
+V334,86.05496664070174,float32,Indicator only
+V335,86.05496664070174,float32,Indicator only
+V336,86.05496664070174,float32,Indicator only
+V337,86.05496664070174,float32,Indicator only
+V338,86.05496664070174,float32,Indicator only
+V339,86.05496664070174,float32,Indicator only
+id_01,75.5760829071697,float32,Indicator only
+id_02,76.14522301622245,float32,Indicator only
+id_03,88.76892335828225,float32,Indicator only
+id_04,88.76892335828225,float32,Indicator only
+id_05,76.82375452975243,float32,Indicator only
+id_06,76.82375452975243,float32,Indicator only
+id_07,99.12707013919464,float32,Drop column
+id_08,99.12707013919464,float32,Drop column
+id_09,87.31229044603245,float32,Indicator only
+id_10,87.31229044603245,float32,Indicator only
+id_11,76.12727334304196,float32,Indicator only
+id_12,75.5760829071697,category,Indicator only
+id_13,78.44007179869273,float32,Indicator only
+id_14,86.4456260371863,float32,Indicator only
+id_15,76.12608798726589,category,Indicator only
+id_16,78.098011989027,category,Indicator only
+id_17,76.39973583499847,float32,Indicator only
+id_18,92.36072069631184,float32,Indicator only
+id_19,76.40837199850984,float32,Indicator only
+id_20,76.41802418125782,float32,Indicator only
+id_21,99.12639279303687,float32,Drop column
+id_22,99.1246994276425,float32,Drop column
+id_23,99.1246994276425,category,Drop column
+id_24,99.19615944728554,float32,Drop column
+id_25,99.13096487960172,float32,Drop column
+id_26,99.12571544687913,float32,Drop column
+id_27,99.1246994276425,category,Drop column
+id_28,76.12727334304196,category,Indicator only
+id_29,76.12727334304196,category,Indicator only
+id_30,86.8654113184543,category,Indicator only
+id_31,76.24513157449114,category,Indicator only
+id_32,86.86185525112609,float32,Indicator only
+id_33,87.58949436109323,category,Indicator only
+id_34,86.82477054898906,category,Indicator only
+id_35,76.12608798726589,category,Indicator only
+id_36,76.12608798726589,category,Indicator only
+id_37,76.12608798726589,category,Indicator only
+id_38,76.12608798726589,category,Indicator only
+DeviceType,76.15572188166763,category,Indicator only
+DeviceInfo,79.90551021099333,category,Indicator only
