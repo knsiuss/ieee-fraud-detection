@@ -17,6 +17,8 @@ raw_data/
 *.feather
 !data/.gitkeep
 !data/metadata/
+!data/metadata/*.csv
+!data/metadata/*.json
 !dashboard/data/*.csv
 !dashboard/data/*.parquet
 
