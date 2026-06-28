@@ -3,7 +3,7 @@
   <img src="https://img.shields.io/badge/Python-3.10+-3776AB?style=for-the-badge&logo=python&logoColor=white" alt="Python"/>
   <img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge" alt="License"/>
   <img src="https://img.shields.io/badge/Task-Binary%20Classification-blueviolet?style=for-the-badge" alt="Task"/>
-  <img src="https://img.shields.io/github/actions/workflow/status/maxvyquincy9393/FraudDetection/ci.yml?branch=main&style=for-the-badge&label=CI&logo=github" alt="CI"/>
+  <img src="https://img.shields.io/github/actions/workflow/status/knsiuss/ieee-fraud-detection/ci.yml?branch=main&style=for-the-badge&label=CI&logo=github" alt="CI"/>
   <img src="https://img.shields.io/badge/pre--commit-active-brightgreen?style=for-the-badge&logo=pre-commit" alt="pre-commit"/>
   <img src="https://img.shields.io/badge/docs-Sphinx-blue?style=for-the-badge&logo=readthedocs" alt="Docs"/>
 </p>
@@ -12,7 +12,7 @@
 
 > **End-to-end machine learning pipeline for detecting fraudulent e-commerce transactions using the IEEE-CIS / Vesta Corporation dataset from Kaggle.**
 
-> 📖 **Documentation**: [https://maxvyquincy9393.github.io/FraudDetection](https://maxvyquincy9393.github.io/FraudDetection)
+> 📖 **Documentation**: [https://knsiuss.github.io/ieee-fraud-detection](https://knsiuss.github.io/ieee-fraud-detection)
 
 ---
 
@@ -75,7 +75,7 @@ This project tackles the **IEEE-CIS Fraud Detection** challenge — predicting t
 ## Project Structure
 
 ```
-FraudDetection/
+ieee-fraud-detection/
 │
 ├── README.md                          # Project documentation (this file)
 ├── LICENSE                            # MIT License
@@ -211,7 +211,6 @@ The analysis follows a structured, sequential notebook pipeline:
 | 07 | Feature Engineering Exploration | Done | Create new features, transformations |
 | 08 | Feature Importance Selection | Done | LightGBM-based importance, select top features |
 | 09 | Baseline Model (Logistic Regression) | Done | Logistic regression baseline evaluation |
-
 | 10 | Advanced Model Training | Done | LightGBM, XGBoost, CatBoost with CV |
 | 11 | Hyperparameter Tuning | Done | Optuna-based optimisation (100 trials) |
 | 12 | Ensemble Methods | Done | Hard/soft voting + stacking ensembles |
@@ -298,8 +297,8 @@ pip or conda
 
 ```bash
 # Clone the repository
-git clone https://github.com/maxvyquincy9393/FraudDetection.git
-cd FraudDetection
+git clone https://github.com/knsiuss/ieee-fraud-detection.git
+cd ieee-fraud-detection
 
 # Create a virtual environment (optional but recommended)
 python -m venv .venv
@@ -378,7 +377,7 @@ If you use this project in your work, please cite it as follows:
   author = {P. Kanisius Bagaskara},
   title = {{IEEE-CIS Fraud Detection}},
   year = {2026},
-  url = {https://github.com/maxvyquincy9393/FraudDetection}
+  url = {https://github.com/knsiuss/ieee-fraud-detection}
 }
 ```
 
