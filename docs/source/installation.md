@@ -8,8 +8,8 @@
 ## Editable install (recommended)
 
 ```bash
-git clone https://github.com/maxvyquincy9393/FraudDetection.git
-cd FraudDetection
+git clone https://github.com/knsiuss/ieee-fraud-detection.git
+cd ieee-fraud-detection
 
 # Create a virtual environment
 python -m venv .venv
