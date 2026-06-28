@@ -17,6 +17,8 @@ raw_data/
 *.feather
 !data/.gitkeep
 !data/metadata/
+!dashboard/data/*.csv
+!dashboard/data/*.parquet
 
 # Jupyter Notebook
 .ipynb_checkpoints/
