@@ -30,6 +30,9 @@ dev = [
     "pre-commit>=3.0",
     "hypothesis>=6.0",
 ]
+dashboard = [
+    "streamlit>=1.28",
+]
 docs = [
     "sphinx>=7.0",
     "furo>=2024.0",
