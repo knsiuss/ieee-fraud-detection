@@ -143,14 +143,16 @@ def metric(col, label, val):
 S = stats()
 OVERALL = float(S.get("fraud_rate", 0))
 
-t1, t2, t3, t4 = st.tabs(
+t1, t2, t3, t4, t5 = st.tabs(
     [
         "EDA Overview",
         "Missing Values",
         "Feature Analysis",
         "Model Performance",
+        "Demo",
     ]
 )
+
 
 #
 # TAB 1 — OVERVIEW
@@ -756,3 +758,142 @@ with t4:
             params = json.load(f)
         st.markdown("### LightGBM Best Params (from Tuning)")
         st.json(params)
+
+
+#
+# TAB 5 — DEMO FRAUD PREDICTOR
+#
+with t5:
+    st.title("Live Fraud Predictor")
+    st.markdown(
+        "Gunakan panel ini untuk mensimulasikan transaksi secara real-time. "
+        "Masukkan beberapa parameter utama di bawah ini untuk melihat probabilitas fraud dari model LightGBM secara instan."
+    )
+
+    # Fungsi untuk melatih model secara cepat menggunakan data sampel (akan di-cache oleh Streamlit)
+    @st.cache_resource
+    def get_trained_demo_model():
+        s_df = sample()
+        if s_df.empty:
+            return None, None, None
+        
+        # Kecualikan ID dan kolom target
+        ex_cols = ["TransactionID", "isFraud", "TransactionDT"]
+        obj_cols = s_df.select_dtypes(include=["object", "category"]).columns.tolist()
+        feats = [c for c in s_df.columns if c not in ex_cols and c not in obj_cols]
+        
+        X = s_df[feats].fillna(-999).astype("float32")
+        y = s_df["isFraud"].values
+        
+        import lightgbm as lgb
+        lgb_params = {
+            "objective": "binary",
+            "metric": "auc",
+            "num_leaves": 15,
+            "learning_rate": 0.1,
+            "verbose": -1,
+            "random_state": 42,
+        }
+        # Melatih model LightGBM sederhana
+        model = lgb.train(lgb_params, lgb.Dataset(X, label=y), num_boost_round=100)
+        return model, feats, s_df
+
+    model_data = get_trained_demo_model()
+
+    if model_data[0] is None:
+        st.warning("Data sample tidak ditemukan. Pastikan Anda telah menjalankan python dashboard/precompute.py terlebih dahulu.")
+    else:
+        model, feats, s_df = model_data
+        st.markdown("### Transaksi Simulator")
+        
+        # Form Input untuk simulasi parameter transaksi
+        with st.form("fraud_prediction_form"):
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                st.markdown("##### Informasi Pembayaran")
+                amt = st.number_input(
+                    "Transaction Amount ($)", 
+                    min_value=0.1, 
+                    max_value=10000.0, 
+                    value=150.0, 
+                    step=10.0,
+                    help="Nominal transaksi dalam USD."
+                )
+                card1 = st.number_input(
+                    "Card Issuer Code (card1)", 
+                    min_value=1000, 
+                    max_value=20000, 
+                    value=9500, 
+                    step=100,
+                    help="Kode ID bank/penerbit kartu kredit (numerik)."
+                )
+                dist1 = st.number_input(
+                    "Distance (dist1)", 
+                    min_value=0.0, 
+                    max_value=5000.0, 
+                    value=12.0, 
+                    step=5.0,
+                    help="Jarak geografis (misal antara billing address dan lokasi transaksi)."
+                )
+                
+            with col2:
+                st.markdown("##### Fitur Perilaku (Behavioral)")
+                c1 = st.slider(
+                    "Card Match Count (C1)", 
+                    min_value=1, 
+                    max_value=100, 
+                    value=1,
+                    help="Jumlah akun/alamat yang terhubung dengan kartu ini. Nilai tinggi biasanya lebih berisiko."
+                )
+                c13 = st.slider(
+                    "Transaction Frequency (C13)", 
+                    min_value=1, 
+                    max_value=500, 
+                    value=1,
+                    help="Frekuensi transaksi kartu ini di masa lalu."
+                )
+                d1 = st.slider(
+                    "Days Since Last Activity (D1)", 
+                    min_value=0, 
+                    max_value=600, 
+                    value=0,
+                    help="Jumlah hari sejak aktivitas transaksi terakhir pada kartu ini."
+                )
+                
+            submit_btn = st.form_submit_button("Analisis Keamanan Transaksi")
+            
+        if submit_btn:
+            # Menggunakan median dari dataset sample sebagai baseline agar fitur lain bernilai wajar
+            baseline = s_df[feats].median().to_frame().T
+            
+            # Overwrite nilai baseline dengan input dari user
+            baseline["TransactionAmt"] = amt
+            baseline["card1"] = card1
+            baseline["dist1"] = dist1
+            baseline["C1"] = c1
+            baseline["C13"] = c13
+            baseline["D1"] = d1
+            
+            # Persiapkan input untuk model
+            X_input = baseline.fillna(-999).astype("float32")
+            
+            # Prediksi probabilitas fraud
+            prob = model.predict(X_input)[0]
+            
+            # Tampilkan Hasil Analisis
+            st.divider()
+            st.subheader("Hasil Analisis Model")
+            
+            # Visualisasi persentase fraud
+            st.progress(float(prob))
+            st.write(f"**Probabilitas Fraud:** {prob * 100:.2f}%")
+            
+            # Alert Box berdasarkan tingkat risiko
+            if prob < 0.15:
+                st.success("TRANSAKSI AMAN (LOW RISK): Transaksi dinilai wajar dan aman untuk diproses.")
+            elif prob < 0.50:
+                st.warning("RISIKO MENENGAH (MEDIUM RISK): Terdeteksi indikasi janggal. Disarankan verifikasi tambahan (OTP/MFA).")
+            else:
+                st.error("PERINGATAN FRAUD (HIGH RISK): Pola transaksi sangat mirip dengan fraud. Transaksi otomatis ditolak/diblokir!")
+

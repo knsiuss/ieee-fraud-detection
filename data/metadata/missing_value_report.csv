@@ -7,9 +7,9 @@ ProductCD,0.0,category,None needed
 card1,0.0,int16,None needed
 card2,1.5126833068039423,float32,Median
 card3,0.26501168422122123,float32,Median
-card4,0.267043722694483,category,Mode + Indicator
+card4,0.267043722694483,category,Mode
 card5,0.7212043214684865,float32,Median
-card6,0.26602770345785215,category,Mode + Indicator
+card6,0.26602770345785215,category,Mode
 addr1,11.12642666034477,float32,Median + Indicator
 addr2,11.12642666034477,float32,Median + Indicator
 dist1,59.6523520845328,float32,Median + Indicator
