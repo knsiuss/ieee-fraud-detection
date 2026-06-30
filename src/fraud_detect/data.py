@@ -75,17 +75,6 @@ def reduce_mem_usage(df: pd.DataFrame, verbose: bool = True) -> pd.DataFrame:
     -------
     pandas.DataFrame
         A new DataFrame with downcasted dtypes.
-
-    Examples
-    --------
-    >>> import pandas as pd, numpy as np
-    >>> df = pd.DataFrame({"a": np.array([1, 2, 3], dtype=np.int64),
-    ...                    "b": np.array([0.5, 1.5, 2.5], dtype=np.float64)})
-    >>> out = reduce_mem_usage(df, verbose=False)
-    >>> out["a"].dtype
-    numpy.int8
-    >>> out["b"].dtype
-    numpy.float32
     """
     df = df.copy()
     start_mem = df.memory_usage(deep=True).sum() / 1024**2
@@ -157,16 +146,6 @@ def compute_missing_report(df: pd.DataFrame) -> pd.DataFrame:
     -------
     pandas.DataFrame
         Columns: ``column``, ``missing_pct``, ``dtype``, ``strategy``.
-
-    Examples
-    --------
-    >>> import pandas as pd, numpy as np
-    >>> df = pd.DataFrame({"x": [1, 2, 3], "y": [np.nan, np.nan, 3.0]})
-    >>> report = compute_missing_report(df)
-    >>> report["column"].tolist()
-    ['x', 'y']
-    >>> report.set_index("column")["missing_pct"].round(1).to_dict()
-    {'x': 0.0, 'y': 66.7}
     """
     total = len(df)
     records = []
