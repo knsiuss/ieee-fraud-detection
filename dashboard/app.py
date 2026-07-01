@@ -793,6 +793,7 @@ with t5:
             "learning_rate": 0.1,
             "verbose": -1,
             "random_state": 42,
+            "num_threads": 1,
         }
         # Melatih model LightGBM sederhana
         model = lgb.train(lgb_params, lgb.Dataset(X, label=y), num_boost_round=100)
@@ -806,6 +807,40 @@ with t5:
         model, feats, s_df = model_data
         st.markdown("### Transaksi Simulator")
         
+        # Pilih Skenario Template Transaksi
+        scenario = st.selectbox(
+            "Pilih Skenario Template Transaksi (Opsional)",
+            options=[
+                "Custom Input (Manual)", 
+                "Transaksi Nyata dari Dataset - Terdeteksi Fraud (Probabilitas 99.90%)", 
+                "Transaksi Nyata dari Dataset - Terdeteksi Aman (Probabilitas 0.07%)"
+            ],
+            help="Pilih skenario untuk mengisi otomatis form dengan transaksi nyata dari dataset."
+        )
+
+        # Set default values based on selected scenario
+        if scenario == "Transaksi Nyata dari Dataset - Terdeteksi Fraud (Probabilitas 99.90%)":
+            def_amt = 300.0
+            def_card1 = 10616
+            def_dist1 = 0.0
+            def_c1 = 12
+            def_c13 = 1
+            def_d1 = 0
+        elif scenario == "Transaksi Nyata dari Dataset - Terdeteksi Aman (Probabilitas 0.07%)":
+            def_amt = 105.0
+            def_card1 = 15775
+            def_dist1 = 0.0
+            def_c1 = 5
+            def_c13 = 61
+            def_d1 = 42
+        else:
+            def_amt = 150.0
+            def_card1 = 9500
+            def_dist1 = 12.0
+            def_c1 = 1
+            def_c13 = 1
+            def_d1 = 0
+
         # Form Input untuk simulasi parameter transaksi
         with st.form("fraud_prediction_form"):
             col1, col2 = st.columns(2)
@@ -816,7 +851,7 @@ with t5:
                     "Transaction Amount ($)", 
                     min_value=0.1, 
                     max_value=10000.0, 
-                    value=150.0, 
+                    value=def_amt, 
                     step=10.0,
                     help="Nominal transaksi dalam USD."
                 )
@@ -824,7 +859,7 @@ with t5:
                     "Card Issuer Code (card1)", 
                     min_value=1000, 
                     max_value=20000, 
-                    value=9500, 
+                    value=def_card1, 
                     step=100,
                     help="Kode ID bank/penerbit kartu kredit (numerik)."
                 )
@@ -832,7 +867,7 @@ with t5:
                     "Distance (dist1)", 
                     min_value=0.0, 
                     max_value=5000.0, 
-                    value=12.0, 
+                    value=def_dist1, 
                     step=5.0,
                     help="Jarak geografis (misal antara billing address dan lokasi transaksi)."
                 )
@@ -843,29 +878,35 @@ with t5:
                     "Card Match Count (C1)", 
                     min_value=1, 
                     max_value=100, 
-                    value=1,
+                    value=def_c1,
                     help="Jumlah akun/alamat yang terhubung dengan kartu ini. Nilai tinggi biasanya lebih berisiko."
                 )
                 c13 = st.slider(
                     "Transaction Frequency (C13)", 
                     min_value=1, 
                     max_value=500, 
-                    value=1,
+                    value=def_c13,
                     help="Frekuensi transaksi kartu ini di masa lalu."
                 )
                 d1 = st.slider(
                     "Days Since Last Activity (D1)", 
                     min_value=0, 
                     max_value=600, 
-                    value=0,
+                    value=def_d1,
                     help="Jumlah hari sejak aktivitas transaksi terakhir pada kartu ini."
                 )
                 
             submit_btn = st.form_submit_button("Analisis Keamanan Transaksi")
             
         if submit_btn:
-            # Menggunakan median dari dataset sample sebagai baseline agar fitur lain bernilai wajar
-            baseline = s_df[feats].median().to_frame().T
+            # Tentukan baseline (394 fitur penunjang lainnya) berdasarkan skenario
+            if scenario == "Transaksi Nyata dari Dataset - Terdeteksi Fraud (Probabilitas 99.90%)":
+                baseline = s_df.loc[[65619]][feats].copy()
+            elif scenario == "Transaksi Nyata dari Dataset - Terdeteksi Aman (Probabilitas 0.07%)":
+                baseline = s_df.loc[[22047]][feats].copy()
+            else:
+                # Menggunakan median dari dataset sample sebagai baseline agar fitur lain bernilai wajar
+                baseline = s_df[feats].median().to_frame().T
             
             # Overwrite nilai baseline dengan input dari user
             baseline["TransactionAmt"] = amt
@@ -884,6 +925,11 @@ with t5:
             # Tampilkan Hasil Analisis
             st.divider()
             st.subheader("Hasil Analisis Model")
+            
+            if scenario != "Custom Input (Manual)":
+                st.info(f"💡 Info: Simulator menggunakan 394 fitur penunjang asli dari data transaksi riil no. {65619 if 'Fraud' in scenario else 22047} di dataset.")
+            else:
+                st.info("💡 Info: Simulator menggunakan nilai median/normal untuk 394 fitur penunjang lainnya.")
             
             # Visualisasi persentase fraud
             st.progress(float(prob))

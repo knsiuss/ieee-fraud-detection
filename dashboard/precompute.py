@@ -176,6 +176,7 @@ def precompute():
         "objective": "binary", "metric": "auc", "num_leaves": 31,
         "learning_rate": 0.1, "feature_fraction": 0.8, "bagging_fraction": 0.8,
         "bagging_freq": 5, "verbose": -1, "random_state": 42,
+        "num_threads": 1,
     }
     model = lgb.train(
         lgb_params, lgb.Dataset(X_tr, label=y_tr),
