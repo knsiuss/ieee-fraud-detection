@@ -56,6 +56,21 @@ def _synthetic(n: int = 300) -> pd.DataFrame:
     )
 
 
+class TestMissingModel:
+    def test_scoring_returns_503_without_path_leak(self, tmp_path, monkeypatch):
+        monkeypatch.setattr(store, "CURRENT_DIR", tmp_path / "does-not-exist")
+        main._clear_cache()
+        c = TestClient(main.app)
+        res = c.post("/api/predict", json={"values": {"x": 1.0}})
+        assert res.status_code == 503
+        detail = res.json()["detail"]
+        assert "train_model" in detail
+        assert "tmp_path" not in detail and "\\" not in detail  # no filesystem path
+
+        health = c.get("/api/health").json()
+        assert health["model_present"] is False
+
+
 class TestReadEndpoints:
     def test_health(self, client):
         body = client.get("/api/health").json()
