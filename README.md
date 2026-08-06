@@ -18,8 +18,41 @@ This repository contains a complete, production-shaped data science pipeline —
 
 ---
 
+## Try it in 60 seconds
+
+```bash
+git clone <your-fork-url> && cd ieee-fraud-detection
+python -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\activate
+pip install -e ".[lgbm,dev]"
+python scripts/train_model.py      # trains on the committed demo sample (~1 min)
+uvicorn api.main:app --reload      # then open http://localhost:8000
+```
+
+In the browser: **Score → Checkout → "Suspicious account" → amount 840 →
+Detect fraud** — see a high-risk case with a plain-English explanation. Then
+open **Batch → Download sample CSV → Score file** for the batch workflow.
+
+> A fresh clone has no Kaggle data; `scripts/train_model.py` falls back to
+> the committed demo sample, so this works anywhere.
+
+## What this is (for reviewers)
+
+A production-inspired **fraud-risk decisioning platform** for the IEEE-CIS
+Kaggle competition: a tuned LightGBM served behind a FastAPI API with a
+vanilla-JS/Chart.js review console — checkout-style scoring, batch CSV
+scoring, SHAP explanations, reviewer feedback, and gated auto-retraining.
+Honest ML practice throughout: **time-ordered evaluation (ROC-AUC 0.909)**
+instead of an inflated random split, a [model card](docs/MODEL_CARD.md),
+a leakage audit, and drift monitoring. Typed, tested Python —
+`pip install -e . && python scripts/train_model.py && uvicorn api.main:app`
+runs it locally.
+
+---
+
 ## Table of Contents
 
+- [Try it in 60 seconds](#try-it-in-60-seconds)
+- [What this is (for reviewers)](#what-this-is-for-reviewers)
 - [Architecture](#architecture)
 - [Repository Structure](#repository-structure)
 - [Analysis Pipeline](#analysis-pipeline)
@@ -145,7 +178,12 @@ ieee-fraud-detection/
 │   ├── MODEL_CARD.md            #   Intended use, honest metrics, risks, monitoring
 │   ├── DEPLOYMENT.md            #   Free-tier deployment guide
 │   ├── EXTERNAL_DATA.md         #   External-dataset comparability research
+│   ├── RELEASE_CHECKLIST.md     #   Launch-readiness checklist
+│   ├── RELEASE_NOTES.md         #   Draft release notes (v0.1.0)
+│   ├── CASE_STUDY.md            #   Portfolio case-study write-up
 │   └── source/                  #   Sphinx documentation
+├── render.yaml                  # Render Blueprint (free-tier deployment)
+├── .github/workflows/           # CI (lint + test) and docs deployment workflows
 ├── .github/workflows/           # CI (lint + test) and docs deployment workflows
 ├── CONTRIBUTING.md              # Contribution guide
 ├── CHANGELOG.md                 # Version history
