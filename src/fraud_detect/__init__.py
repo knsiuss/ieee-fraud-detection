@@ -85,10 +85,24 @@ from fraud_detect.models import (
     train_all_models,
     train_model,
 )
+from fraud_detect.contract import (
+    CONTRACT_VERSION,
+    REQUIRED_FIELDS,
+    ContractError,
+    ContractReport,
+    FieldStatus,
+    validate_payload,
+)
 from fraud_detect.monitoring import (
     data_quality_check,
     feature_drift,
     psi,
+)
+from fraud_detect.policy import (
+    DEFAULT_POLICY,
+    Decision,
+    DecisionPolicy,
+    policy_from_env,
 )
 from fraud_detect.serving import (
     ModelArtefact,
@@ -217,6 +231,18 @@ __all__ = [
     "psi",
     "feature_drift",
     "data_quality_check",
+    # Contract
+    "CONTRACT_VERSION",
+    "REQUIRED_FIELDS",
+    "ContractError",
+    "ContractReport",
+    "FieldStatus",
+    "validate_payload",
+    # Policy
+    "DEFAULT_POLICY",
+    "Decision",
+    "DecisionPolicy",
+    "policy_from_env",
     # Config
     "DATA_ROOT",
     "TARGET_COLUMN",

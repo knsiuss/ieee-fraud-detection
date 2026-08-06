@@ -1,20 +1,34 @@
-"""IEEE-CIS Fraud Detection — FastAPI service.
+"""IEEE-CIS Fraud Detection — FastAPI decisioning service (portfolio demo).
 
 Run locally:
     uvicorn api.main:app --reload
 
-The service serves the trained LightGBM artefact for single / batch scoring,
-explains individual predictions with SHAP, collects reviewer feedback, and
-offers a gated auto-retrain endpoint.
+Every scoring path loads the **same joblib artefact** through
+:func:`fraud_detect.serving.load_artefact` and runs
+:func:`fraud_detect.serving.predict_proba`. A strict, versioned feature
+contract (:mod:`fraud_detect.contract`) validates raw payloads, a versioned
+decision policy (:mod:`fraud_detect.policy`) maps the probability to
+APPROVE / MANUAL_REVIEW / DECLINE, and every decision is persisted to a local
+SQLite audit store with model/policy/contract versions, reason codes, and
+reviewer outcome.
+
+This is a **portfolio demo on public data** — not a production fraud system.
 
 Endpoints
     GET  /api/health
     GET  /api/model
-    POST /api/predict          single-transaction score
-    POST /api/predict/batch    score an uploaded CSV of transactions
+    GET  /api/stats
+    POST /api/predict          raw IEEE payload -> decision (idempotent, persisted)
+    POST /api/predict/batch    upload a CSV of transactions -> per-row decisions
+    POST /api/simulate         demo scenario builder (friendly inputs, labeled)
     POST /api/explain          SHAP explanation for one transaction
-    POST /api/feedback         persist a reviewer label into the retrain pool
-    POST /api/retrain          train a candidate; swap if it beats the gate
+    GET  /api/sim/fields       schema for the demo scenario builder
+    GET  /api/review/queue     analyst review queue (filterable)
+    GET  /api/review/{id}      audit record for one decision
+    POST /api/review/{id}/outcome   record reviewer verdict -> retrain pool
+    GET  /api/monitor/summary  aggregates over decision history
+    POST /api/feedback         legacy reviewer label endpoint
+    POST /api/retrain          gated retraining (admin)
 """
 
 from __future__ import annotations
@@ -23,6 +37,7 @@ import collections
 import io
 import os
 import time
+import uuid
 from functools import lru_cache
 from typing import Annotated
 
@@ -34,6 +49,8 @@ from fastapi.staticfiles import StaticFiles
 
 from fraud_detect import sim as simmod
 from fraud_detect._exceptions import MissingArtefactError
+from fraud_detect.contract import CONTRACT_VERSION, ContractError, validate_payload
+from fraud_detect.policy import DecisionPolicy, policy_from_env
 from fraud_detect.serving import (
     align_features,
     decision_drivers,
@@ -46,10 +63,11 @@ from fraud_detect.serving import (
 from . import schemas, store
 
 app = FastAPI(
-    title="IEEE-CIS Fraud Detection API (demo)",
+    title="IEEE-CIS Fraud Decisioning API (demo)",
     description=(
-        "Portfolio demo: fraud probability scoring with SHAP explanations and gated "
-        "retraining on public IEEE-CIS competition data. Not a bank-ready fraud system."
+        "Portfolio demo: raw IEEE-CIS payloads are scored by a joblib LightGBM "
+        "artefact, a versioned policy decides APPROVE / MANUAL_REVIEW / DECLINE, "
+        "and every decision is audited. Public data only; not a real fraud system."
     ),
     version="0.1.0",
 )
@@ -96,6 +114,18 @@ async def rate_limit(request: Request, call_next):
     return await call_next(request)
 
 
+def _env_float(name: str) -> float | None:
+    value = os.getenv(name)
+    return float(value) if value else None
+
+
+# Versioned decision policy, configurable without retraining. Override via env.
+_POLICY: DecisionPolicy = policy_from_env(
+    review_above=_env_float("DECISION_REVIEW_ABOVE"),
+    decline_above=_env_float("DECISION_DECLINE_ABOVE"),
+)
+
+
 @lru_cache
 def _current():
     """Cached handle to the served artefact; invalidated after a retrain."""
@@ -106,22 +136,52 @@ def _clear_cache() -> None:
     _current.cache_clear()
 
 
-def _build_row(values: dict[str, float], art) -> pd.DataFrame:
-    """Start from the training median and overlay the analyst's inputs."""
-    row = art.baseline.copy()
-    for k, v in values.items():
-        if k in art.features:
-            row.loc[0, k] = float(v)
-    return align_features(row, art.features)
+def _align_row(values: dict[str, float], art) -> pd.DataFrame:
+    """Align raw feature values to the model's exact feature list."""
+    return align_features(pd.DataFrame([values]), art.features)
 
 
-def _score(values: dict[str, float]):
-    """Return (probability, tier, action, version) for one transaction."""
+def _decide(values: dict[str, float], transaction_id: str | None) -> tuple[dict, object, str]:
+    """Validate -> score (joblib) -> apply policy -> persist. Idempotent."""
     art = _current()
-    x = _build_row(values, art)
+    report = validate_payload(values, art.features)
+    x = _align_row(values, art)
     prob = float(predict_proba(art.model, x)[0])
-    tier = risk_tier(prob)
-    return prob, tier, store.version(art)
+    decision, action = _POLICY.apply(prob)
+    tx = transaction_id or uuid.uuid4().hex[:12]
+
+    existing = store.get_decision(tx)
+    if existing is not None:
+        return existing, art, action
+
+    drivers = decision_drivers(art.model, x, art.features, art.baseline, top_n=3)
+    store.record_decision(
+        transaction_id=tx,
+        model_version=store.version(art),
+        contract_version=CONTRACT_VERSION,
+        score=prob,
+        decision=decision.value,
+        policy_version=_POLICY.version,
+        thresholds=_POLICY.as_dict(),
+        reason_codes=drivers,
+        feature_report=report.as_dict(),
+        input_features={c: float(x.iloc[0][c]) for c in art.features},
+    )
+    return store.get_decision(tx), art, action
+
+
+def _decision_response(record: dict, tier, action: str) -> schemas.PredictResponse:
+    return schemas.PredictResponse(
+        probability=float(record["score"]),
+        risk_tier=tier.label,
+        action=action,
+        model_version=record["model_version"],
+        transaction_id=record["transaction_id"],
+        decision=record["decision"],
+        policy_version=record["policy_version"],
+        contract_version=record["contract_version"],
+        feature_report=record["feature_report"],
+    )
 
 
 def _require_admin(admin_key: str | None) -> None:
@@ -154,10 +214,12 @@ def stats() -> dict:
 
 @app.post("/api/predict", response_model=schemas.PredictResponse)
 def predict(req: schemas.PredictRequest) -> schemas.PredictResponse:
-    prob, tier, version = _score(req.values)
-    return schemas.PredictResponse(
-        probability=prob, risk_tier=tier.label, action=tier.action, model_version=version
-    )
+    try:
+        record, art, action = _decide(req.values, req.transaction_id)
+    except ContractError as exc:
+        raise HTTPException(status_code=422, detail=exc.messages) from exc
+    tier = risk_tier(float(record["score"]))
+    return _decision_response(record, tier, action)
 
 
 @app.get("/api/sim/fields")
@@ -167,19 +229,77 @@ def sim_fields() -> dict:
 
 @app.post("/api/simulate", response_model=schemas.SimulateResponse)
 def simulate(req: schemas.SimulateRequest) -> schemas.SimulateResponse:
-    """Score a transaction from friendly, checkout-style inputs."""
+    """Score a **demo scenario** from friendly, checkout-style inputs.
+
+    Friendly fields are mapped onto the model's feature space over a scenario
+    profile; the model still sees the full 400-feature schema. The response
+    reports exactly which features came from the form vs the profile median.
+    """
     art = _current()
     data = req.model_dump()
     row = simmod.build_row(data, art.features, art.baseline, art.profiles)
     prob = float(predict_proba(art.model, row)[0])
+    decision, action = _POLICY.apply(prob)
     tier = risk_tier(prob)
+
+    mapped = simmod.map_friendly(data)
+    supplied = set(mapped)
+    defaulted = [f for f in art.features if f not in supplied]
+    feature_report = {
+        "counts": {
+            "supplied": len(supplied),
+            "defaulted": len(defaulted),
+            "missing": 0,
+            "rejected": 0,
+        },
+        "fields": {
+            f: {
+                "status": "supplied" if f in supplied else "defaulted",
+                "reason": "scenario profile median",
+            }
+            for f in art.features
+        },
+    }
+    feature_usage = {
+        "profile": req.profile,
+        "supplied_features": sorted(supplied),
+        "defaulted_count": len(defaulted),
+        "note": (
+            "Demo scenario builder: only the listed fields were set by the form; "
+            "the rest used the scenario profile median."
+        ),
+    }
+
+    tx = req.transaction_id or uuid.uuid4().hex[:12]
+    if store.get_decision(tx) is None:
+        drivers = decision_drivers(art.model, row, art.features, art.baseline, top_n=3)
+        store.record_decision(
+            transaction_id=tx,
+            model_version=store.version(art),
+            contract_version=CONTRACT_VERSION,
+            score=prob,
+            decision=decision.value,
+            policy_version=_POLICY.version,
+            thresholds=_POLICY.as_dict(),
+            reason_codes=drivers,
+            feature_report=feature_report,
+            input_features={c: float(row.iloc[0][c]) for c in art.features},
+        )
+    record = store.get_decision(tx)
+
     return schemas.SimulateResponse(
-        probability=prob,
+        probability=float(record["score"]),
         risk_tier=tier.label,
-        action=tier.action,
+        action=action,
         model_version=store.version(art),
+        transaction_id=tx,
+        decision=record["decision"],
+        policy_version=record["policy_version"],
+        contract_version=record["contract_version"],
+        feature_report=record["feature_report"],
         profile=req.profile,
-        mapped_values=simmod.map_friendly(data),
+        mapped_values=mapped,
+        feature_usage=feature_usage,
     )
 
 
@@ -196,26 +316,61 @@ async def predict_batch(
         raise HTTPException(status_code=400, detail="Could not parse CSV.") from exc
 
     art = _current()
+    id_col = "TransactionID" if "TransactionID" in df.columns else None
+    numeric_cols = [c for c in art.features if c in df.columns]
     x = align_features(df, art.features)
     probs = predict_proba(art.model, x)
 
-    id_col = "TransactionID" if "TransactionID" in df.columns else None
+    compute_reasons = len(df) <= 50
     rows: list[schemas.BatchScoreRow] = []
+    errors: list[dict[str, str]] = []
     for i in range(len(df)):
-        tier = risk_tier(float(probs[i]))
+        row_values = {c: df.iloc[i][c] for c in numeric_cols}
+        try:
+            report = validate_payload(row_values, art.features)
+        except ContractError as exc:
+            errors.append({"row": str(i), "errors": "; ".join(exc.messages)})
+            continue
+        prob = float(probs[i])
+        decision, action = _POLICY.apply(prob)
+        tier = risk_tier(prob)
+        tx = str(df.iloc[i][id_col]) if id_col is not None else f"row-{i}"
+        if store.get_decision(tx) is None:
+            drivers = (
+                decision_drivers(art.model, x.iloc[[i]], art.features, art.baseline, top_n=3)
+                if compute_reasons
+                else None
+            )
+            store.record_decision(
+                transaction_id=tx,
+                model_version=store.version(art),
+                contract_version=CONTRACT_VERSION,
+                score=prob,
+                decision=decision.value,
+                policy_version=_POLICY.version,
+                thresholds=_POLICY.as_dict(),
+                reason_codes=drivers,
+                feature_report=report.as_dict(),
+                input_features={c: float(x.iloc[i][c]) for c in art.features},
+            )
+        record = store.get_decision(tx)
         rows.append(
             schemas.BatchScoreRow(
                 id=(df.iloc[i][id_col] if id_col is not None else i),
-                probability=float(probs[i]),
+                transaction_id=tx,
+                probability=float(record["score"]),
                 risk_tier=tier.label,
-                action=tier.action,
-                values={},
+                action=action,
+                decision=record["decision"],
+                policy_version=record["policy_version"],
+                contract_version=record["contract_version"],
             )
         )
     return schemas.BatchScoreResponse(
         model_version=store.version(art),
         count=len(rows),
         rows=rows,
+        errors=errors,
     )
 
 
@@ -230,7 +385,7 @@ def explain(req: schemas.PredictRequest) -> schemas.ExplainResponse:
             art.profiles,
         )
     else:
-        x = _build_row(req.values, art)
+        x = _align_row(req.values, art)
     prob = float(predict_proba(art.model, x)[0])
     tier = risk_tier(prob)
 
@@ -254,6 +409,39 @@ def explain(req: schemas.PredictRequest) -> schemas.ExplainResponse:
         drivers=drivers,
         features=features,
     )
+
+
+@app.get("/api/review/queue")
+def review_queue(
+    decision: str | None = None,
+    status: str | None = None,
+    limit: int = 100,
+) -> list[dict]:
+    return store.list_decisions(decision=decision, status=status, limit=limit)
+
+
+@app.get("/api/review/{transaction_id}")
+def review_detail(transaction_id: str) -> dict:
+    record = store.get_decision(transaction_id)
+    if record is None:
+        raise HTTPException(status_code=404, detail="Decision not found.")
+    return record
+
+
+@app.post("/api/review/{transaction_id}/outcome")
+def review_outcome(
+    transaction_id: str,
+    req: schemas.ReviewOutcomeRequest,
+) -> dict:
+    updated = store.update_outcome(transaction_id, req.verdict, req.note)
+    if updated is None:
+        raise HTTPException(status_code=404, detail="Decision not found.")
+    return updated
+
+
+@app.get("/api/monitor/summary")
+def monitor_summary() -> dict:
+    return store.decision_stats()
 
 
 @app.post("/api/feedback", response_model=schemas.FeedbackResponse)

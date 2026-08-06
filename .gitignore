@@ -4,6 +4,7 @@ data/interim/
 data/processed/
 data/models/
 data/feedback/
+data/decisions/
 dataset/
 raw_data/
 *.csv

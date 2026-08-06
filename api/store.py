@@ -12,7 +12,9 @@ Reviewer feedback (from ``POST /api/feedback``) accumulates in
 
 from __future__ import annotations
 
+import contextlib
 import json
+import sqlite3
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -245,3 +247,175 @@ def retrain_and_swap(data_df: pd.DataFrame | None = None) -> dict[str, Any]:
             else "New model did not beat the served model on validation; kept current."
         ),
     }
+
+
+# Decision / audit store — a durable local SQLite store for the demo. The
+# database holds the input features used for each decision so the decision can
+# be reproduced and fed to the retraining pool. Features are stored in the DB
+# (audit), but never logged to stdout.
+
+DECISION_DB: Path = config.DATA_ROOT / "decisions" / "decisions.db"
+
+_SCHEMA = """
+CREATE TABLE IF NOT EXISTS decisions (
+    transaction_id   TEXT PRIMARY KEY,
+    timestamp        TEXT NOT NULL,
+    model_version    TEXT,
+    contract_version TEXT,
+    score            REAL,
+    decision         TEXT,
+    policy_version   TEXT,
+    thresholds       TEXT,
+    reason_codes     TEXT,
+    feature_report   TEXT,
+    input_features   TEXT,
+    status           TEXT NOT NULL DEFAULT 'NEW',
+    reviewer_outcome TEXT,
+    feedback_note    TEXT
+);
+"""
+
+
+def _decision_conn() -> sqlite3.Connection:
+    DECISION_DB.parent.mkdir(parents=True, exist_ok=True)
+    conn = sqlite3.connect(str(DECISION_DB))
+    conn.row_factory = sqlite3.Row
+    conn.execute(_SCHEMA)
+    return conn
+
+
+def record_decision(  # noqa: PLR0913
+    *,
+    transaction_id: str,
+    model_version: str,
+    contract_version: str,
+    score: float,
+    decision: str,
+    policy_version: str,
+    thresholds: dict[str, float],
+    reason_codes: list[dict] | None,
+    feature_report: dict,
+    input_features: dict[str, float],
+) -> dict:
+    """Persist a decision; idempotent on ``transaction_id`` (first wins)."""
+    conn = _decision_conn()
+    try:
+        conn.execute(
+            """
+            INSERT OR IGNORE INTO decisions (
+                transaction_id, timestamp, model_version, contract_version,
+                score, decision, policy_version, thresholds, reason_codes,
+                feature_report, input_features, status
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'NEW')
+            """,
+            (
+                transaction_id,
+                datetime.now(timezone.utc).isoformat(),
+                model_version,
+                contract_version,
+                float(score),
+                decision,
+                policy_version,
+                json.dumps(thresholds),
+                json.dumps(reason_codes) if reason_codes is not None else None,
+                json.dumps(feature_report),
+                json.dumps(input_features),
+            ),
+        )
+        conn.commit()
+        row = conn.execute(
+            "SELECT * FROM decisions WHERE transaction_id = ?", (transaction_id,)
+        ).fetchone()
+        return _row_to_dict(row)
+    finally:
+        conn.close()
+
+
+def get_decision(transaction_id: str) -> dict | None:
+    conn = _decision_conn()
+    try:
+        row = conn.execute(
+            "SELECT * FROM decisions WHERE transaction_id = ?", (transaction_id,)
+        ).fetchone()
+        return _row_to_dict(row) if row else None
+    finally:
+        conn.close()
+
+
+def list_decisions(
+    *,
+    decision: str | None = None,
+    status: str | None = None,
+    limit: int = 100,
+) -> list[dict]:
+    conn = _decision_conn()
+    try:
+        query = "SELECT * FROM decisions"
+        clauses: list[str] = []
+        params: list[Any] = []
+        if decision:
+            clauses.append("decision = ?")
+            params.append(decision)
+        if status:
+            clauses.append("status = ?")
+            params.append(status)
+        if clauses:
+            query += " WHERE " + " AND ".join(clauses)
+        query += " ORDER BY timestamp DESC LIMIT ?"
+        params.append(int(limit))
+        return [_row_to_dict(r) for r in conn.execute(query, params).fetchall()]
+    finally:
+        conn.close()
+
+
+def update_outcome(transaction_id: str, verdict: str, note: str | None) -> dict | None:
+    """Set the reviewer outcome and feed the retraining pool."""
+    if verdict not in ("safe", "fraud"):
+        raise ValueError(f"verdict must be 'safe' or 'fraud', got {verdict!r}")
+    row = get_decision(transaction_id)
+    if row is None:
+        return None
+    record_feedback(row.get("input_features") or {}, 1 if verdict == "fraud" else 0)
+    conn = _decision_conn()
+    try:
+        conn.execute(
+            "UPDATE decisions SET status='REVIEWED', reviewer_outcome=?,"
+            " feedback_note=? WHERE transaction_id=?",
+            (verdict, note, transaction_id),
+        )
+        conn.commit()
+    finally:
+        conn.close()
+    return get_decision(transaction_id)
+
+
+def decision_stats() -> dict:
+    """Lightweight aggregates over the decision history for monitoring."""
+    conn = _decision_conn()
+    try:
+        row = conn.execute(
+            "SELECT COUNT(*) AS n, AVG(score) AS avg_score, MIN(score) AS min_score,"
+            " MAX(score) AS max_score FROM decisions"
+        ).fetchone()
+        by_decision = {
+            r["decision"]: r["n"]
+            for r in conn.execute("SELECT decision, COUNT(*) AS n FROM decisions GROUP BY decision")
+        }
+        reviewed = conn.execute(
+            "SELECT COUNT(*) AS n FROM decisions WHERE status='REVIEWED'"
+        ).fetchone()["n"]
+        out = dict(row)
+        out["by_decision"] = by_decision
+        out["reviewed"] = int(reviewed)
+        return out
+    finally:
+        conn.close()
+
+
+def _row_to_dict(row: sqlite3.Row) -> dict:
+    d = dict(row)
+    for key in ("thresholds", "reason_codes", "feature_report", "input_features"):
+        if d.get(key):
+            with contextlib.suppress(TypeError, json.JSONDecodeError):
+                d[key] = json.loads(d[key])
+    return d
