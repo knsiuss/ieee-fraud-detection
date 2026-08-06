@@ -34,9 +34,7 @@ def binary_data() -> tuple[dict[str, pd.Series], dict[str, np.ndarray]]:
     )
 
 
-# --------------------------------------------------------------------------- #
 # plot_roc_curves
-# --------------------------------------------------------------------------- #
 
 
 def test_plot_roc_curves_returns_figure(binary_data):
@@ -57,9 +55,7 @@ def test_plot_roc_single_model(binary_data):
     plt.close(fig)
 
 
-# --------------------------------------------------------------------------- #
 # plot_pr_curves
-# --------------------------------------------------------------------------- #
 
 
 def test_plot_pr_curves_returns_figure(binary_data):
@@ -70,9 +66,7 @@ def test_plot_pr_curves_returns_figure(binary_data):
     plt.close(fig)
 
 
-# --------------------------------------------------------------------------- #
 # plot_confusion_matrix
-# --------------------------------------------------------------------------- #
 
 
 def test_plot_confusion_matrix_returns_figure():
@@ -91,9 +85,7 @@ def test_plot_confusion_matrix_normalised():
     plt.close(fig)
 
 
-# --------------------------------------------------------------------------- #
 # plot_metrics_comparison
-# --------------------------------------------------------------------------- #
 
 
 def test_plot_metrics_comparison_returns_figure():
@@ -109,9 +101,7 @@ def test_plot_metrics_comparison_returns_figure():
     plt.close(fig)
 
 
-# --------------------------------------------------------------------------- #
 # plot_threshold_analysis
-# --------------------------------------------------------------------------- #
 
 
 def test_plot_threshold_analysis_returns_figure():
@@ -123,9 +113,7 @@ def test_plot_threshold_analysis_returns_figure():
     plt.close(fig)
 
 
-# --------------------------------------------------------------------------- #
 # plot_cumulative_gain
-# --------------------------------------------------------------------------- #
 
 
 def test_plot_cumulative_gain_returns_figure():

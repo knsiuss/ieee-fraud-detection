@@ -20,9 +20,7 @@ from fraud_detect._exceptions import MissingArtefactError
 from fraud_detect.viz import save_figure
 
 
-# --------------------------------------------------------------------------- #
 # data.reduce_mem_usage
-# --------------------------------------------------------------------------- #
 def test_reduce_mem_usage_downcasts_integers():
     df = pd.DataFrame({"a": np.array([1, 2, 3], dtype=np.int64)})
     out = data.reduce_mem_usage(df, verbose=False)
@@ -41,9 +39,7 @@ def test_reduce_mem_usage_does_not_mutate_input():
     assert df["a"].dtype == np.int64  # original untouched
 
 
-# --------------------------------------------------------------------------- #
 # data.get_imputation_strategy / categorize_missing
-# --------------------------------------------------------------------------- #
 @pytest.mark.parametrize(
     "pct, dtype, expected",
     [
@@ -95,9 +91,7 @@ def test_load_merged_train(monkeypatch):
         pd.testing.assert_frame_equal(loaded, df)
 
 
-# --------------------------------------------------------------------------- #
 # features.add_time_features / add_amount_features / add_email_features
-# --------------------------------------------------------------------------- #
 def test_add_time_features_vectorised_and_idempotent():
     df = pd.DataFrame({config.TRANSACTION_DT_COLUMN: [0, 3600, 86400]})
     out = features.add_time_features(df)
@@ -131,9 +125,7 @@ def test_add_email_features_free_domain_and_match():
     assert out["r_email_is_free"].tolist() == [1, 1, 0]
 
 
-# --------------------------------------------------------------------------- #
 # models.select_feature_columns / make_train_val_split
-# --------------------------------------------------------------------------- #
 def test_select_feature_columns_excludes_id_target_dt():
     df = pd.DataFrame(
         {
@@ -165,9 +157,7 @@ def test_make_train_val_split_shapes_and_stratification():
     assert abs(train_rate - val_rate) < 0.1
 
 
-# --------------------------------------------------------------------------- #
 # data.categorize_missing edge cases
-# --------------------------------------------------------------------------- #
 def test_categorize_missing_float_and_large():
     assert data.categorize_missing(0.0) == "No Missing"
     assert data.categorize_missing(100.0) == ">75% Missing"
@@ -175,9 +165,7 @@ def test_categorize_missing_float_and_large():
     assert data.categorize_missing(74.999) == "50-75% Missing"
 
 
-# --------------------------------------------------------------------------- #
 # features.add_card_aggregations
-# --------------------------------------------------------------------------- #
 def test_add_card_aggregations_idempotent():
     df = pd.DataFrame({"card1": [1, 1, 2], "TransactionAmt": [10.0, 20.0, 30.0]})
     out1 = features.add_card_aggregations(df)
@@ -192,9 +180,7 @@ def test_add_card_aggregations_missing_card1():
     assert out.equals(df)  # no-op when card1 missing
 
 
-# --------------------------------------------------------------------------- #
 # features.build_all_features composition
-# --------------------------------------------------------------------------- #
 def test_build_all_features_adds_expected_columns(synthetic_df):
     out = features.build_all_features(synthetic_df)
     expected_new = {
@@ -219,9 +205,7 @@ def test_build_all_features_adds_expected_columns(synthetic_df):
     assert expected_new.issubset(out.columns)
 
 
-# --------------------------------------------------------------------------- #
 # models.build_logistic_pipeline
-# --------------------------------------------------------------------------- #
 def test_build_logistic_pipeline_steps():
     pipe = models.build_logistic_pipeline()
     assert isinstance(pipe, Pipeline)
@@ -231,9 +215,7 @@ def test_build_logistic_pipeline_steps():
     assert pipe.steps[2][0] == "model"
 
 
-# --------------------------------------------------------------------------- #
 # models.evaluate_classifier return shape
-# --------------------------------------------------------------------------- #
 def test_evaluate_classifier_returns_expected_keys(synthetic_df):
 
     split = models.make_train_val_split(synthetic_df)
@@ -244,9 +226,7 @@ def test_evaluate_classifier_returns_expected_keys(synthetic_df):
         assert 0.0 <= v <= 1.0
 
 
-# --------------------------------------------------------------------------- #
 # io raises MissingArtefactError
-# --------------------------------------------------------------------------- #
 def test_read_parquet_raises_on_missing():
     with pytest.raises(MissingArtefactError):
         io.read_parquet(Path("/nonexistent/file.parquet"))
@@ -278,9 +258,7 @@ def test_write_csv_creates_file():
         pd.testing.assert_frame_equal(loaded, df)
 
 
-# --------------------------------------------------------------------------- #
 # viz.save_figure helper
-# --------------------------------------------------------------------------- #
 def test_save_figure_creates_file():
     fig, ax = plt.subplots()
     ax.plot([1, 2], [3, 4])
@@ -291,9 +269,7 @@ def test_save_figure_creates_file():
     plt.close(fig)
 
 
-# --------------------------------------------------------------------------- #
 # viz plot functions — smoke tests (return type, no crash)
-# --------------------------------------------------------------------------- #
 def test_plot_target_distribution_returns_figure(synthetic_df):
     fig, ax = viz.plot_target_distribution(synthetic_df["isFraud"])
     assert isinstance(fig, plt.Figure)

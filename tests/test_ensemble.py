@@ -14,9 +14,7 @@ from fraud_detect import ensemble as en
 from fraud_detect.models import ModelBackend, ModelResult
 
 
-# --------------------------------------------------------------------------- #
 # Fixtures
-# --------------------------------------------------------------------------- #
 
 
 @pytest.fixture
@@ -61,9 +59,7 @@ def sample_data() -> tuple[pd.DataFrame, pd.Series]:
     return X, y
 
 
-# --------------------------------------------------------------------------- #
 # EnsembleStrategy / EnsembleConfig
-# --------------------------------------------------------------------------- #
 
 
 class _DummyModel:
@@ -104,9 +100,7 @@ def test_ensemble_config_weight_mismatch() -> None:
         )
 
 
-# --------------------------------------------------------------------------- #
 # build_voting_ensemble — soft voting
-# --------------------------------------------------------------------------- #
 
 
 def test_soft_voting_ensemble_predict_proba_shape(
@@ -137,9 +131,7 @@ def test_soft_voting_ensemble_predict_shape(
     assert set(preds).issubset({0, 1})
 
 
-# --------------------------------------------------------------------------- #
 # build_voting_ensemble — hard voting
-# --------------------------------------------------------------------------- #
 
 
 def test_hard_voting_ensemble_predict_proba_shape(
@@ -156,9 +148,7 @@ def test_hard_voting_ensemble_predict_proba_shape(
     assert np.allclose(proba.sum(axis=1), 1.0)
 
 
-# --------------------------------------------------------------------------- #
 # build_voting_ensemble — errors
-# --------------------------------------------------------------------------- #
 
 
 def test_voting_ensemble_rejects_stacking(models_dict: dict) -> None:
@@ -179,9 +169,7 @@ def test_voting_ensemble_missing_backend(models_dict: dict) -> None:
         en.build_voting_ensemble(models_dict, cfg)
 
 
-# --------------------------------------------------------------------------- #
 # build_stacking_ensemble
-# --------------------------------------------------------------------------- #
 
 
 def test_stacking_ensemble_predict_proba_shape(
@@ -214,9 +202,7 @@ def test_stacking_ensemble_predict_shape(
     assert set(preds).issubset({0, 1})
 
 
-# --------------------------------------------------------------------------- #
 # evaluate_ensemble
-# --------------------------------------------------------------------------- #
 
 
 def test_evaluate_ensemble_returns_metrics(

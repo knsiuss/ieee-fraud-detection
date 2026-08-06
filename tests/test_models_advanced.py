@@ -30,9 +30,7 @@ def binary_df() -> pd.DataFrame:
     )
 
 
-# --------------------------------------------------------------------------- #
 # ModelBackend enum
-# --------------------------------------------------------------------------- #
 
 
 def test_model_backend_enum_values() -> None:
@@ -46,9 +44,7 @@ def test_model_backend_all_backends() -> None:
     assert len(all_backends) == 3
 
 
-# --------------------------------------------------------------------------- #
 # train_model — LightGBM
-# --------------------------------------------------------------------------- #
 
 
 def test_train_lightgbm_returns_model_result(binary_df: pd.DataFrame) -> None:
@@ -73,9 +69,7 @@ def test_train_lightgbm_feature_importance(binary_df: pd.DataFrame) -> None:
     assert result.feature_importance["importance"].is_monotonic_decreasing
 
 
-# --------------------------------------------------------------------------- #
 # train_model — XGBoost
-# --------------------------------------------------------------------------- #
 
 
 def test_train_xgboost_returns_model_result(binary_df: pd.DataFrame) -> None:
@@ -100,9 +94,7 @@ def test_train_xgboost_feature_importance(binary_df: pd.DataFrame) -> None:
         assert list(result.feature_importance.columns) == ["feature", "importance"]
 
 
-# --------------------------------------------------------------------------- #
 # train_model — CatBoost
-# --------------------------------------------------------------------------- #
 
 
 def test_train_catboost_returns_model_result(binary_df: pd.DataFrame) -> None:
@@ -127,9 +119,7 @@ def test_train_catboost_feature_importance(binary_df: pd.DataFrame) -> None:
     assert (result.feature_importance["importance"] >= 0).all()
 
 
-# --------------------------------------------------------------------------- #
 # train_model — unknown backend
-# --------------------------------------------------------------------------- #
 
 
 def test_train_model_unknown_backend(binary_df: pd.DataFrame) -> None:
@@ -137,9 +127,7 @@ def test_train_model_unknown_backend(binary_df: pd.DataFrame) -> None:
         models.train_model(binary_df, backend="invalid_backend")  # type: ignore[arg-type]
 
 
-# --------------------------------------------------------------------------- #
 # train_model — custom params override
-# --------------------------------------------------------------------------- #
 
 
 def test_train_model_with_custom_params(binary_df: pd.DataFrame) -> None:
@@ -153,9 +141,7 @@ def test_train_model_with_custom_params(binary_df: pd.DataFrame) -> None:
     assert 0.0 <= result.val_auc <= 1.0
 
 
-# --------------------------------------------------------------------------- #
 # train_all_models
-# --------------------------------------------------------------------------- #
 
 
 def test_train_all_models_returns_dict(binary_df: pd.DataFrame) -> None:
@@ -194,9 +180,7 @@ def test_train_all_models_returns_all_backends(binary_df: pd.DataFrame) -> None:
         assert backend in results
 
 
-# --------------------------------------------------------------------------- #
 # cross_validate_model
-# --------------------------------------------------------------------------- #
 
 
 def test_cross_validate_model_returns_cv_result(binary_df: pd.DataFrame) -> None:
@@ -219,9 +203,7 @@ def test_cross_validate_model_scores_sorted(binary_df: pd.DataFrame) -> None:
         assert isinstance(fold_idx, int)
 
 
-# --------------------------------------------------------------------------- #
 # ModelResult dataclass
-# --------------------------------------------------------------------------- #
 
 
 def test_model_result_defaults() -> None:
@@ -235,9 +217,7 @@ def test_model_result_defaults() -> None:
     assert result.training_time == 0.0
 
 
-# --------------------------------------------------------------------------- #
 # CrossValidationResult dataclass
-# --------------------------------------------------------------------------- #
 
 
 def test_cross_validation_result_scores_property() -> None:

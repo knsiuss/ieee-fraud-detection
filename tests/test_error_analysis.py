@@ -28,9 +28,7 @@ def sample_data() -> tuple[pd.DataFrame, pd.Series, np.ndarray]:
     return df, y_true, y_pred
 
 
-# --------------------------------------------------------------------------- #
 # compute_error_profile
-# --------------------------------------------------------------------------- #
 
 
 def test_compute_error_profile_returns_profile(sample_data):
@@ -51,9 +49,7 @@ def test_compute_error_profile_overall_metrics(sample_data):
     assert profile.overall["n_errors"] == int((y_true != y_pred).sum())
 
 
-# --------------------------------------------------------------------------- #
 # segment_errors
-# --------------------------------------------------------------------------- #
 
 
 def test_segment_errors_returns_dataframe(sample_data):
@@ -64,9 +60,7 @@ def test_segment_errors_returns_dataframe(sample_data):
     assert len(seg) >= 1
 
 
-# --------------------------------------------------------------------------- #
 # feature_distribution_shift
-# --------------------------------------------------------------------------- #
 
 
 def test_feature_distribution_shift_returns_dataframe(sample_data):
@@ -84,9 +78,7 @@ def test_feature_distribution_shift_no_crash_on_empty(sample_data):
     assert shift.empty
 
 
-# --------------------------------------------------------------------------- #
 # top_false_positives / top_false_negatives
-# --------------------------------------------------------------------------- #
 
 
 def test_top_false_positives_returns_correct(sample_data):
@@ -109,9 +101,7 @@ def test_top_false_negatives_returns_correct(sample_data):
         assert "predicted_probability" in fns.columns
 
 
-# --------------------------------------------------------------------------- #
 # confusion_by_amount_bins
-# --------------------------------------------------------------------------- #
 
 
 def test_confusion_by_amount_bins_returns_dataframe(sample_data):
@@ -129,9 +119,7 @@ def test_confusion_by_amount_bins_missing_column(sample_data):
         ea.confusion_by_amount_bins(df, y_true, y_pred, amt_col="nonexistent")
 
 
-# --------------------------------------------------------------------------- #
 # ErrorProfile dataclass
-# --------------------------------------------------------------------------- #
 
 
 def test_error_profile_defaults():
