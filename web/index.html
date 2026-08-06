@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -13,7 +13,10 @@
       <span class="logo">IEEE-CIS Fraud Console</span>
       <span class="sub">Fraud probability scoring &amp; review</span>
     </div>
-    <div id="status-pill" class="pill">checking model…</div>
+    <div class="topbar-actions">
+      <div id="status-pill" class="pill">checking model…</div>
+      <button id="theme-toggle" class="icon-btn" title="Toggle theme" aria-label="Toggle theme">Light</button>
+    </div>
   </header>
 
   <nav class="tabs">
@@ -27,6 +30,14 @@
       <div class="card">
         <h2>Score a transaction</h2>
         <p class="hint">Enter the fields you know. Everything left blank falls back to the median of the training set.</p>
+
+        <div class="presets" id="presets">
+          <span class="hint" style="margin:0 6px 0 0">Quick start:</span>
+          <button type="button" class="chip" data-preset="typical">Typical</button>
+          <button type="button" class="chip" data-preset="high">High-risk pattern</button>
+          <button type="button" class="chip" data-preset="low">Low-risk pattern</button>
+        </div>
+
         <form id="score-form">
           <div class="grid">
             <label>Transaction Amount (USD)
@@ -86,20 +97,39 @@
     <section id="tab-batch" class="panel hidden">
       <div class="card">
         <h2>Score a CSV batch</h2>
-        <p class="hint">Upload a CSV of transactions (e.g. the Kaggle test table). Any transaction row works — missing features are treated the same as training.</p>
-        <input type="file" id="batch-file" accept=".csv" />
-        <button class="primary" id="batch-btn">Score file</button>
+        <p class="hint">Upload a CSV of transactions (e.g. the Kaggle test table). Missing features are treated the same way as in training.</p>
+
+        <div id="dropzone" class="dropzone">
+          <div class="dz-icon">↥</div>
+          <div class="dz-file" id="dz-label">Drop a CSV here or click to browse</div>
+          <div class="hint" style="margin-bottom:0">Size limit 50 MB</div>
+          <input type="file" id="batch-file" accept=".csv" hidden />
+        </div>
+
+        <div class="batch-tools">
+          <button class="primary" id="batch-btn">Score file</button>
+          <button class="secondary" id="sample-csv">Download sample CSV</button>
+        </div>
+        <p class="hint" id="batch-format-hint">Use the <b>sample CSV</b> to see the expected format (model feature columns). Uploading a partial row still works — missing features are filled the same way as in training.</p>
         <p id="batch-err" class="error hidden"></p>
       </div>
+
       <div id="batch-result" class="card hidden">
+        <h2>Batch results</h2>
         <div id="batch-summary" class="summary"></div>
-        <div class="table-scroll"><table id="batch-table"></table></div>
-        <button id="batch-dl" class="secondary">Download scored CSV</button>
+        <div class="chart-row">
+          <div class="chart-wrap" style="height:220px"><canvas id="batch-chart"></canvas></div>
+          <div class="table-scroll"><table id="batch-table"></table></div>
+        </div>
+        <button id="batch-dl" class="secondary" style="margin-top:14px">Download scored CSV</button>
       </div>
     </section>
 
     <section id="tab-model" class="panel hidden">
-      <div id="model-cards" class="card-grid"></div>
+      <div class="card">
+        <h2>Served model</h2>
+        <div id="model-cards" class="card-grid"></div>
+      </div>
       <div class="card">
         <h2>Dataset overview</h2>
         <div id="overview" class="kpis"></div>
@@ -112,9 +142,7 @@
     </section>
   </main>
 
-  <footer>
-    <span id="footer-version">IEEE-CIS Fraud Detection</span> · FastAPI + vanilla JS
-  </footer>
+  <footer><span id="footer-version">IEEE-CIS Fraud Detection</span> · FastAPI + vanilla JS</footer>
 
   <script src="app.js"></script>
 </body>
