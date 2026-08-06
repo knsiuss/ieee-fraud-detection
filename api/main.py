@@ -63,6 +63,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 @app.exception_handler(MissingArtefactError)
 async def _missing_artefact(request: Request, exc: MissingArtefactError):  # noqa: ARG001
     # Return a safe, generic message — never echo the artefact path.
