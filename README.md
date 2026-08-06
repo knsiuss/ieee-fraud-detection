@@ -1,7 +1,7 @@
 <p align="center">
   <img src="https://img.shields.io/badge/Status-COMPLETED-brightgreen?style=for-the-badge" alt="Status: Completed"/>
   <img src="https://img.shields.io/badge/Python-3.10%2B-3776AB?style=for-the-badge&logo=python&logoColor=white" alt="Python 3.10+"/>
-  <img src="https://img.shields.io/badge/ROC--AUC-0.910-blue?style=for-the-badge" alt="ROC-AUC 0.910"/>
+  <img src="https://img.shields.io/badge/ROC--AUC-0.950-blue?style=for-the-badge" alt="ROC-AUC 0.950"/>
   <img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge" alt="MIT License"/>
   <img src="https://img.shields.io/github/actions/workflow/status/knsiuss/ieee-fraud-detection/ci.yml?branch=main&style=for-the-badge&label=CI&logo=github" alt="CI"/>
 </p>
@@ -10,7 +10,7 @@
 
 > End-to-end machine learning solution for detecting fraudulent e-commerce transactions, built on the [IEEE-CIS / Vesta Corporation](https://www.kaggle.com/c/ieee-fraud-detection) dataset.
 
-This repository contains a complete, production-shaped data science pipeline — from raw data ingestion through exploratory analysis, feature engineering, model training, hyperparameter optimisation, ensembling, and evaluation — packaged as a reusable Python module (`fraud_detect`), a series of reproducible analysis notebooks, and an interactive Streamlit dashboard.
+This repository contains a complete, production-shaped data science pipeline — from raw data ingestion through exploratory analysis, feature engineering, model training, hyperparameter optimisation, ensembling, and evaluation — packaged as a reusable Python module (`fraud_detect`), a reproducible notebook series, a FastAPI service, and a browser-based review console (vanilla JS + Chart.js) with gated auto-retraining.
 
 ---
 
@@ -19,7 +19,7 @@ This repository contains a complete, production-shaped data science pipeline —
 - [Repository Structure](#repository-structure)
 - [Analysis Pipeline](#analysis-pipeline)
 - [Core Python Package](#core-python-package)
-- [Interactive Dashboard](#interactive-dashboard)
+- [Service & Web App](#service--web-app)
 - [Results](#results)
 - [Dataset](#dataset)
 - [Feature Groups](#feature-groups)
@@ -79,14 +79,24 @@ ieee-fraud-detection/
 │   ├── 02_eda_transaction.ipynb #   EDA — transaction features
 │   └── ...                       #   (see Analysis Pipeline table below)
 │
-├── dashboard/                   # Interactive Streamlit dashboard
-│   ├── app.py                   #   Main dashboard application
-│   └── data/                    #   Pre-computed analysis CSVs
+├── api/                         # FastAPI service
+│   ├── main.py                  #   Routes (predict, batch, explain, feedback, retrain)
+│   ├── store.py                 #   Versioned model store + gated retrain
+│   └── schemas.py               #   Pydantic request/response models
+│
+├── web/                         # Vanilla-JS frontend (served by FastAPI at /)
+│   ├── index.html               #   Scorer / batch / model UI
+│   ├── style.css
+│   └── app.js
+│
+├── dashboard/data/              # Committed analysis CSVs + demo sample (train fallback)
 │
 ├── scripts/
-│   └── prepare_data.py          # CSV → Parquet conversion CLI
+│   ├── prepare_data.py          #   CSV → Parquet conversion CLI
+│   ├── train_model.py           #   Train + serialise the serving artefact
+│   └── retrain.py               #   Gated auto-retrain loop (cron-safe)
 │
-├── tests/                       # 102 unit / integration / property tests (no dataset required)
+├── tests/                       # 100+ unit / integration / property tests
 │
 ├── data/
 │   ├── raw/                     # Original Kaggle CSVs (gitignored)
@@ -129,7 +139,7 @@ The analysis is organised as a numbered series of reproducible notebooks. Each s
 
 ## Core Python Package
 
-All I/O, feature engineering, modelling, and evaluation logic lives in the `fraud_detect` package so that notebooks and the dashboard consume a single, tested implementation rather than duplicating code.
+All I/O, feature engineering, modelling, and serving logic lives in the `fraud_detect` package so that notebooks, the API, and the web app consume a single, tested implementation rather than duplicating code.
 
 | Module | Responsibility |
 |---|---|
@@ -143,32 +153,55 @@ All I/O, feature engineering, modelling, and evaluation logic lives in the `frau
 | `evaluation.py` | Metrics, optimal threshold, model comparison, McNemar's test |
 | `error_analysis.py` | Error segmentation, distribution shift, FP/FN analysis |
 | `viz.py` | All plotting for EDA, evaluation, and error analysis (18 functions) |
+| `serving.py` | Model artefact save/load, feature alignment, risk tiers, prediction, SHAP explanation |
 | `_exceptions.py` | Domain exceptions (`FraudDetectError`, `MissingArtefactError`, `InvalidDataError`) |
 
 ---
 
-## Interactive Dashboard
+## Service & Web App
 
-An interactive exploration tool built with **Streamlit** lets stakeholders inspect the data without touching code:
+The trained model is exposed through a **FastAPI** service with a browser-based review console in **vanilla JavaScript + Chart.js** (English UI), served by FastAPI at `/`. It is built for a fraud-analyst / reviewer workflow.
 
-```bash
-streamlit run dashboard/app.py
-```
+### API endpoints
 
-The dashboard surfaces pre-computed analysis of fraud rates by hour, day of week, device type, product code, card type, and email domain, alongside feature-group importance and final model metrics. All visualisations are rendered from committed CSVs in `dashboard/data/`.
+| Method | Path | Purpose |
+|---|---|---|
+| `GET` | `/api/health` | Service status + model presence |
+| `GET` | `/api/model` | Served model metadata (version, ROC-AUC) |
+| `GET` | `/api/stats` | Dataset overview + top features (for the UI) |
+| `POST` | `/api/predict` | Score a single transaction → probability, risk tier, action |
+| `POST` | `/api/predict/batch` | Upload a CSV of transactions → scored rows |
+| `POST` | `/api/explain` | SHAP top contributors for one transaction |
+| `POST` | `/api/feedback` | Record a reviewer verdict into the retrain pool |
+| `POST` | `/api/retrain` | Train a candidate; swap if it beats the gate (admin) |
+
+Interactive API docs are available at `/docs`.
+
+### Frontend tabs
+
+- **Score** — enter a few transaction fields (the rest default to the training median); see a probability gauge, risk tier, recommended action, and a SHAP bar chart explaining *why*.
+- **Batch** — upload a CSV, inspect the risk-tier breakdown and preview table, and download the scored CSV.
+- **Model** — served model metadata, dataset overview, and top predictive features.
+
+### Feedback & auto-retraining
+
+Reviewers mark a transaction safe or fraud; each vote is appended to `data/feedback/`
+(gitignored). A scheduled retrain (`scripts/retrain.py`) folds that pool into the next
+run and **only swaps the served model when the candidate scores ≥ the current model on a
+held-out validation split** — an anti-regression gate. A failed gate never touches the
+deployed model, so the loop is safe to run on a cron.
 
 ---
 
 ## Results
 
-The reference model is a **tuned LightGBM** classifier. Metrics below are reported on a held-out validation split (64K train / 16K validation samples).
+The reference model is a **tuned LightGBM** classifier trained on the full merged table (`scripts/train_model.py`). Full metrics are recorded in the artefact's `meta.json`; the bootstrap artefact served in the repo reports:
 
 | Metric | Value |
 |---|---|
-| **ROC-AUC** | **0.910** |
-| Average precision | 0.615 |
-| Precision (threshold 0.5) | 0.843 |
-| Recall (threshold 0.5) | 0.387 |
+| **ROC-AUC (validation)** | **0.950** |
+| ROC-AUC (training) | 0.979 |
+| Features | 400 |
 
 ### Optimal Hyperparameters (Optuna)
 
@@ -242,7 +275,9 @@ The dataset is provided by **Vesta Corporation** through the [IEEE-CIS Fraud Det
 | **Visualisation** | Matplotlib, Seaborn |
 | **Machine learning** | LightGBM, XGBoost, CatBoost, Scikit-learn |
 | **Hyperparameter tuning** | Optuna |
-| **Dashboard** | Streamlit |
+| **Service** | FastAPI, Uvicorn, python-multipart |
+| **Explanability** | SHAP |
+| **Frontend** | Vanilla JS, Chart.js |
 | **Testing** | Pytest, Hypothesis |
 | **QA** | Ruff, Pre-commit |
 | **Documentation** | Sphinx |
@@ -299,11 +334,53 @@ jupyter notebook notebook/
 
 Execute notebooks in numerical order (`01` → `15`).
 
-### Run the Dashboard
+### Train the Service Model
 
 ```bash
-streamlit run dashboard/app.py
+python scripts/train_model.py
 ```
+
+Writes a serving artefact to `data/models/current/` (model, feature list, median baseline, and metadata). On a fresh clone with no Kaggle data it falls back to the committed demo sample.
+
+### Run the Service
+
+```bash
+uvicorn api.main:app --reload
+```
+
+Open `http://localhost:8000` for the review console, or `http://localhost:8000/docs` for the interactive API docs.
+
+### Auto-retrain (optional)
+
+```bash
+python scripts/retrain.py            # once, manually
+# 7 4 * * *  python scripts/retrain.py >> retrain.log 2>&1   # cron
+```
+
+---
+
+## Deployment
+
+The API and frontend are served from a single process, so free-tier hosting is straightforward.
+
+### Docker
+
+```bash
+docker build -t fraud-detection .
+docker run -p 8000:8000 fraud-detection
+```
+
+The image bootstraps a model from the bundled training data so it responds cold. Mount `data/models` and `data/feedback` as a volume to keep retrained artefacts across restarts.
+
+### Free hosting options
+
+| Component | Host |
+|---|---|
+| FastAPI + frontend (single service) | **Render** free tier or **Hugging Face Spaces** |
+| Frontend hosted separately | **Netlify** / **GitHub Pages** (set `window.API_BASE`) |
+| Scheduled retraining | GitHub Actions `schedule`, or cron on the host |
+
+Free hosting services sleep after idle, so the first request can be slow (cold start) — expected for a demo, and fine once the service is warm.
 
 ---
 
