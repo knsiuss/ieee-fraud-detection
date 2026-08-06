@@ -29,38 +29,60 @@
     <section id="tab-score" class="panel active">
       <div class="card">
         <h2>Score a transaction</h2>
-        <p class="hint">Enter the fields you know. Everything left blank falls back to the median of the training set.</p>
+        <p class="hint">Detect fraud from transaction details — or drop down to raw model features.</p>
 
-        <div class="presets" id="presets">
-          <span class="hint" style="margin:0 6px 0 0">Quick start:</span>
-          <button type="button" class="chip" data-preset="typical">Typical</button>
-          <button type="button" class="chip" data-preset="high">High-risk pattern</button>
-          <button type="button" class="chip" data-preset="low">Low-risk pattern</button>
+        <div class="mode-toggle">
+          <button type="button" id="mode-checkout" class="mode active">Checkout</button>
+          <button type="button" id="mode-advanced" class="mode">Features</button>
         </div>
 
-        <form id="score-form">
+        <form id="sim-form">
+          <p class="hint">Fill the transaction like a checkout. Fields you don't touch use a realistic profile median.</p>
+          <div class="grid" id="sim-fields"></div>
           <div class="grid">
-            <label>Transaction Amount (USD)
-              <input type="number" id="f-amt" name="TransactionAmt" value="150" min="0.1" step="1" />
-            </label>
-            <label>Card Issuer Code (card1)
-              <input type="number" id="f-card1" name="card1" value="9500" step="1" />
-            </label>
-            <label>Address Distance (dist1)
-              <input type="number" id="f-dist1" name="dist1" value="12" step="1" />
-            </label>
-            <label>Card Match Count (C1)
-              <input type="number" id="f-c1" name="C1" value="1" step="1" />
-            </label>
-            <label>Transaction Frequency (C13)
-              <input type="number" id="f-c13" name="C13" value="1" step="1" />
-            </label>
-            <label>Days Since Last Activity (D1)
-              <input type="number" id="f-d1" name="D1" value="0" step="1" />
+            <label>Cardholder profile
+              <select id="sim-profile">
+                <option value="typical">Typical cardholder</option>
+                <option value="nonfraud">Trusted / verified</option>
+                <option value="fraud">Suspicious account</option>
+              </select>
             </label>
           </div>
-          <button type="submit" class="primary" id="score-btn">Score transaction</button>
+          <button type="submit" class="primary" id="sim-btn">Detect fraud</button>
         </form>
+
+        <div id="advanced-wrap" class="hidden">
+          <div class="presets" id="presets">
+            <span class="hint" style="margin:0 6px 0 0">Quick start:</span>
+            <button type="button" class="chip" data-preset="typical">Typical</button>
+            <button type="button" class="chip" data-preset="high">High-risk pattern</button>
+            <button type="button" class="chip" data-preset="low">Low-risk pattern</button>
+          </div>
+          <p class="hint">Enter the fields you know. Everything left blank falls back to the training median.</p>
+          <form id="score-form">
+            <div class="grid">
+              <label>Transaction Amount (USD)
+                <input type="number" id="f-amt" name="TransactionAmt" value="150" min="0.1" step="1" />
+              </label>
+              <label>Card Issuer Code (card1)
+                <input type="number" id="f-card1" name="card1" value="9500" step="1" />
+              </label>
+              <label>Address Distance (dist1)
+                <input type="number" id="f-dist1" name="dist1" value="12" step="1" />
+              </label>
+              <label>Card Match Count (C1)
+                <input type="number" id="f-c1" name="C1" value="1" step="1" />
+              </label>
+              <label>Transaction Frequency (C13)
+                <input type="number" id="f-c13" name="C13" value="1" step="1" />
+              </label>
+              <label>Days Since Last Activity (D1)
+                <input type="number" id="f-d1" name="D1" value="0" step="1" />
+              </label>
+            </div>
+            <button type="submit" class="primary" id="score-btn">Score transaction</button>
+          </form>
+        </div>
       </div>
 
       <div id="result" class="card hidden">
@@ -77,6 +99,10 @@
         </div>
 
         <div class="why">
+          <h3>Decision summary</h3>
+          <p id="summary-text" class="summary-text"></p>
+          <div class="table-scroll" style="max-height:230px"><table id="drivers-table"></table></div>
+
           <h3>Why did the model say this?</h3>
           <p class="hint">SHAP contributions. Red pushes toward fraud, blue toward safe.</p>
           <div class="chart-wrap"><canvas id="shap-chart"></canvas></div>

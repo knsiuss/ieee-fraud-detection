@@ -69,6 +69,8 @@ document.querySelectorAll(".tab").forEach((btn) => {
 /* Health + model info on load */
 (async function init() {
   initTheme();
+  setMode("checkout");
+  loadSimFields();
   try {
     const health = await api("/api/health");
     const pill = $("#status-pill");
@@ -126,6 +128,65 @@ function fmtInt(v) {
   if (v == null) return "–";
   return Number(v).toLocaleString("en-US");
 }
+
+/* Input mode toggle: checkout (friendly) vs features (advanced) */
+function setMode(mode) {
+  const checkout = mode === "checkout";
+  $("#sim-form").classList.toggle("hidden", !checkout);
+  $("#advanced-wrap").classList.toggle("hidden", checkout);
+  $("#mode-checkout").classList.toggle("active", checkout);
+  $("#mode-advanced").classList.toggle("active", !checkout);
+}
+$("#mode-checkout").addEventListener("click", () => setMode("checkout"));
+$("#mode-advanced").addEventListener("click", () => setMode("advanced"));
+
+/* Checkout simulator */
+let simFields = [];
+async function loadSimFields() {
+  try {
+    const res = await api("/api/sim/fields");
+    simFields = res.fields || [];
+    renderSimFields();
+  } catch (e) { console.error("sim fields failed", e); }
+}
+function renderSimFields() {
+  $("#sim-fields").innerHTML = simFields.map((f) => {
+    if (f.type === "select") {
+      const opts = f.options.map((o) => `<option value="${o}">${o}</option>`).join("");
+      return `<label>${f.label}<select name="${f.name}">${opts}</select></label>`;
+    }
+    return `<label>${f.label}<input type="number" name="${f.name}" min="${f.min ?? ""}" max="${f.max ?? ""}" value="${f.value}" step="1"></label>`;
+  }).join("");
+}
+function gatherSimValues() {
+  const values = {};
+  $("#sim-fields").querySelectorAll("input, select").forEach((el) => {
+    if (!el.name) return;
+    if (el.type === "number") { const v = parseFloat(el.value); if (Number.isFinite(v)) values[el.name] = v; }
+    else values[el.name] = el.value;
+  });
+  values.profile = $("#sim-profile").value;
+  return values;
+}
+$("#sim-form").addEventListener("submit", async (ev) => {
+  ev.preventDefault();
+  const btn = $("#sim-btn");
+  btn.disabled = true; btn.textContent = "Detecting…";
+  try {
+    const sim = await api("/api/simulate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(gatherSimValues()),
+    });
+    renderResult(sim);
+    loadExplanation(sim.mapped_values || {});
+    $("#result").classList.remove("hidden");
+  } catch (e) {
+    alert("Simulation failed: " + e.message);
+  } finally {
+    btn.disabled = false; btn.textContent = "Detect fraud";
+  }
+});
 
 /* Presets */
 document.querySelectorAll("#presets .chip").forEach((chip) => {
@@ -186,9 +247,30 @@ async function loadExplanation(values) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ values }),
     });
-    lastShap = exp.features || [];
-    renderShap(lastShap);
+    renderExplanation(exp);
   } catch (e) { console.error("explain failed", e); }
+}
+
+function renderExplanation(exp) {
+  lastShap = exp.features || [];
+  renderShap(lastShap);
+
+  $("#summary-text").textContent = exp.summary || "";
+  const drivers = exp.drivers || [];
+  $("#drivers-table").innerHTML = drivers.length
+    ? "<tr><th>Signal</th><th>Value</th><th>Typical</th><th>Effect</th></tr>" +
+      drivers.map((d) => {
+        const fraud = d.direction === "fraud";
+        const cls = fraud ? "high" : "low";
+        const effect = fraud ? "raises risk" : "lowers risk";
+        return `<tr>
+          <td>${d.label}</td>
+          <td>${d.value_text}</td>
+          <td>${d.typical_text}</td>
+          <td><span class="tag ${cls}">${effect}</span></td>
+        </tr>`;
+      }).join("")
+    : "";
 }
 
 function renderShap(features) {
