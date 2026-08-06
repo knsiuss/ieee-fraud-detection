@@ -29,8 +29,11 @@ from fastapi import FastAPI, File, Header, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
+from fraud_detect import sim as simmod
 from fraud_detect.serving import (
     align_features,
+    decision_drivers,
+    decision_summary,
     explain_top_features,
     predict_proba,
     risk_tier,
@@ -119,6 +122,29 @@ def predict(req: schemas.PredictRequest) -> schemas.PredictResponse:
     )
 
 
+@app.get("/api/sim/fields")
+def sim_fields() -> dict:
+    return {"fields": simmod.FRIENDLY_FIELDS, "profiles": simmod.PROFILES}
+
+
+@app.post("/api/simulate", response_model=schemas.SimulateResponse)
+def simulate(req: schemas.SimulateRequest) -> schemas.SimulateResponse:
+    """Score a transaction from friendly, checkout-style inputs."""
+    art = _current()
+    data = req.model_dump()
+    row = simmod.build_row(data, art.features, art.baseline, art.profiles)
+    prob = float(predict_proba(art.model, row)[0])
+    tier = risk_tier(prob)
+    return schemas.SimulateResponse(
+        probability=prob,
+        risk_tier=tier.label,
+        action=tier.action,
+        model_version=store.version(art),
+        profile=req.profile,
+        mapped_values=simmod.map_friendly(data),
+    )
+
+
 @app.post("/api/predict/batch", response_model=schemas.BatchScoreResponse)
 async def predict_batch(
     file: Annotated[UploadFile, File()],
@@ -161,6 +187,7 @@ def explain(req: schemas.PredictRequest) -> schemas.ExplainResponse:
     x = _build_row(req.values, art)
     prob = float(predict_proba(art.model, x)[0])
     tier = risk_tier(prob)
+
     top = explain_top_features(art.model, x, art.features, top_n=10)
     features = [
         schemas.ShapFeature(
@@ -170,11 +197,15 @@ def explain(req: schemas.PredictRequest) -> schemas.ExplainResponse:
         )
         for r in top.itertuples()
     ]
+    drivers = decision_drivers(art.model, x, art.features, art.baseline, top_n=4)
+    summary = decision_summary(prob, tier.label, drivers, tier.action)
     return schemas.ExplainResponse(
         probability=prob,
         risk_tier=tier.label,
         action=tier.action,
         model_version=store.version(art),
+        summary=summary,
+        drivers=drivers,
         features=features,
     )
 

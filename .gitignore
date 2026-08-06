@@ -97,3 +97,6 @@ docs/build/
 .ruff_cache/
 .mypy_cache/
 .dmypy.json
+
+# SHAP temp dir
+.freebuff/

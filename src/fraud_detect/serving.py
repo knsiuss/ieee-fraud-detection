@@ -18,7 +18,7 @@ list the model was trained on.
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
@@ -67,6 +67,9 @@ class ModelArtefact:
     baseline:
         One-row DataFrame (indexed to ``features``) used as the neutral
         default when the caller only supplies a handful of inputs.
+    profiles:
+        Optional named one-row baselines (e.g. ``fraud`` / ``nonfraud``)
+        representing the median of a segment, for the friendly simulator.
     meta:
         Free-form metadata (ROC-AUC, trained timestamp, etc.).
     """
@@ -75,6 +78,7 @@ class ModelArtefact:
     features: list[str]
     baseline: pd.DataFrame
     meta: dict[str, Any]
+    profiles: dict[str, pd.DataFrame] = field(default_factory=dict)
 
 
 def risk_tier(prob: float) -> RiskTier:
@@ -169,17 +173,19 @@ def predict_proba(
     return np.asarray(probs, dtype="float64")
 
 
-def save_artefact(
+def save_artefact(  # noqa: PLR0913
     artefact_dir: Path | str,
     model: Any,
     features: list[str],
     baseline: pd.DataFrame,
     meta: dict[str, Any] | None = None,
+    profiles: dict[str, pd.DataFrame] | None = None,
 ) -> Path:
     """Serialise a model version into ``artefact_dir`` and return the path.
 
     Writes ``model.joblib``, ``features.json``, ``baseline.json`` and
     ``meta.json`` so a deployed service can load everything from one folder.
+    Named segment medians in ``profiles`` are written as ``baseline_<name>.json``.
     """
     out = Path(artefact_dir)
     out.mkdir(parents=True, exist_ok=True)
@@ -187,6 +193,11 @@ def save_artefact(
     (out / FEATURES_FILE).write_text(json.dumps(features), encoding="utf-8")
     baseline.to_json(out / BASELINE_FILE, orient="records")
     (out / META_FILE).write_text(json.dumps(meta or {}, indent=2), encoding="utf-8")
+    for name, row in (profiles or {}).items():
+        (out / f"baseline_{name}.json").write_text(
+            row.reset_index(drop=True).to_json(orient="records"),
+            encoding="utf-8",
+        )
     return out
 
 
@@ -216,12 +227,65 @@ def load_artefact(artefact_dir: Path | str) -> ModelArtefact:
     meta_path = d / META_FILE
     meta = json.loads(meta_path.read_text(encoding="utf-8")) if meta_path.exists() else {}
 
+    profiles: dict[str, pd.DataFrame] = {}
+    for profile_path in sorted(d.glob("baseline_*.json")):
+        if profile_path.name == BASELINE_FILE:
+            continue
+        name = profile_path.stem.removeprefix("baseline_")
+        profiles[name] = pd.read_json(profile_path, orient="records").astype("float32")
+
     return ModelArtefact(
         model=model,
         features=list(features),
         baseline=baseline,
         meta=meta,
+        profiles=profiles,
     )
+
+
+#: Human-readable labels for the most informative features. Features without
+#: a label fall back to their raw (often anonymised) name.
+FEATURE_LABELS: dict[str, str] = {
+    "TransactionAmt": "Transaction amount",
+    "card1": "Card issuer code",
+    "card2": "Card count (bank id)",
+    "card4": "Card network",
+    "card5": "Card count (bank)",
+    "card6": "Card type",
+    "addr1": "Billing address region",
+    "addr2": "Billing address city",
+    "dist1": "Billing distance",
+    "C1": "Card match count",
+    "C2": "Card count in 1 hour",
+    "C5": "Address count",
+    "C6": "Address count in 1 hour",
+    "C7": "Address count in 24h",
+    "C8": "Address count in 10 days",
+    "C13": "Transaction frequency",
+    "C14": "Transaction frequency in 1h",
+    "D1": "Days since last activity",
+    "D2": "Days since last address change",
+    "D4": "Days since last card change",
+    "D5": "Days since last card change (2)",
+    "D10": "Days since last device",
+    "D15": "Days since last login",
+    "P_emaildomain": "Purchaser email domain",
+    "R_emaildomain": "Recipient email domain",
+    "id_02": "Device signal (browser)",
+    "id_20": "Device signal (session)",
+    "id_30": "Device signal (screen)",
+}
+
+
+def _shap_values(model: Any, features: pd.DataFrame) -> np.ndarray:
+    """SHAP log-odds contributions for the first row, aligned to ``features``."""
+    import shap  # noqa: PLC0415
+
+    explainer = shap.TreeExplainer(model)
+    raw = explainer.shap_values(features.iloc[:1].to_numpy())
+    # Binary LightGBM returns [neg_class, pos_class]; keep the pos-class row.
+    values = np.asarray(raw[-1]) if isinstance(raw, list) else np.asarray(raw)
+    return np.ravel(values)
 
 
 def explain_top_features(
@@ -239,19 +303,75 @@ def explain_top_features(
     it is not installed.
     """
     try:
-        import shap  # noqa: PLC0415
+        values = _shap_values(model, features)
     except ImportError:
         return pd.DataFrame(columns=["feature", "contribution", "direction"])
-
-    explainer = shap.TreeExplainer(model)
-    raw = explainer.shap_values(features.iloc[:1].to_numpy())
-
-    # Binary LightGBM returns [neg_class, pos_class]; keep the pos-class row.
-    values = np.asarray(raw[-1]) if isinstance(raw, list) else np.asarray(raw)
-    values = np.ravel(values)
 
     out = pd.DataFrame({"feature": feature_names, "contribution": values})
     out["abs_contribution"] = out["contribution"].abs()
     out = out.sort_values("abs_contribution", ascending=False).head(top_n)
     out["direction"] = np.where(out["contribution"] >= 0, "fraud", "safe")
     return out.reset_index(drop=True)[["feature", "contribution", "direction"]]
+
+
+def decision_drivers(
+    model: Any,
+    features: pd.DataFrame,
+    feature_names: list[str],
+    baseline: pd.DataFrame,
+    top_n: int = 4,
+) -> list[dict[str, Any]]:
+    """Describe the top drivers of a prediction in human-readable terms.
+
+    Each driver carries the actual value, the training median, and the
+    direction the feature pushes the decision. Empty list if SHAP is missing.
+    """
+    try:
+        contributions = _shap_values(model, features)
+    except ImportError:
+        return []
+
+    row = features.iloc[0]
+    idx = np.argsort(np.abs(contributions))[::-1][:top_n]
+    drivers: list[dict[str, Any]] = []
+    for i in idx:
+        name = feature_names[i]
+        value = float(row[name])
+        typical = float(baseline[name].iloc[0]) if name in baseline.columns else None
+        missing = value == FILL_VALUE
+        drivers.append(
+            {
+                "feature": name,
+                "label": FEATURE_LABELS.get(name, name),
+                "value": None if missing else value,
+                "typical": None if typical == FILL_VALUE else typical,
+                "value_text": "missing" if missing else f"{value:g}",
+                "typical_text": "missing" if typical in (None, FILL_VALUE) else f"{typical:g}",
+                "contribution": float(contributions[i]),
+                "direction": "fraud" if contributions[i] >= 0 else "safe",
+            }
+        )
+    return drivers
+
+
+def decision_summary(
+    probability: float,
+    tier: str,
+    drivers: list[dict[str, Any]],
+    action: str,
+) -> str:
+    """One plain-English paragraph explaining a prediction."""
+    lead = f"{tier.upper()} risk — {probability * 100:.0f}% fraud probability."
+    if not drivers:
+        return f"{lead} {action}"
+    clauses = []
+    for driver in drivers[:3]:
+        if driver["value_text"] == "missing":
+            clauses.append(f"{driver['label']} is unknown to the model")
+        else:
+            effect = "raises risk" if driver["direction"] == "fraud" else "lowers risk"
+            clause = (
+                f"{driver['label']} at {driver['value_text']} (typical {driver['typical_text']})"
+            )
+            clauses.append(f"{clause} {effect}")
+    return f"{lead} Main signals: {'; '.join(clauses)}. {action}"

@@ -89,6 +89,10 @@ def main() -> None:
 
     features = select_feature_columns(df)
     baseline = median_baseline(features, df)
+    profiles = {
+        "nonfraud": median_baseline(features, df.loc[df[config.TARGET_COLUMN] == 0]),
+        "fraud": median_baseline(features, df.loc[df[config.TARGET_COLUMN] == 1]),
+    }
     meta = {
         "backend": backend.value,
         "roc_auc": result.val_auc,
@@ -105,6 +109,7 @@ def main() -> None:
         features,
         baseline,
         meta,
+        profiles=profiles,
     )
     print(f"Artefact written to {out}")
     print(f"  features: {len(features)} | ROC-AUC (val): {result.val_auc:.5f}")
