@@ -8,6 +8,8 @@ import pandas as pd
 from fraud_detect import serving
 from fraud_detect.serving import (
     align_features,
+    decision_drivers,
+    decision_summary,
     explain_top_features,
     load_artefact,
     median_baseline,
@@ -99,3 +101,27 @@ class TestExplain:
         top = explain_top_features(art.model, x, art.features, top_n=2)
         assert len(top) <= 2
         assert set(top.columns) >= {"feature", "contribution", "direction"}
+
+    def test_decision_drivers(self, tmp_path):
+        _tiny_lightgbm(tmp_path / "art")
+        art = load_artefact(tmp_path / "art")
+        x = align_features(pd.DataFrame({"a": [2.0], "b": [2.0]}), art.features)
+        drivers = decision_drivers(art.model, x, art.features, art.baseline, top_n=2)
+        assert len(drivers) <= 2
+        for d in drivers:
+            assert {"feature", "label", "value_text", "typical_text", "direction"} <= set(d)
+            assert d["direction"] in {"fraud", "safe"}
+
+    def test_decision_summary_builds_prose(self):
+        drivers = [
+            {
+                "label": "Card match count",
+                "value_text": "12",
+                "typical_text": "1",
+                "direction": "fraud",
+            }
+        ]
+        summary = decision_summary(0.6, "high", drivers, "Block.")
+        assert "HIGH risk" in summary
+        assert "60% fraud probability" in summary
+        assert "Card match count" in summary

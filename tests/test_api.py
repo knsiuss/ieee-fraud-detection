@@ -104,6 +104,25 @@ class TestReadEndpoints:
         assert body["model"]["version"] == "test-1"
 
 
+class TestSimulate:
+    def test_sim_fields(self, client):
+        body = client.get("/api/sim/fields").json()
+        assert body["profiles"] == ["typical", "nonfraud", "fraud"]
+        assert len(body["fields"]) >= 3
+
+    def test_simulate_maps_friendly_inputs(self, client):
+        res = client.post(
+            "/api/simulate",
+            json={"profile": "typical", "amount": 50.0, "card_brand": "visa"},
+        )
+        assert res.status_code == 200
+        body = res.json()
+        assert body["profile"] == "typical"
+        assert body["mapped_values"]["TransactionAmt"] == 50.0
+        assert body["mapped_values"]["card1"] == 6200.0  # visa issuer code
+        assert body["risk_tier"] in {"low", "medium", "high"}
+
+
 class TestWriteEndpoints:
     def test_feedback_records(self, client, tmp_path):
         res = client.post(
