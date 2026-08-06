@@ -1,44 +1,74 @@
-/* FraUd Detection Console — vanilla JS + Chart.js.
+/* IEEE-CIS Fraud Detection Console — vanilla JS + Chart.js.
    Set window.API_BASE before this script to point at a remote FastAPI
    service; by default it uses the same origin. */
 
 const API_BASE = (typeof window.API_BASE !== "undefined") ? window.API_BASE : "";
 const TIER_META = {
-  low: { label: "Low risk", cls: "low", color: "#16a34a" },
-  medium: { label: "Medium risk", cls: "medium", color: "#ea580c" },
-  high: { label: "High risk", cls: "high", color: "#dc2626" },
+  low: { label: "Low risk", cls: "low", color: "#22c55e" },
+  medium: { label: "Medium risk", cls: "medium", color: "#f59e0b" },
+  high: { label: "High risk", cls: "high", color: "#ef4444" },
+};
+const PRESETS = {
+  typical: { TransactionAmt: 150, card1: 9500, dist1: 12, C1: 1, C13: 1, D1: 0 },
+  high: { TransactionAmt: 840, card1: 10616, dist1: 0, C1: 12, C13: 44, D1: 120 },
+  low: { TransactionAmt: 45.5, card1: 13748, dist1: 7, C1: 1, C13: 1, D1: 0 },
 };
 
 let lastValues = {};
 let shapChart = null;
+let batchChart = null;
+let lastShap = [];
+let lastBatch = [];
+
+const $ = (sel) => document.querySelector(sel);
+
+/* Theme */
+function applyTheme(theme) {
+  document.documentElement.dataset.theme = theme;
+  $("#theme-toggle").textContent = theme === "dark" ? "Light" : "Dark";
+  refreshCharts();
+}
+function initTheme() {
+  const saved = localStorage.getItem("fd-theme") || "dark";
+  applyTheme(saved);
+  $("#theme-toggle").addEventListener("click", () => {
+    const next = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
+    localStorage.setItem("fd-theme", next);
+    applyTheme(next);
+  });
+}
+
+function chartDefaults() {
+  const dark = document.documentElement.dataset.theme === "dark";
+  return { grid: dark ? "rgba(230,237,246,0.08)" : "rgba(16,24,40,0.07)", tick: dark ? "#8ba1bd" : "#667085" };
+}
+
+function refreshCharts() {
+  if (lastShap.length) renderShap(lastShap);
+  if (lastBatch.length) renderBatchChart(lastBatch);
+}
 
 async function api(path, options = {}) {
   const res = await fetch(API_BASE + path, options);
   if (!res.ok) {
     let detail = `HTTP ${res.status}`;
-    try {
-      const body = await res.json();
-      detail = body.detail || detail;
-    } catch (_) { /* not json */ }
+    try { const body = await res.json(); detail = body.detail || detail; } catch (_) {}
     throw new Error(detail);
   }
   return res.json();
 }
 
-const $ = (sel) => document.querySelector(sel);
-
 /* Tabs */
 document.querySelectorAll(".tab").forEach((btn) => {
   btn.addEventListener("click", () => {
     document.querySelectorAll(".tab").forEach((b) => b.classList.toggle("active", b === btn));
-    document.querySelectorAll(".panel").forEach((p) => {
-      p.classList.toggle("active", p.id === "tab-" + btn.dataset.tab);
-    });
+    document.querySelectorAll(".panel").forEach((p) => p.classList.toggle("active", p.id === "tab-" + btn.dataset.tab));
   });
 });
 
 /* Health + model info on load */
 (async function init() {
+  initTheme();
   try {
     const health = await api("/api/health");
     const pill = $("#status-pill");
@@ -58,12 +88,7 @@ document.querySelectorAll(".tab").forEach((btn) => {
 })();
 
 async function loadModelTab() {
-  try {
-    const stats = await api("/api/stats");
-    renderModelTab(stats);
-  } catch (e) {
-    console.error("stats failed", e);
-  }
+  try { renderModelTab(await api("/api/stats")); } catch (e) { console.error("stats failed", e); }
 }
 
 function renderModelTab(stats) {
@@ -94,15 +119,24 @@ function renderModelTab(stats) {
   const tf = stats.top_features || [];
   $("#topfeat-table").innerHTML =
     "<tr><th>#</th><th>Feature</th><th>Importance</th></tr>" +
-    tf.map((f, i) =>
-      `<tr><td>${i + 1}</td><td>${f.feature}</td><td>${fmtInt(f.importance)}</td></tr>`
-    ).join("");
+    tf.map((f, i) => `<tr><td>${i + 1}</td><td>${f.feature}</td><td>${fmtInt(f.importance)}</td></tr>`).join("");
 }
 
 function fmtInt(v) {
   if (v == null) return "–";
   return Number(v).toLocaleString("en-US");
 }
+
+/* Presets */
+document.querySelectorAll("#presets .chip").forEach((chip) => {
+  chip.addEventListener("click", () => {
+    const vals = PRESETS[chip.dataset.preset] || {};
+    Object.entries(vals).forEach(([name, val]) => {
+      const el = document.querySelector(`#score-form input[name="${name}"]`);
+      if (el) el.value = val;
+    });
+  });
+});
 
 /* Single scoring */
 $("#score-form").addEventListener("submit", async (ev) => {
@@ -152,14 +186,14 @@ async function loadExplanation(values) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ values }),
     });
-    renderShap(exp.features || []);
-  } catch (e) {
-    console.error("explain failed", e);
-  }
+    lastShap = exp.features || [];
+    renderShap(lastShap);
+  } catch (e) { console.error("explain failed", e); }
 }
 
 function renderShap(features) {
   if (!features.length) return;
+  const d = chartDefaults();
   const rows = [...features].reverse();
   if (shapChart) shapChart.destroy();
   shapChart = new Chart($("#shap-chart"), {
@@ -168,8 +202,8 @@ function renderShap(features) {
       labels: rows.map((f) => f.feature),
       datasets: [{
         data: rows.map((f) => f.contribution),
-        backgroundColor: rows.map((f) => f.direction === "fraud" ? "#dc2626" : "#2563eb"),
-        borderRadius: 4,
+        backgroundColor: rows.map((f) => f.direction === "fraud" ? "#ef4444" : "#3b82f6"),
+        borderRadius: 5,
       }],
     },
     options: {
@@ -181,8 +215,8 @@ function renderShap(features) {
         tooltip: { callbacks: { label: (c) => (c.raw >= 0 ? "+" : "") + c.raw.toFixed(4) } },
       },
       scales: {
-        x: { title: { display: true, text: "log-odds contribution" }, grid: { color: "#eef1f6" } },
-        y: { grid: { display: false } },
+        x: { title: { display: true, text: "log-odds contribution", color: d.tick }, ticks: { color: d.tick }, grid: { color: d.grid } },
+        y: { ticks: { color: d.tick }, grid: { display: false } },
       },
     },
   });
@@ -202,25 +236,52 @@ async function sendFeedback(verdict) {
     const note = $("#fb-note");
     note.textContent = `Recorded as ${verdict}. Retraining pool now has ${res.pool_size} label(s).`;
     note.classList.remove("hidden");
-  } catch (e) {
-    alert("Feedback failed: " + e.message);
-  }
+  } catch (e) { alert("Feedback failed: " + e.message); }
 }
 
-/* Batch scoring */
-$("#batch-btn").addEventListener("click", async () => {
-  const fileInput = $("#batch-file");
-  if (!fileInput.files.length) {
-    showBatchError("Choose a CSV file first.");
-    return;
+/* Batch — dropzone + file input */
+const dropzone = $("#dropzone");
+const batchFile = $("#batch-file");
+dropzone.addEventListener("click", () => batchFile.click());
+dropzone.addEventListener("dragover", (e) => { e.preventDefault(); dropzone.classList.add("drag"); });
+dropzone.addEventListener("dragleave", () => dropzone.classList.remove("drag"));
+dropzone.addEventListener("drop", (e) => {
+  e.preventDefault();
+  dropzone.classList.remove("drag");
+  if (e.dataTransfer.files.length) {
+    batchFile.files = e.dataTransfer.files;
+    updateDropLabel();
   }
+});
+batchFile.addEventListener("change", updateDropLabel);
+function updateDropLabel() {
+  const f = batchFile.files[0];
+  $("#dz-label").innerHTML = f ? `<span class="dz-file">${f.name}</span> · ${fmtInt(f.size)} bytes` : "Drop a CSV here or click to browse";
+}
+
+/* Batch — sample template (real rows from the training set, full feature set) */
+$("#sample-csv").addEventListener("click", () => {
+  fetch(API_BASE + "/sample_transactions.csv")
+    .then((r) => { if (!r.ok) throw new Error(); return r.blob(); })
+    .then((blob) => { downloadBlob("sample_transactions.csv", blob, "text/csv"); })
+    .catch(() => console.warn("sample file not served"));
+});
+
+/* Batch — scoring */
+$("#batch-btn").addEventListener("click", async () => {
+  if (!batchFile.files.length) { showBatchError("Choose a CSV file first."); return; }
   $("#batch-btn").disabled = true;
   hideBatchError();
   const formData = new FormData();
-  formData.append("file", fileInput.files[0]);
+  formData.append("file", batchFile.files[0]);
   try {
     const res = await api("/api/predict/batch", { method: "POST", body: formData });
-    renderBatch(res);
+    lastBatch = res.rows || [];
+    renderBatchSummary(lastBatch);
+    renderBatchChart(lastBatch);
+    renderBatchTable(lastBatch);
+    $("#batch-result").classList.remove("hidden");
+    bindDownload(lastBatch);
   } catch (e) {
     showBatchError(e.message);
   } finally {
@@ -228,17 +289,50 @@ $("#batch-btn").addEventListener("click", async () => {
   }
 });
 
-function renderBatch(res) {
-  const rows = res.rows || [];
+function renderBatchSummary(rows) {
   const dist = { low: 0, medium: 0, high: 0 };
   rows.forEach((r) => { dist[r.risk_tier] = (dist[r.risk_tier] || 0) + 1; });
-  $("#batch-summary").innerHTML = `
-    <span><b>${fmtInt(rows.length)}</b> transactions scored</span>
-    <span style="color:#16a34a"><b>${fmtInt(dist.low)}</b> low</span>
-    <span style="color:#ea580c"><b>${fmtInt(dist.medium)}</b> medium</span>
-    <span style="color:#dc2626"><b>${fmtInt(dist.high)}</b> high</span>
-  `;
+  const total = rows.length || 1;
+  const highPct = (dist.high / total * 100).toFixed(1);
+  $("#batch-summary").innerHTML = [
+    ["Transactions", fmtInt(rows.length)],
+    ["Low risk", fmtInt(dist.low), "low"],
+    ["Medium risk", fmtInt(dist.medium), "medium"],
+    ["High risk", fmtInt(dist.high), "high"],
+    ["High %", highPct + "%", "high"],
+  ].map(([k, v, cls]) =>
+    `<div class="kpi"><div class="k">${k}</div><div class="v" style="color:var(--${cls || "text"})">${v}</div></div>`
+  ).join("");
+}
 
+function renderBatchChart(rows) {
+  const dist = { low: 0, medium: 0, high: 0 };
+  rows.forEach((r) => { dist[r.risk_tier] = (dist[r.risk_tier] || 0) + 1; });
+  if (batchChart) batchChart.destroy();
+  batchChart = new Chart($("#batch-chart"), {
+    type: "doughnut",
+    data: {
+      labels: ["Low", "Medium", "High"],
+      datasets: [{
+        data: [dist.low, dist.medium, dist.high],
+        backgroundColor: ["#22c55e", "#f59e0b", "#ef4444"],
+        borderColor: "#121a2b",
+        borderWidth: 3,
+      }],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      cutout: "68%",
+      plugins: {
+        legend: { position: "bottom", labels: { color: chartDefaults().tick } },
+        tooltip: { callbacks: { label: (c) => `${c.label}: ${c.raw} (${(c.raw / (rows.length || 1) * 100).toFixed(1)}%)` } },
+      },
+    },
+  });
+}
+
+function renderBatchTable(rows) {
   $("#batch-table").innerHTML =
     "<tr><th>ID</th><th>Probability</th><th>Risk</th><th>Action</th></tr>" +
     rows.map((r) => {
@@ -250,30 +344,26 @@ function renderBatch(res) {
         <td>${r.action}</td>
       </tr>`;
     }).join("");
-
-  $("#batch-result").classList.remove("hidden");
-  bindDownload(rows);
 }
 
 function bindDownload(rows) {
-  const dl = $("#batch-dl");
-  dl.onclick = () => {
+  $("#batch-dl").onclick = () => {
     const header = "id,probability,risk_tier,action\n";
     const body = rows.map((r) =>
       [r.id ?? "", r.probability.toFixed(6), r.risk_tier, `"${r.action}"`].join(",")
     ).join("\n");
-    const blob = new Blob([header + body], { type: "text/csv" });
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = "scored_transactions.csv";
-    a.click();
-    URL.revokeObjectURL(a.href);
+    downloadBlob("scored_transactions.csv", header + body, "text/csv");
   };
 }
 
-function showBatchError(msg) {
-  const el = $("#batch-err");
-  el.textContent = msg;
-  el.classList.remove("hidden");
+function downloadBlob(name, content, type) {
+  const blob = new Blob([content], { type });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = name;
+  a.click();
+  URL.revokeObjectURL(a.href);
 }
+
+function showBatchError(msg) { const el = $("#batch-err"); el.textContent = msg; el.classList.remove("hidden"); }
 function hideBatchError() { $("#batch-err").classList.add("hidden"); }
