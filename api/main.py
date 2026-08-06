@@ -185,7 +185,9 @@ def feedback(req: schemas.FeedbackRequest) -> schemas.FeedbackResponse:
 
 
 @app.post("/api/retrain", response_model=schemas.RetrainResponse)
-def retrain(admin_key: str | None = Header(default=None)) -> schemas.RetrainResponse:
+def retrain(
+    admin_key: str | None = Header(default=None, alias="X-Admin-Key"),
+) -> schemas.RetrainResponse:
     _require_admin(admin_key)
     result = store.retrain_and_swap()
     _clear_cache()
