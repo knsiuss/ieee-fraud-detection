@@ -1,4 +1,4 @@
-.PHONY: install test lint format clean docs
+.PHONY: install test lint format format-check retrain serve clean docs
 
 install:
 	pip install -e ".[lgbm,dev,docs]"
@@ -8,13 +8,19 @@ test:
 	pytest
 
 lint:
-	ruff check src/fraud_detect/ tests/ scripts/
+	ruff check src/fraud_detect/ api/ scripts/ tests/
 
 format:
-	ruff format src/fraud_detect/ tests/ scripts/
+	ruff format src/fraud_detect/ api/ scripts/ tests/
 
 format-check:
-	ruff format --check src/fraud_detect/ tests/ scripts/
+	ruff format --check src/fraud_detect/ api/ scripts/ tests/
+
+retrain:
+	python scripts/retrain.py
+
+serve:
+	uvicorn api.main:app --reload
 
 docs:
 	sphinx-build -b html docs/source docs/build
