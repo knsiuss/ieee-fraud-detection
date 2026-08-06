@@ -184,7 +184,15 @@ async def predict_batch(
 @app.post("/api/explain", response_model=schemas.ExplainResponse)
 def explain(req: schemas.PredictRequest) -> schemas.ExplainResponse:
     art = _current()
-    x = _build_row(req.values, art)
+    if req.profile:
+        x = simmod.build_row(
+            {**req.values, "profile": req.profile},
+            art.features,
+            art.baseline,
+            art.profiles,
+        )
+    else:
+        x = _build_row(req.values, art)
     prob = float(predict_proba(art.model, x)[0])
     tier = risk_tier(prob)
 

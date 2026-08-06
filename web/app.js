@@ -179,7 +179,7 @@ $("#sim-form").addEventListener("submit", async (ev) => {
       body: JSON.stringify(gatherSimValues()),
     });
     renderResult(sim);
-    loadExplanation(sim.mapped_values || {});
+    loadExplanation(sim.mapped_values || {}, payload.profile);
     $("#result").classList.remove("hidden");
   } catch (e) {
     alert("Simulation failed: " + e.message);
@@ -240,12 +240,14 @@ function renderResult(pred) {
   $("#fb-note").classList.add("hidden");
 }
 
-async function loadExplanation(values) {
+async function loadExplanation(values, profile) {
   try {
+    const body = { values };
+    if (profile) body.profile = profile;
     const exp = await api("/api/explain", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ values }),
+      body: JSON.stringify(body),
     });
     renderExplanation(exp);
   } catch (e) { console.error("explain failed", e); }
