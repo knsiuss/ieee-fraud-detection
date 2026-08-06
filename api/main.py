@@ -33,6 +33,7 @@ from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from fraud_detect import sim as simmod
+from fraud_detect._exceptions import MissingArtefactError
 from fraud_detect.serving import (
     align_features,
     decision_drivers,
@@ -61,6 +62,15 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+@app.exception_handler(MissingArtefactError)
+async def _missing_artefact(request: Request, exc: MissingArtefactError):  # noqa: ARG001
+    # Return a safe, generic message — never echo the artefact path.
+    return JSONResponse(
+        {"detail": "Model artefact not found. Run `python scripts/train_model.py` first."},
+        status_code=503,
+    )
+
 
 _ADMIN_KEY = os.getenv("FRAUD_API_ADMIN_KEY")
 
@@ -257,7 +267,10 @@ def retrain(
     admin_key: str | None = Header(default=None, alias="X-Admin-Key"),
 ) -> schemas.RetrainResponse:
     _require_admin(admin_key)
-    result = store.retrain_and_swap()
+    try:
+        result = store.retrain_and_swap()
+    except RuntimeError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
     _clear_cache()
     return schemas.RetrainResponse(**result)
 
