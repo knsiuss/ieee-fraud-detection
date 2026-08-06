@@ -30,6 +30,9 @@ data — see the model card for honest scope.
 - Pre-existing lint debt (`ruff`) across `src/`, `api/`, `scripts/`, `tests/`;
   CI scope corrected to the real source dirs.
 - Admin header alias so `X-Admin-Key` actually matches.
+- Web console: checkout submit referenced an undefined `payload` (result
+  panel never appeared); tab panels stayed invisible due to `hidden`
+  (both found while capturing README screenshots).
 
 ### Removed
 - Streamlit dashboard (`dashboard/app.py`, `dashboard/precompute.py`).

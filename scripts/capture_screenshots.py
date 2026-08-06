@@ -54,7 +54,11 @@ def capture(base: str) -> None:
         )
         page.click("#sim-btn")
         page.wait_for_function(
-            "() => document.querySelector('#result') && !document.querySelector('#result').classList.contains('hidden') && document.querySelector('#summary-text').innerText.length > 0",
+            "() => {"
+            "  const r = document.querySelector('#result');"
+            "  return r && !r.classList.contains('hidden')"
+            "    && document.querySelector('#summary-text').innerText.length > 0;"
+            "}",
             timeout=20000,
         )
         page.wait_for_timeout(500)
