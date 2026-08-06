@@ -21,9 +21,7 @@ from fraud_detect._exceptions import InvalidDataError
 matplotlib.use("Agg")
 
 
-# --------------------------------------------------------------------------- #
 # End-to-end: reduce_mem_usage on all dtypes
-# --------------------------------------------------------------------------- #
 def test_reduce_mem_usage_handles_all_dtypes():
     """Verify reduce_mem_usage processes every common dtype without error."""
     df = pd.DataFrame(
@@ -43,9 +41,7 @@ def test_reduce_mem_usage_handles_all_dtypes():
     assert list(out.columns) == list(df.columns)
 
 
-# --------------------------------------------------------------------------- #
 # End-to-end: feature engineering pipeline
-# --------------------------------------------------------------------------- #
 def test_build_all_features_full_pipeline(synthetic_df):
     """Verify the full feature pipeline produces the expected output columns."""
     out = features.build_all_features(synthetic_df)
@@ -75,9 +71,7 @@ def test_build_all_features_full_pipeline(synthetic_df):
         assert col in out.columns, f"Missing engineered column: {col}"
 
 
-# --------------------------------------------------------------------------- #
 # End-to-end: model workflow with synthetic data
-# --------------------------------------------------------------------------- #
 def test_model_workflow_no_crash(synthetic_df):
     """Verify split -> fit -> evaluate works end-to-end on synthetic data."""
     split = models.make_train_val_split(synthetic_df)
@@ -92,9 +86,7 @@ def test_model_workflow_no_crash(synthetic_df):
     assert result["overfitting_gap"] >= 0.0
 
 
-# --------------------------------------------------------------------------- #
 # build_all_features edge cases
-# --------------------------------------------------------------------------- #
 def test_build_all_features_missing_columns():
     """Should gracefully handle a DataFrame missing optional columns."""
     df = pd.DataFrame({"TransactionID": [1], "TransactionDT": [0], "TransactionAmt": [10.0]})
@@ -111,9 +103,7 @@ def test_build_all_features_idempotent(synthetic_df):
     assert twice.shape == once.shape
 
 
-# --------------------------------------------------------------------------- #
 # load_train_features raises InvalidDataError for empty data
-# --------------------------------------------------------------------------- #
 def test_load_train_features_raises_on_empty(monkeypatch):
     """Verify load_train_features raises InvalidDataError for empty parquet."""
     with TemporaryDirectory() as tmp:
@@ -138,9 +128,7 @@ def test_load_train_features_raises_on_missing_target(monkeypatch):
             io.load_train_features()
 
 
-# --------------------------------------------------------------------------- #
 # compute_lightgbm_importance (requires lightgbm)
-# --------------------------------------------------------------------------- #
 def test_compute_lightgbm_importance(synthetic_df):
     """Verify compute_lightgbm_importance returns correct shape/sort."""
     pytest.importorskip("lightgbm")

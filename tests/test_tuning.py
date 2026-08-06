@@ -33,9 +33,7 @@ def binary_df() -> pd.DataFrame:
     )
 
 
-# --------------------------------------------------------------------------- #
 # build_search_space
-# --------------------------------------------------------------------------- #
 
 
 def test_build_search_space_returns_dict() -> None:
@@ -59,9 +57,7 @@ def test_build_search_space_has_low_high_keys() -> None:
         assert "high" in spec, f"{name} missing 'high'"
 
 
-# --------------------------------------------------------------------------- #
 # save_best_params / load_best_params
-# --------------------------------------------------------------------------- #
 
 
 def test_save_and_load_best_params_round_trip() -> None:
@@ -100,9 +96,7 @@ def test_load_best_params_no_fallback_returns_empty() -> None:
     assert loaded == {}
 
 
-# --------------------------------------------------------------------------- #
 # tune_model (requires optuna)
-# --------------------------------------------------------------------------- #
 
 
 def test_tune_model_returns_study(binary_df: pd.DataFrame) -> None:

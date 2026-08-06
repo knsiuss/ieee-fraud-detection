@@ -23,9 +23,7 @@ def binary_data() -> tuple[pd.Series, np.ndarray]:
     return y_true, y_pred_proba
 
 
-# --------------------------------------------------------------------------- #
 # find_best_threshold
-# --------------------------------------------------------------------------- #
 
 
 def test_find_best_threshold_returns_float(binary_data):
@@ -45,9 +43,7 @@ def test_find_best_threshold_perfect_predictions():
     assert youden > 0.0
 
 
-# --------------------------------------------------------------------------- #
 # compute_evaluation
-# --------------------------------------------------------------------------- #
 
 
 def test_compute_evaluation_returns_report(binary_data):
@@ -70,9 +66,7 @@ def test_compute_evaluation_raises_on_single_class():
         ev.compute_evaluation(y_true, y_pred)
 
 
-# --------------------------------------------------------------------------- #
 # EvaluationReport dataclass
-# --------------------------------------------------------------------------- #
 
 
 def test_evaluation_report_fields():
@@ -92,9 +86,7 @@ def test_evaluation_report_fields():
     assert report.confusion_matrix[0, 0] == 100
 
 
-# --------------------------------------------------------------------------- #
 # compare_models
-# --------------------------------------------------------------------------- #
 
 
 def test_compare_models_returns_dataframe(binary_data):
@@ -117,9 +109,7 @@ def test_compare_models_sorted_by_auc(binary_data):
     assert df.iloc[0]["model"] == "Good"
 
 
-# --------------------------------------------------------------------------- #
 # mcnemar_test
-# --------------------------------------------------------------------------- #
 
 
 @pytest.fixture

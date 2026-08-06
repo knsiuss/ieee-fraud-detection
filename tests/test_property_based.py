@@ -19,9 +19,7 @@ _INT8_SAFE = st.integers(min_value=-100, max_value=100)
 _FLOAT_SAFE = st.floats(min_value=1e-6, max_value=1e6, allow_nan=False, allow_infinity=False)
 
 
-# --------------------------------------------------------------------------- #
 # Property: reduce_mem_usage output dtypes are never wider than input
-# --------------------------------------------------------------------------- #
 @given(st.lists(_INT8_SAFE, min_size=1, max_size=5))
 @settings(max_examples=50)
 def test_reduce_mem_usage_no_upcast_int(values):
@@ -42,9 +40,7 @@ def test_reduce_mem_usage_no_upcast_float(values):
     assert output_bits <= input_bits, f"Upcast from {input_bits} to {output_bits}"
 
 
-# --------------------------------------------------------------------------- #
 # Property: add_time_features is idempotent
-# --------------------------------------------------------------------------- #
 @given(st.lists(st.integers(min_value=0, max_value=86400 * 7), min_size=1))
 @settings(max_examples=50)
 def test_add_time_features_idempotent(dt_values):
@@ -55,9 +51,7 @@ def test_add_time_features_idempotent(dt_values):
     pd.testing.assert_frame_equal(out1, out2)
 
 
-# --------------------------------------------------------------------------- #
 # Property: add_amount_features preserves input columns exactly
-# --------------------------------------------------------------------------- #
 @given(st.lists(_FLOAT_SAFE, min_size=1))
 @settings(max_examples=50)
 def test_add_amount_features_preserves_input(amounts):
@@ -66,9 +60,7 @@ def test_add_amount_features_preserves_input(amounts):
     pd.testing.assert_series_equal(df["TransactionAmt"], out["TransactionAmt"], check_dtype=False)
 
 
-# --------------------------------------------------------------------------- #
 # Property: select_feature_columns never returns EXCLUDE_COLUMNS
-# --------------------------------------------------------------------------- #
 @given(st.lists(_INT8_SAFE, min_size=1))
 @settings(max_examples=50)
 def test_select_feature_columns_no_excluded(values):
