@@ -303,6 +303,14 @@ footer {
   padding: 22px;
   border-top: 1px solid var(--border);
 }
+.demo-note {
+  margin-top: 8px;
+  font-size: 0.72rem;
+  color: color-mix(in srgb, var(--orange) 75%, var(--muted));
+  max-width: 640px;
+  margin-left: auto;
+  margin-right: auto;
+}
 
 @media (max-width: 640px) {
   .tabs { padding: 10px 16px 0; }
