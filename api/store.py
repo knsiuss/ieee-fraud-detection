@@ -65,6 +65,25 @@ def model_info() -> dict[str, Any]:
     return info
 
 
+def public_stats() -> dict[str, Any]:
+    """Lightweight aggregates for the web UI's overview tab."""
+    out: dict[str, Any] = {"model": model_info(), "overview": {}, "top_features": []}
+
+    stats_csv = Path(__file__).resolve().parents[1] / "dashboard" / "data" / "overall_stats.csv"
+    if stats_csv.exists():
+        df = pd.read_csv(stats_csv)
+        out["overview"] = {str(r["metric"]): r["value"] for _, r in df.iterrows()}
+
+    mfi = Path(__file__).resolve().parents[1] / "dashboard" / "data" / "model_feat_importance.csv"
+    if mfi.exists():
+        top = pd.read_csv(mfi).head(10)
+        out["top_features"] = [
+            {"feature": str(r.feature), "importance": float(r.importance)}
+            for r in top.itertuples()
+        ]
+    return out
+
+
 # Feedback pool
 
 def record_feedback(values: dict[str, float], verdict: int) -> int:
