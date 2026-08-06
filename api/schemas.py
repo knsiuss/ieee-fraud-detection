@@ -27,6 +27,23 @@ class PredictResponse(RiskResponse):
     model_version: str
 
 
+class SimulateRequest(BaseModel):
+    """Friendly, checkout-style inputs for the transaction simulator."""
+
+    profile: Literal["typical", "nonfraud", "fraud"] = "typical"
+    amount: float | None = None
+    card_brand: str | None = None
+    billing_distance: float | None = None
+    card_match_count: float | None = None
+    purchase_frequency: float | None = None
+    days_since_activity: float | None = None
+
+
+class SimulateResponse(PredictResponse):
+    profile: str
+    mapped_values: dict[str, float]
+
+
 class BatchScoreRow(RiskResponse):
     id: str | int | None = None
     values: dict[str, float]
@@ -44,11 +61,24 @@ class ShapFeature(BaseModel):
     direction: Literal["fraud", "safe"]
 
 
+class Driver(BaseModel):
+    feature: str
+    label: str
+    value: float | None
+    typical: float | None
+    value_text: str
+    typical_text: str
+    contribution: float
+    direction: Literal["fraud", "safe"]
+
+
 class ExplainResponse(BaseModel):
     probability: float
     risk_tier: str
     action: str
     model_version: str
+    summary: str
+    drivers: list[Driver]
     features: list[ShapFeature]
 
 

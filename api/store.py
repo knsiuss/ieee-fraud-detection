@@ -213,6 +213,10 @@ def retrain_and_swap(data_df: pd.DataFrame | None = None) -> dict[str, Any]:
 
     swapped = new_auc >= old_auc + GATE_MIN_IMPROVEMENT
     if swapped:
+        profiles = {
+            "nonfraud": median_baseline(features, df.loc[df[config.TARGET_COLUMN] == 0]),
+            "fraud": median_baseline(features, df.loc[df[config.TARGET_COLUMN] == 1]),
+        }
         meta = {
             "backend": "lightgbm",
             "roc_auc": new_auc,
@@ -223,7 +227,7 @@ def retrain_and_swap(data_df: pd.DataFrame | None = None) -> dict[str, Any]:
             "trained_at": datetime.now(timezone.utc).isoformat(),
             "gate": "passed",
         }
-        save_artefact(CURRENT_DIR, candidate, features, baseline, meta)
+        save_artefact(CURRENT_DIR, candidate, features, baseline, meta, profiles=profiles)
     else:
         # Keep a trace of the rejected candidate for reproducibility.
         stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S")
