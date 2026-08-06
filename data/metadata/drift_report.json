@@ -1,0 +1,136 @@
+{
+  "generated_at": "2026-08-06T08:51:33.907095+00:00",
+  "reference": "C:\\fraud\\ieee-fraud-detection\\data\\interim\\train_merged.parquet",
+  "recent": "C:\\fraud\\ieee-fraud-detection\\web\\sample_transactions.csv",
+  "n_features": 400,
+  "drifted_features": 21,
+  "top_drift": [
+    {
+      "feature": "card1",
+      "psi": 6.293645077635262,
+      "status": "drifted"
+    },
+    {
+      "feature": "C13",
+      "psi": 4.260773215006585,
+      "status": "drifted"
+    },
+    {
+      "feature": "V307",
+      "psi": 3.6095595033833976,
+      "status": "drifted"
+    },
+    {
+      "feature": "C5",
+      "psi": 3.413806918637878,
+      "status": "drifted"
+    },
+    {
+      "feature": "TransactionAmt",
+      "psi": 3.402264394605243,
+      "status": "drifted"
+    },
+    {
+      "feature": "C9",
+      "psi": 2.6813598892189137,
+      "status": "drifted"
+    },
+    {
+      "feature": "V285",
+      "psi": 1.7303219808814412,
+      "status": "drifted"
+    },
+    {
+      "feature": "V310",
+      "psi": 1.1683970143760682,
+      "status": "drifted"
+    },
+    {
+      "feature": "V308",
+      "psi": 1.1623176276804503,
+      "status": "drifted"
+    },
+    {
+      "feature": "C10",
+      "psi": 0.951253259336321,
+      "status": "drifted"
+    },
+    {
+      "feature": "C4",
+      "psi": 0.938035782058366,
+      "status": "drifted"
+    },
+    {
+      "feature": "V302",
+      "psi": 0.9305254346217505,
+      "status": "drifted"
+    },
+    {
+      "feature": "V304",
+      "psi": 0.9272438951742299,
+      "status": "drifted"
+    },
+    {
+      "feature": "V303",
+      "psi": 0.9245165439612868,
+      "status": "drifted"
+    },
+    {
+      "feature": "C8",
+      "psi": 0.907931740792038,
+      "status": "drifted"
+    }
+  ],
+  "data_quality": {
+    "n_rows": 10,
+    "n_expected_features": 400,
+    "n_present_features": 400,
+    "n_missing_columns": 0,
+    "missing_columns": [],
+    "worst_missing": [
+      [
+        "dist1",
+        0.9
+      ],
+      [
+        "id_07",
+        0.9
+      ],
+      [
+        "id_08",
+        0.9
+      ],
+      [
+        "id_18",
+        0.9
+      ],
+      [
+        "id_21",
+        0.9
+      ],
+      [
+        "id_22",
+        0.9
+      ],
+      [
+        "id_24",
+        0.9
+      ],
+      [
+        "id_25",
+        0.9
+      ],
+      [
+        "id_26",
+        0.9
+      ],
+      [
+        "D2",
+        0.7
+      ]
+    ],
+    "unknown_columns": [
+      "TransactionID"
+    ]
+  }
+}

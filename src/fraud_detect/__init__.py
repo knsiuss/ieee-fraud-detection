@@ -85,6 +85,11 @@ from fraud_detect.models import (
     train_all_models,
     train_model,
 )
+from fraud_detect.monitoring import (
+    data_quality_check,
+    feature_drift,
+    psi,
+)
 from fraud_detect.serving import (
     ModelArtefact,
     RiskTier,
@@ -208,6 +213,10 @@ __all__ = [
     "predict_proba",
     "risk_tier",
     "save_artefact",
+    # Monitoring
+    "psi",
+    "feature_drift",
+    "data_quality_check",
     # Config
     "DATA_ROOT",
     "TARGET_COLUMN",
