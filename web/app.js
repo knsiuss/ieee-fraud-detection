@@ -62,7 +62,11 @@ async function api(path, options = {}) {
 document.querySelectorAll(".tab").forEach((btn) => {
   btn.addEventListener("click", () => {
     document.querySelectorAll(".tab").forEach((b) => b.classList.toggle("active", b === btn));
-    document.querySelectorAll(".panel").forEach((p) => p.classList.toggle("active", p.id === "tab-" + btn.dataset.tab));
+    document.querySelectorAll(".panel").forEach((p) => {
+      const on = p.id === "tab-" + btn.dataset.tab;
+      p.classList.toggle("active", on);
+      p.classList.toggle("hidden", !on);
+    });
   });
 });
 
@@ -173,10 +177,11 @@ $("#sim-form").addEventListener("submit", async (ev) => {
   const btn = $("#sim-btn");
   btn.disabled = true; btn.textContent = "Detecting…";
   try {
+    const payload = gatherSimValues();
     const sim = await api("/api/simulate", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(gatherSimValues()),
+      body: JSON.stringify(payload),
     });
     renderResult(sim);
     loadExplanation(sim.mapped_values || {}, payload.profile);

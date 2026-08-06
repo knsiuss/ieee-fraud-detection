@@ -25,6 +25,7 @@ This repository contains a complete, production-shaped data science pipeline —
 - [Analysis Pipeline](#analysis-pipeline)
 - [Core Python Package](#core-python-package)
 - [Service & Web App](#service--web-app)
+- [Screenshots](#screenshots)
 - [Results (honest evaluation)](#results-honest-evaluation)
 - [Reproducing Results](#reproducing-results)
 - [Limitations](#limitations)
@@ -129,7 +130,8 @@ ieee-fraud-detection/
 │   ├── train_model.py           #   Train + serialise the serving artefact
 │   ├── retrain.py               #   Gated auto-retrain loop (cron-safe)
 │   ├── evaluate_model.py        #   Random vs time-aware honest evaluation
-│   └── drift_report.py          #   PSI drift + data-quality report
+│   ├── drift_report.py          #   PSI drift + data-quality report
+│   └── capture_screenshots.py   #   README screenshots (Playwright, optional)
 │
 ├── tests/                       # 100+ unit / integration / property tests
 │
@@ -232,6 +234,18 @@ Reviewers mark a transaction safe or fraud; each vote is appended to `data/feedb
 run and **only swaps the served model when the candidate scores ≥ the current model on a
 held-out validation split** — an anti-regression gate. A failed gate never touches the
 deployed model, so the loop is safe to run on a cron.
+
+---
+
+## Screenshots
+
+![Checkout-style scoring with decision summary](docs/screenshots/score-checkout.png)
+![Batch upload](docs/screenshots/batch-upload.png)
+![Batch results with risk-tier breakdown](docs/screenshots/batch-results.png)
+![Model & dataset overview](docs/screenshots/model-overview.png)
+
+Screenshots are generated from the running app by
+`scripts/capture_screenshots.py` (requires Playwright + a running server).
 
 ---
 
