@@ -20,6 +20,7 @@ This repository contains a complete, production-shaped data science pipeline —
 
 ## Table of Contents
 
+- [Architecture](#architecture)
 - [Repository Structure](#repository-structure)
 - [Analysis Pipeline](#analysis-pipeline)
 - [Core Python Package](#core-python-package)
@@ -59,6 +60,28 @@ The objective is to predict the probability that an online payment transaction i
 - **Sparse identity data** — the identity table covers only ~25% of transactions.
 - **Missing values** — many columns exceed 50% missingness and require per-column imputation strategies.
 - **Relative timestamps** — `TransactionDT` is expressed as seconds from an unknown reference point.
+
+---
+
+## Architecture
+
+```mermaid
+flowchart LR
+    UI["Web console<br/>(vanilla JS + Chart.js)"] -->|HTTP + JSON| REST["FastAPI service<br/>(api/)"]
+    REST --> ALGO["fraud_detect.serving / sim<br/>align · predict · SHAP · decision summary"]
+    REST --> STORE["store.py<br/>versioning + gated retraining"]
+    ALGO --> STORE
+    STORE --> MODEL[("artefact<br/>data/models/current")]
+    FB[("reviewer feedback<br/>data/feedback/")] --> STORE
+    EVAL["evaluate_model.py<br/>random vs time-ordered"] -.-> MODEL
+    DRIFT["drift_report.py<br/>PSI · data quality"] -.-> MODEL
+```
+
+The browser console talks to the FastAPI service, which scores through the
+testable `fraud_detect` package (serving + checkout-simulator). A reviewer's
+verdicts land in the feedback pool; a scheduled retrain folds them in and
+**only** promotes a candidate that beats the served model on a held-out
+split. Evaluation and drift are reproducible scripts over the model artefact.
 
 ---
 
