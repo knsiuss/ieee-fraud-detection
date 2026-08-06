@@ -167,9 +167,15 @@ def predict_proba(
     """Return class-1 (fraud) probabilities for ``features``.
 
     ``n_threads`` defaults to 1 to avoid the LightGBM OpenMP oversubscription
-    hang that previously froze the dashboard in threaded web workers.
+    hang that previously froze the dashboard in threaded web workers. When the
+    model was trained with early stopping, prediction uses its
+    ``best_iteration`` so overfit trailing trees do not distort scores.
     """
-    probs = model.predict(features, num_threads=n_threads)
+    kwargs: dict[str, int] = {"num_threads": n_threads}
+    best = getattr(model, "best_iteration", None)
+    if best is not None:
+        kwargs["num_iteration"] = best
+    probs = model.predict(features, **kwargs)
     return np.asarray(probs, dtype="float64")
 
 
