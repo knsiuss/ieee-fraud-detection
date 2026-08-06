@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Fraud Detection Console</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="logo">IEEE-CIS Fraud Console</span>
+      <span class="sub">Fraud probability scoring &amp; review</span>
+    </div>
+    <div id="status-pill" class="pill">checking model…</div>
+  </header>
+
+  <nav class="tabs">
+    <button class="tab active" data-tab="score">Score</button>
+    <button class="tab" data-tab="batch">Batch</button>
+    <button class="tab" data-tab="model">Model</button>
+  </nav>
+
+  <main>
+    <section id="tab-score" class="panel active">
+      <div class="card">
+        <h2>Score a transaction</h2>
+        <p class="hint">Enter the fields you know. Everything left blank falls back to the median of the training set.</p>
+        <form id="score-form">
+          <div class="grid">
+            <label>Transaction Amount (USD)
+              <input type="number" id="f-amt" name="TransactionAmt" value="150" min="0.1" step="1" />
+            </label>
+            <label>Card Issuer Code (card1)
+              <input type="number" id="f-card1" name="card1" value="9500" step="1" />
+            </label>
+            <label>Address Distance (dist1)
+              <input type="number" id="f-dist1" name="dist1" value="12" step="1" />
+            </label>
+            <label>Card Match Count (C1)
+              <input type="number" id="f-c1" name="C1" value="1" step="1" />
+            </label>
+            <label>Transaction Frequency (C13)
+              <input type="number" id="f-c13" name="C13" value="1" step="1" />
+            </label>
+            <label>Days Since Last Activity (D1)
+              <input type="number" id="f-d1" name="D1" value="0" step="1" />
+            </label>
+          </div>
+          <button type="submit" class="primary" id="score-btn">Score transaction</button>
+        </form>
+      </div>
+
+      <div id="result" class="card hidden">
+        <div class="result-head">
+          <div>
+            <h2 id="risk-tier" class="tier">–</h2>
+            <p id="risk-action" class="hint"></p>
+          </div>
+          <div class="gauge">
+            <div id="prob-label" class="prob">0%</div>
+            <div class="track"><div id="prob-bar" class="fill" style="width:0%"></div></div>
+            <div class="scale"><span>0</span><span>0.5</span><span>1</span></div>
+          </div>
+        </div>
+
+        <div class="why">
+          <h3>Why did the model say this?</h3>
+          <p class="hint">SHAP contributions. Red pushes toward fraud, blue toward safe.</p>
+          <div class="chart-wrap"><canvas id="shap-chart"></canvas></div>
+        </div>
+
+        <div class="feedback">
+          <h3>Review result</h3>
+          <p class="hint">Labels flow into the retraining pool and improve the model over time.</p>
+          <div class="feedback-btns">
+            <button id="fb-safe" class="secondary">Mark as safe</button>
+            <button id="fb-fraud" class="danger">Mark as fraud</button>
+          </div>
+          <p id="fb-note" class="hint hidden"></p>
+        </div>
+      </div>
+    </section>
+
+    <section id="tab-batch" class="panel hidden">
+      <div class="card">
+        <h2>Score a CSV batch</h2>
+        <p class="hint">Upload a CSV of transactions (e.g. the Kaggle test table). Any transaction row works — missing features are treated the same as training.</p>
+        <input type="file" id="batch-file" accept=".csv" />
+        <button class="primary" id="batch-btn">Score file</button>
+        <p id="batch-err" class="error hidden"></p>
+      </div>
+      <div id="batch-result" class="card hidden">
+        <div id="batch-summary" class="summary"></div>
+        <div class="table-scroll"><table id="batch-table"></table></div>
+        <button id="batch-dl" class="secondary">Download scored CSV</button>
+      </div>
+    </section>
+
+    <section id="tab-model" class="panel hidden">
+      <div id="model-cards" class="card-grid"></div>
+      <div class="card">
+        <h2>Dataset overview</h2>
+        <div id="overview" class="kpis"></div>
+      </div>
+      <div class="card">
+        <h2>Top predictive features</h2>
+        <p class="hint">LightGBM gain importance from the training run.</p>
+        <div class="table-scroll"><table id="topfeat-table"></table></div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <span id="footer-version">IEEE-CIS Fraud Detection</span> · FastAPI + vanilla JS
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>

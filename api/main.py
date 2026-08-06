@@ -106,6 +106,11 @@ def model_info() -> dict:
     return store.model_info()
 
 
+@app.get("/api/stats")
+def stats() -> dict:
+    return store.public_stats()
+
+
 @app.post("/api/predict", response_model=schemas.PredictResponse)
 def predict(req: schemas.PredictRequest) -> schemas.PredictResponse:
     prob, tier, version = _score(req.values)
