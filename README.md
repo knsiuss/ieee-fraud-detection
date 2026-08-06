@@ -1,7 +1,7 @@
 <p align="center">
   <img src="https://img.shields.io/badge/Status-COMPLETED-brightgreen?style=for-the-badge" alt="Status: Completed"/>
   <img src="https://img.shields.io/badge/Python-3.10%2B-3776AB?style=for-the-badge&logo=python&logoColor=white" alt="Python 3.10+"/>
-  <img src="https://img.shields.io/badge/ROC--AUC-0.950-blue?style=for-the-badge" alt="ROC-AUC 0.950"/>
+  <img src="https://img.shields.io/badge/ROC--AUC-0.909-blue?style=for-the-badge" alt="ROC-AUC 0.909 (time-ordered split)"/>
   <img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge" alt="MIT License"/>
   <img src="https://img.shields.io/github/actions/workflow/status/knsiuss/ieee-fraud-detection/ci.yml?branch=main&style=for-the-badge&label=CI&logo=github" alt="CI"/>
 </p>
@@ -12,6 +12,10 @@
 
 This repository contains a complete, production-shaped data science pipeline — from raw data ingestion through exploratory analysis, feature engineering, model training, hyperparameter optimisation, ensembling, and evaluation — packaged as a reusable Python module (`fraud_detect`), a reproducible notebook series, a FastAPI service, and a browser-based review console (vanilla JS + Chart.js) with gated auto-retraining.
 
+> **Demo / portfolio.** Built on public Kaggle competition data for learning
+> and review. **Not a production fraud system** — do not use it for real
+> payment decisions. See the [Model Card](docs/MODEL_CARD.md) for honest scope.
+
 ---
 
 ## Table of Contents
@@ -20,7 +24,10 @@ This repository contains a complete, production-shaped data science pipeline —
 - [Analysis Pipeline](#analysis-pipeline)
 - [Core Python Package](#core-python-package)
 - [Service & Web App](#service--web-app)
-- [Results](#results)
+- [Results (honest evaluation)](#results-honest-evaluation)
+- [Reproducing Results](#reproducing-results)
+- [Limitations](#limitations)
+- [Roadmap](#roadmap)
 - [Dataset](#dataset)
 - [Feature Groups](#feature-groups)
 - [Tech Stack](#tech-stack)
@@ -71,6 +78,9 @@ ieee-fraud-detection/
 │   ├── evaluation.py            #   Metrics, optimal threshold, model comparison, McNemar's test
 │   ├── error_analysis.py        #   Error segmentation, distribution-shift, FP/FN analysis
 │   ├── viz.py                   #   Plotting helpers (18 functions)
+│   ├── serving.py               #   Model serving: artefacts, prediction, risk tiers, SHAP
+│   ├── sim.py                   #   Checkout-style inputs → model features + profiles
+│   ├── monitoring.py            #   PSI drift + data-quality checks
 │   └── _exceptions.py           #   Domain exceptions
 │
 ├── notebook/                    # 15 ordered analysis notebooks (01–15)
@@ -94,7 +104,9 @@ ieee-fraud-detection/
 ├── scripts/
 │   ├── prepare_data.py          #   CSV → Parquet conversion CLI
 │   ├── train_model.py           #   Train + serialise the serving artefact
-│   └── retrain.py               #   Gated auto-retrain loop (cron-safe)
+│   ├── retrain.py               #   Gated auto-retrain loop (cron-safe)
+│   ├── evaluate_model.py        #   Random vs time-aware honest evaluation
+│   └── drift_report.py          #   PSI drift + data-quality report
 │
 ├── tests/                       # 100+ unit / integration / property tests
 │
@@ -104,8 +116,15 @@ ieee-fraud-detection/
 │   ├── processed/               # Engineered features (gitignored)
 │   └── metadata/                # Analysis outputs & best parameters
 │
-├── docs/                        # Sphinx documentation source
+├── docs/
+│   ├── MODEL_CARD.md            #   Intended use, honest metrics, risks, monitoring
+│   ├── DEPLOYMENT.md            #   Free-tier deployment guide
+│   ├── EXTERNAL_DATA.md         #   External-dataset comparability research
+│   └── source/                  #   Sphinx documentation
 ├── .github/workflows/           # CI (lint + test) and docs deployment workflows
+├── CONTRIBUTING.md              # Contribution guide
+├── CHANGELOG.md                 # Version history
+├── SECURITY.md                  # Security policy
 ├── Makefile                     # Dev workflow shortcuts
 ├── pyproject.toml               # Package metadata + dependencies
 └── README.md
@@ -193,15 +212,36 @@ deployed model, so the loop is safe to run on a cron.
 
 ---
 
-## Results
+## Results (honest evaluation)
 
-The reference model is a **tuned LightGBM** classifier trained on the full merged table (`scripts/train_model.py`). Full metrics are recorded in the artefact's `meta.json`; the bootstrap artefact served in the repo reports:
+The headline metric is **ROC-AUC 0.909 on a time-ordered validation split**
+(the last ~20% of the time series is held out, so the model is scored on
+transactions that happen after everything it trained on).
 
-| Metric | Value |
-|---|---|
-| **ROC-AUC (validation)** | **0.950** |
-| ROC-AUC (training) | 0.979 |
-| Features | 400 |
+A **random split scores 0.954** — that number is **inflated by temporal
+leakage** (a random split lets the model memorise time-correlated signal),
+so it is reported for transparency, not as the result. Reproducible metrics
+live in [`data/metadata/evaluation.json`](data/metadata/evaluation.json) and
+[`docs/MODEL_CARD.md`](docs/MODEL_CARD.md).
+
+| Metric | Time-ordered split (honest) | Random split (inflated) |
+|---|---|---|
+| **ROC-AUC** | **0.909** | 0.954 |
+| PR-AUC | 0.562 | 0.773 |
+| Brier score | 0.021 | 0.014 |
+| Precision @ threshold 0.5 | 0.824 | 0.934 |
+| Recall @ threshold 0.5 | 0.360 | 0.531 |
+| Precision @ top 1% riskiest | 0.899 | 0.987 |
+| Precision @ top 5% riskiest | 0.414 | 0.543 |
+
+### Calibration caveat
+
+The model is only roughly calibrated (Brier 0.021). In the top probability
+decile it **under-predicts**: mean prediction 0.225 vs actual fraud rate
+0.251. Treat the output as a **risk ranking**, not a calibrated likelihood,
+unless you recalibrate it for your threshold.
+
+### Optimal Hyperparameters (Optuna)
 
 ### Optimal Hyperparameters (Optuna)
 
@@ -397,9 +437,60 @@ Continuous integration runs **lint and tests on Python 3.10, 3.11, and 3.12** fo
 
 ---
 
+## Reproducing Results
+
+```bash
+# 1. Train + serialise the serving artefact (needs the merged table)
+python scripts/train_model.py
+
+# 2. Honest evaluation — random vs time-ordered split, full metric set
+python scripts/evaluate_model.py        # -> data/metadata/evaluation.json
+
+# 3. Drift / data-quality report against a recent transactions file
+python scripts/drift_report.py          # -> data/metadata/drift_report.json
+
+# 4. Tests (no dataset required)
+make lint && make test
+```
+
+Every number in this README comes from those scripts (fixed seeds and
+splits in `fraud_detect/config.py`).
+
+---
+
+## Limitations
+
+- **Data is from 2017–2018** (Vesta / IEEE contest) — outdated relative to
+  current fraud patterns; the model is a benchmark, not a live system.
+- **Temporal leakage** inflates any random-split metric; only the
+  time-ordered numbers are trustworthy.
+- **Calibration is approximate** — the model under-predicts at high risk.
+- **No live deployment or live labels** — real-time drift and
+  label-based performance monitoring are future work
+  (`docs/MODEL_CARD.md`).
+- **No external dataset is merged or validated** — feature spaces are
+  incompatible (`docs/EXTERNAL_DATA.md`).
+- **Rate limiting is per-process and demo-grade**; the retrain guard needs
+  `FRAUD_API_ADMIN_KEY` set (`docs/DEPLOYMENT.md`).
+
+---
+
+## Roadmap
+
+- [x] Production-shaped pipeline + honest (time-aware) evaluation
+- [x] FastAPI service: predict / batch / explain / feedback / gated retrain
+- [x] Checkout-style web console with SHAP explanations (replaces Streamlit)
+- [x] Model card, monitoring scaffold, external-data research, deploy docs
+- [ ] Real-time prediction logging + drift alerts in the service
+- [ ] Label-based performance monitoring (needs a trusted label source)
+- [ ] Recalibration + threshold-setting tooling
+- [ ] Public demo deployment (requires approval — see `docs/DEPLOYMENT.md`)
+
+---
+
 ## Contributing
 
-Contributions are welcome. Please open an issue to discuss proposed changes, and ensure the linting and test checks pass before submitting a pull request. The repo includes issue templates and a PR template under `.github/`.
+Contributions are welcome. Please open an issue to discuss proposed changes, and ensure the linting and test checks pass before submitting a pull request. The repo includes issue templates and a PR template under `.github/`. See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ---
 
