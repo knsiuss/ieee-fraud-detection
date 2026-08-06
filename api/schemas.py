@@ -11,10 +11,13 @@ class PredictRequest(BaseModel):
     """A single transaction to score.
 
     ``values`` holds the feature values the analyst provided; every feature
-    left out falls back to the median seen at training time.
+    left out falls back to the median seen at training time. Optionally pass
+    a ``profile`` to overlay onto a segment median instead (for explanations
+    that match the checkout simulator).
     """
 
     values: dict[str, float] = Field(default_factory=dict)
+    profile: Literal["typical", "nonfraud", "fraud"] | None = None
 
 
 class RiskResponse(BaseModel):

@@ -117,7 +117,12 @@ def build_row(
     baseline: pd.DataFrame,
     profiles: dict[str, pd.DataFrame] | None = None,
 ) -> pd.DataFrame:
-    """Build an aligned feature row from friendly inputs over a profile median."""
+    """Build an aligned feature row from friendly inputs over a profile median.
+
+    Accepts both friendly field names (``amount``, ``card_brand``, …) and
+    already-mapped feature values (e.g. ``TransactionAmt``, ``C1``, …), so a
+    caller can re-explain a simulated row with the same profile.
+    """
     profile = inputs.get("profile", "typical")
     base = (profiles or {}).get(profile) if profiles else None
     if base is None:
@@ -126,4 +131,7 @@ def build_row(
     for feature, value in map_friendly(inputs).items():
         if feature in row.columns:
             row.loc[0, feature] = value
+    for feature, value in inputs.items():
+        if feature in row.columns:
+            row.loc[0, feature] = float(value)
     return align_features(row, features)
