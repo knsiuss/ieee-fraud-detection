@@ -1,0 +1,26 @@
+# Render Blueprint — IEEE-CIS Fraud Detection (portfolio demo)
+#
+# Deploy on Render's free web-service tier:
+#   1. Push this repo to GitHub.
+#   2. Render → New → Blueprint → connect the repo (uses this file).
+#   3. Set FRAUD_API_ADMIN_KEY in the service's Environment (dashboard).
+#
+# The build also trains a serving model on the committed demo sample
+# (dashboard/data/sample.parquet) so the service works immediately without
+# the full Kaggle dataset. Persisted disk is NOT available on the free tier,
+# so retrained artefacts / feedback reset on redeploy — acceptable for a demo.
+services:
+  - type: web
+    name: ieee-fraud-detection
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt && python scripts/train_model.py
+    startCommand: uvicorn api.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /api/health
+    envVars:
+      - key: PYTHONPATH
+        value: src
+      - key: FRAUD_API_RATE_LIMIT
+        value: "300"
+      - key: FRAUD_API_ADMIN_KEY
+        sync: false

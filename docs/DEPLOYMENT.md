@@ -13,10 +13,20 @@ free-tier story is simple.
 |---|---|---|
 | FastAPI + web UI (single service) | **Render** (free web service) or **Hugging Face Spaces** | One process, HTTPS, public URL, free |
 
-### Render (recommended — simplest)
+### Render (recommended — simplest, blueprint included)
+
+A [Render Blueprint](render.yaml) is committed: `render.yaml` defines the
+service, build, start command, health check, and env vars.
 
 1. Push the repo to GitHub.
-2. Render → **New → Web Service** → connect the repo.
+2. Render → **New → Blueprint** → connect the repo (uses `render.yaml`).
+3. Set `FRAUD_API_ADMIN_KEY` in the service Environment.
+4. Deploy. The build runs `pip install -r requirements.txt && python
+   scripts/train_model.py` — the second command trains on the committed demo
+   sample so the service responds immediately.
+
+Alternatively, manual setup via **New → Web Service**:
+1. Connect the repo.
 3. Settings:
    - **Root directory**: `ieee-fraud-detection` (if the repo is nested) or the repo root.
    - **Build command**: `pip install -r requirements.txt`
@@ -62,6 +72,18 @@ If you prefer a static frontend on GitHub Pages / Netlify:
 - Rate limiting, request-size caps, and auth are **not** implemented beyond
   the retrain key. See the model card / README limitations.
 - Never serve real card or identity data through this demo.
+
+## Rollback
+
+- **Render**: Deploy → "Deploy a previous commit" (redeploy the last
+  known-good commit). The served model is rebuilt on deploy and the free tier
+  has no persistent disk, so a rollback also resets the model — redeploy,
+  then optionally re-run the retrain.
+- **Docker**: keep previous image tags (`docker build -t fraud-detection:<sha>`)
+  and start the last known-good tag.
+- **Model-level**: the gated retrain already protects the *served model* — a
+  candidate that fails the validation gate is never swapped, so the model only
+  changes on a deliberate, passing retrain.
 
 ## Not published
 
