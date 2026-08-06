@@ -85,6 +85,17 @@ from fraud_detect.models import (
     train_all_models,
     train_model,
 )
+from fraud_detect.serving import (
+    ModelArtefact,
+    RiskTier,
+    align_features,
+    explain_top_features,
+    load_artefact,
+    median_baseline,
+    predict_proba,
+    risk_tier,
+    save_artefact,
+)
 from fraud_detect.tuning import (
     build_search_space,
     load_best_params,
@@ -183,6 +194,16 @@ __all__ = [
     "load_best_params",
     "save_best_params",
     "tune_model",
+    # Serving
+    "ModelArtefact",
+    "RiskTier",
+    "align_features",
+    "explain_top_features",
+    "load_artefact",
+    "median_baseline",
+    "predict_proba",
+    "risk_tier",
+    "save_artefact",
     # Config
     "DATA_ROOT",
     "TARGET_COLUMN",
