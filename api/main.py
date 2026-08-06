@@ -19,14 +19,17 @@ Endpoints
 
 from __future__ import annotations
 
+import collections
 import io
 import os
+import time
 from functools import lru_cache
 from typing import Annotated
 
 import pandas as pd
-from fastapi import FastAPI, File, Header, HTTPException, UploadFile
+from fastapi import FastAPI, File, Header, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from fraud_detect import sim as simmod
@@ -42,12 +45,16 @@ from fraud_detect.serving import (
 from . import schemas, store
 
 app = FastAPI(
-    title="IEEE-CIS Fraud Detection API",
-    description="Fraud probability scoring with SHAP explanations and gated retraining.",
+    title="IEEE-CIS Fraud Detection API (demo)",
+    description=(
+        "Portfolio demo: fraud probability scoring with SHAP explanations and gated "
+        "retraining on public IEEE-CIS competition data. Not a bank-ready fraud system."
+    ),
     version="0.1.0",
 )
 
-# The vanilla-JS frontend is served from a different origin, so allow cross-origin.
+# The vanilla-JS frontend may be hosted on a different origin, so allow cross-origin.
+# Acceptable for a public demo; restrict in real production.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -56,6 +63,26 @@ app.add_middleware(
 )
 
 _ADMIN_KEY = os.getenv("FRAUD_API_ADMIN_KEY")
+
+# Simple per-process, per-IP fixed-window rate limit. Documented as in-process
+# (not distributed) — enough to keep a public demo from being hammered.
+_RATE_LIMIT_PER_MIN = int(os.getenv("FRAUD_API_RATE_LIMIT", "300"))
+_RATE_WINDOW: collections.defaultdict[str, collections.deque] = collections.defaultdict(
+    collections.deque
+)
+
+
+@app.middleware("http")
+async def rate_limit(request: Request, call_next):
+    ip = request.client.host if request.client else "unknown"
+    now = time.monotonic()
+    window = _RATE_WINDOW[ip]
+    while window and window[0] < now - 60:
+        window.popleft()
+    if len(window) >= _RATE_LIMIT_PER_MIN:
+        return JSONResponse({"detail": "Rate limit exceeded. Try again shortly."}, status_code=429)
+    window.append(now)
+    return await call_next(request)
 
 
 @lru_cache
