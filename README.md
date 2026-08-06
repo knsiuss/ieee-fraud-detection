@@ -1,271 +1,235 @@
 <p align="center">
   <img src="https://img.shields.io/badge/Status-COMPLETED-brightgreen?style=for-the-badge" alt="Status: Completed"/>
-  <img src="https://img.shields.io/badge/Python-3.10+-3776AB?style=for-the-badge&logo=python&logoColor=white" alt="Python"/>
-  <img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge" alt="License"/>
-  <img src="https://img.shields.io/badge/Task-Binary%20Classification-blueviolet?style=for-the-badge" alt="Task"/>
+  <img src="https://img.shields.io/badge/Python-3.10%2B-3776AB?style=for-the-badge&logo=python&logoColor=white" alt="Python 3.10+"/>
+  <img src="https://img.shields.io/badge/ROC--AUC-0.910-blue?style=for-the-badge" alt="ROC-AUC 0.910"/>
+  <img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge" alt="MIT License"/>
   <img src="https://img.shields.io/github/actions/workflow/status/knsiuss/ieee-fraud-detection/ci.yml?branch=main&style=for-the-badge&label=CI&logo=github" alt="CI"/>
-  <img src="https://img.shields.io/badge/pre--commit-active-brightgreen?style=for-the-badge&logo=pre-commit" alt="pre-commit"/>
-  <img src="https://img.shields.io/badge/docs-Sphinx-blue?style=for-the-badge&logo=readthedocs" alt="Docs"/>
 </p>
 
 # IEEE-CIS Fraud Detection
 
-> **End-to-end machine learning pipeline for detecting fraudulent e-commerce transactions using the IEEE-CIS / Vesta Corporation dataset from Kaggle.**
+> End-to-end machine learning solution for detecting fraudulent e-commerce transactions, built on the [IEEE-CIS / Vesta Corporation](https://www.kaggle.com/c/ieee-fraud-detection) dataset.
 
-> 📖 **Documentation**: [https://knsiuss.github.io/ieee-fraud-detection](https://knsiuss.github.io/ieee-fraud-detection)
+This repository contains a complete, production-shaped data science pipeline — from raw data ingestion through exploratory analysis, feature engineering, model training, hyperparameter optimisation, ensembling, and evaluation — packaged as a reusable Python module (`fraud_detect`), a series of reproducible analysis notebooks, and an interactive Streamlit dashboard.
 
 ---
 
 ## Table of Contents
 
-- [Overview](#overview)
-- [Business Context](#business-context)
-- [Project Structure](#project-structure)
+- [Repository Structure](#repository-structure)
+- [Analysis Pipeline](#analysis-pipeline)
+- [Core Python Package](#core-python-package)
+- [Interactive Dashboard](#interactive-dashboard)
+- [Results](#results)
 - [Dataset](#dataset)
-- [Notebook Pipeline](#notebook-pipeline)
-- [Key Findings (So Far)](#key-findings-so-far)
+- [Feature Groups](#feature-groups)
 - [Tech Stack](#tech-stack)
 - [Getting Started](#getting-started)
-- [Roadmap](#roadmap)
+- [Development & QA](#development--qa)
 - [Contributing](#contributing)
 - [Citation](#citation)
 - [License](#license)
-- [Author](#author)
 
 ---
 
 ## Overview
 
-This project tackles the **IEEE-CIS Fraud Detection** challenge — predicting the probability that an online transaction is fraudulent (`isFraud`). The dataset is provided by **Vesta Corporation**, a leading payment processing company, and contains real-world anonymized transaction records.
+The objective is to predict the probability that an online payment transaction is fraudulent (`isFraud`). The challenge is notable for its severity of class imbalance, high dimensionality, and large volumes of missing data.
 
 | Aspect | Detail |
 |---|---|
-| **Task** | Binary Classification |
+| **Task** | Binary classification |
 | **Target** | `isFraud` (0 = legitimate, 1 = fraud) |
-| **Primary Metric** | ROC-AUC |
-| **Dataset Size** | ~590K training transactions, 400+ features |
-| **Fraud Rate** | ~3.5% (heavily imbalanced) |
+| **Primary metric** | ROC-AUC |
+| **Training size** | ~590K transactions |
+| **Features** | 400+, including 339 anonymised Vesta features (`V1`–`V339`) |
+| **Fraud rate** | ~3.5% (heavily imbalanced) |
+
+### Problem Characteristics
+
+- **Class imbalance** — only ~3.5% of transactions are fraudulent, requiring threshold calibration and PR-aware evaluation.
+- **High dimensionality** — 339 anonymous engineered features plus raw transaction, card, and identity attributes.
+- **Sparse identity data** — the identity table covers only ~25% of transactions.
+- **Missing values** — many columns exceed 50% missingness and require per-column imputation strategies.
+- **Relative timestamps** — `TransactionDT` is expressed as seconds from an unknown reference point.
 
 ---
 
-## Business Context
-
-| Scenario | Impact |
-|---|---|
-| False Negative (missed fraud) | Direct financial loss, trust damage |
-| False Positive (false alert) | Customer friction, declined legitimate transactions |
-| True Positive (caught fraud) | Prevented loss, reduced abuse |
-
-### Key Challenges
-- **Class Imbalance** — Only ~3.5% of transactions are fraudulent
-- **High Dimensionality** — 400+ features including 339 anonymous engineered features (`V1`–`V339`)
-- **Sparse Identity Data** — Identity table covers only ~25% of transactions
-- **Extensive Missing Values** — Many features have >50% missing data
-- **Temporal Features** — `TransactionDT` is relative (seconds from a reference point)
-
-### Success Criteria
-| Level | AUC Target |
-|---|---|
-| Bronze | > 0.90 |
-| Silver | > 0.93 |
-| Gold | > 0.95 |
-
----
-
-## Project Structure
+## Repository Structure
 
 ```
 ieee-fraud-detection/
 │
-├── README.md                          # Project documentation (this file)
-├── LICENSE                            # MIT License
-├── CONTRIBUTING.md                    # Contribution guide
-├── CODE_OF_CONDUCT.md                 # Contributor Covenant v2.1
-├── SECURITY.md                        # Security policy & reporting
-├── pyproject.toml                     # Package metadata + dependencies
-├── Makefile                           # Dev workflow shortcuts
-├── .pre-commit-config.yaml            # Pre-commit hooks (ruff, format, lint)
-├── scripts/                           # CLI utilities
-│   └── prepare_data.py                # CSV → Parquet conversion CLI
+├── src/fraud_detect/            # Core Python package — typed, documented utilities
+│   ├── config.py                #   Paths, column groups, hyperparameters, tuning spaces
+│   ├── io.py                    #   Parquet/CSV read & write helpers
+│   ├── data.py                  #   Memory optimisation, missing-value reports, imputation
+│   ├── features.py              #   Feature engineering transforms
+│   ├── models.py                #   Train/val split, model training + cross-validation
+│   ├── tuning.py                #   Optuna hyperparameter optimisation
+│   ├── ensemble.py              #   Voting and stacking ensembles
+│   ├── evaluation.py            #   Metrics, optimal threshold, model comparison, McNemar's test
+│   ├── error_analysis.py        #   Error segmentation, distribution-shift, FP/FN analysis
+│   ├── viz.py                   #   Plotting helpers (18 functions)
+│   └── _exceptions.py           #   Domain exceptions
 │
-├── .github/
-│   ├── CODEOWNERS                     # Auto-assign reviewers
-│   ├── workflows/
-│   │   ├── ci.yml                     # CI: lint + test (3.10-3.12)
-│   │   └── docs.yml                   # Docs: build + deploy to GitHub Pages
-│   └── ISSUE_TEMPLATE/                # Bug report, feature request templates
+├── notebook/                    # 15 ordered analysis notebooks (01–15)
+│   ├── README.md                #   Notebook index & dependency graph
+│   ├── 01_data_loading.ipynb    #   Data loading, merging & sanity checks
+│   ├── 02_eda_transaction.ipynb #   EDA — transaction features
+│   └── ...                       #   (see Analysis Pipeline table below)
 │
-├── src/fraud_detect/                  # Reusable, typed Python package
-│   ├── __init__.py                    # Public API re-exports
-│   ├── config.py                      # Paths, column groups, hyperparameters
-│   ├── _exceptions.py                 # Domain exceptions
-│   ├── io.py                          # Parquet/CSV read/write helpers
-│   ├── data.py                        # Memory optimisation, missing-value reports
-│   ├── features.py                    # Time/amount/email/card feature transforms
-│   ├── models.py                      # Split, train, CV (3 backends + logistic)
-│   ├── tuning.py                      # Optuna hyperparameter optimisation
-│   ├── ensemble.py                    # Voting + stacking ensembles
-│   ├── evaluation.py                  # Metrics, threshold, McNemar's test
-│   ├── error_analysis.py              # Segmentation, shift, FP/FN analysis
-│   └── viz.py                         # Plotting helpers (18 functions)
+├── dashboard/                   # Interactive Streamlit dashboard
+│   ├── app.py                   #   Main dashboard application
+│   └── data/                    #   Pre-computed analysis CSVs
 │
-├── tests/                             # 94 tests (no dataset needed)
-│   ├── conftest.py                    # Shared fixtures (synthetic_df)
-│   ├── test_pure_functions.py         # Unit tests
-│   ├── test_integration.py            # End-to-end pipeline tests
-│   ├── test_property_based.py         # Hypothesis property-based tests
-│   ├── test_models_advanced.py        # Advanced model training tests
-│   ├── test_tuning.py                 # Optuna tuning tests
-│   ├── test_ensemble.py               # Ensemble method tests
-│   ├── test_evaluation.py             # Evaluation metric tests
-│   ├── test_error_analysis.py         # Error analysis tests
-│   └── test_viz_advanced.py           # Visualisation smoke tests
+├── scripts/
+│   └── prepare_data.py          # CSV → Parquet conversion CLI
 │
-├── scripts/                           # CLI utilities
-│   ├── prepare_data.py                # CSV -> Parquet conversion CLI
-│   └── .gitkeep
+├── tests/                       # 102 unit / integration / property tests (no dataset required)
 │
 ├── data/
-│   ├── raw/                           # Original parquet files (gitignored)
-│   ├── interim/                       # Merged training table (gitignored)
-│   ├── processed/                     # Engineered features (gitignored)
-│   └── metadata/                      # Analysis outputs & best params
-│   ├── processed/                     # Engineered features
-│   └── metadata/                      # Analysis outputs & reports
-│       ├── feature_importance.csv     # LightGBM feature importance scores
-│       ├── missing_value_report.csv   # Missing value analysis per column
-│       └── redundant_feature.csv      # Identified redundant features
+│   ├── raw/                     # Original Kaggle CSVs (gitignored)
+│   ├── interim/                 # Merged training table (gitignored)
+│   ├── processed/               # Engineered features (gitignored)
+│   └── metadata/                # Analysis outputs & best parameters
 │
-├── docs/                              # Sphinx documentation site
-│   ├── requirements.txt               # Sphinx deps
-│   └── source/                        # RST/MD sources, conf.py, API stubs
-│
-└── notebook/                          # Analysis & modeling notebooks
-    ├── README.md                      # Pipeline index & dependency graph
-    ├── 01_data_loading.ipynb                  # Data loading, merging & sanity checks
-    ├── 02_eda_transaction.ipynb               # EDA on transaction features
-    ├── 03_eda_identity_features.ipynb         # EDA on identity features
-    ├── 04_missing_value_analysis.ipynb        # Missing value deep-dive
-    ├── 05_target_distribution_imbalance.ipynb # Target distribution & imbalance study
-    ├── 06_feature_correlation_analysis.ipynb  # Feature correlation analysis
-    ├── 07_feature_engineering_exploration.ipynb # Feature engineering experiments
-    ├── 08_feature_importance_selection.ipynb  # Feature importance & selection
-    └── 09_baseline_model_logistic.ipynb       # Logistic-regression baseline
+├── docs/                        # Sphinx documentation source
+├── .github/workflows/           # CI (lint + test) and docs deployment workflows
+├── Makefile                     # Dev workflow shortcuts
+├── pyproject.toml               # Package metadata + dependencies
+└── README.md
 ```
+
+---
+
+## Analysis Pipeline
+
+The analysis is organised as a numbered series of reproducible notebooks. Each stage consumes the outputs of the previous one and produces a documented deliverable — tables, figures, or trained artefacts — stored under `data/metadata/`.
+
+| # | Notebook | Purpose | Key Output |
+|---|---|---|---|
+| 01 | **Data Loading** | Load the transaction and identity tables, merge them, and run sanity checks. | Clean merged training table |
+| 02 | **EDA — Transaction Features** | Examine distribution and ranges of transaction-level features (amount, product, card). | Data-quality notes |
+| 03 | **EDA — Identity Features** | Analyse coverage and value distribution of the identity/device table. | Coverage assessment |
+| 04 | **Missing Value Analysis** | Quantify missingness per column and define the imputation strategy. | `missing_value_report.csv` |
+| 05 | **Target Distribution & Imbalance** | Characterise the class imbalance and its impact on evaluation. | Imbalance strategy |
+| 06 | **Feature Correlation Analysis** | Identify correlated and redundant feature groups. | `redundant_feature.csv` |
+| 07 | **Feature Engineering** | Derive new features (e.g. amount-vs-address means, card-amount means, temporal aggregates). | Engineered feature set |
+| 08 | **Feature Importance & Selection** | Rank features with LightGBM importance and select the top set. | `feature_importance.csv` |
+| 09 | **Baseline Model** | Train a logistic regression reference point. | Baseline ROC-AUC |
+| 10 | **Model Training** | Train gradient-boosted models (LightGBM, XGBoost, CatBoost) with cross-validation. | Trained models + CV scores |
+| 11 | **Hyperparameter Tuning** | Optimise each model with Optuna (100 trials). | `lightgbm_best_params.json` |
+| 12 | **Ensemble Methods** | Combine models via hard/soft voting and stacking. | Ensemble scores |
+| 13 | **Model Evaluation** | Compare ROC/PR curves, confusion matrices, and McNemar significance tests. | Model comparison |
+| 14 | **Error Analysis** | Segment errors, detect distribution shift, and review FP/FN cases. | Error analysis report |
+| 15 | **Final Summary** | Consolidate final model performance and select the best model. | Final results |
+
+---
+
+## Core Python Package
+
+All I/O, feature engineering, modelling, and evaluation logic lives in the `fraud_detect` package so that notebooks and the dashboard consume a single, tested implementation rather than duplicating code.
+
+| Module | Responsibility |
+|---|---|
+| `config.py` | Centralised paths, column groups, hyperparameters, and tuning spaces |
+| `io.py` | Parquet/CSV read/write; `load_train_features()` with fallback |
+| `data.py` | `reduce_mem_usage()`, missing-value reporting, per-column imputation strategy |
+| `features.py` | Vectorised time, amount, email, and card feature transforms |
+| `models.py` | Train/validation split, logistic pipeline, LightGBM / XGBoost / CatBoost, CV |
+| `tuning.py` | Optuna optimisation and persistence of best parameters |
+| `ensemble.py` | Hard/soft voting and stacking ensembles |
+| `evaluation.py` | Metrics, optimal threshold, model comparison, McNemar's test |
+| `error_analysis.py` | Error segmentation, distribution shift, FP/FN analysis |
+| `viz.py` | All plotting for EDA, evaluation, and error analysis (18 functions) |
+| `_exceptions.py` | Domain exceptions (`FraudDetectError`, `MissingArtefactError`, `InvalidDataError`) |
+
+---
+
+## Interactive Dashboard
+
+An interactive exploration tool built with **Streamlit** lets stakeholders inspect the data without touching code:
+
+```bash
+streamlit run dashboard/app.py
+```
+
+The dashboard surfaces pre-computed analysis of fraud rates by hour, day of week, device type, product code, card type, and email domain, alongside feature-group importance and final model metrics. All visualisations are rendered from committed CSVs in `dashboard/data/`.
+
+---
+
+## Results
+
+The reference model is a **tuned LightGBM** classifier. Metrics below are reported on a held-out validation split (64K train / 16K validation samples).
+
+| Metric | Value |
+|---|---|
+| **ROC-AUC** | **0.910** |
+| Average precision | 0.615 |
+| Precision (threshold 0.5) | 0.843 |
+| Recall (threshold 0.5) | 0.387 |
+
+### Optimal Hyperparameters (Optuna)
+
+```json
+{
+  "num_leaves": 64,
+  "learning_rate": 0.05,
+  "subsample": 0.8
+}
+```
+
+### Top Predictive Features
+
+Ranked by LightGBM gain importance (`dashboard/data/model_feat_importance.csv`):
+
+| Rank | Feature | Importance |
+|---|---|---|
+| 1 | `V258` | 7,353 |
+| 2 | `C1` | 2,483 |
+| 3 | `TransactionAmt` | 2,446 |
+| 4 | `card1` | 2,279 |
+| 5 | `C14` | 2,236 |
+| 6 | `card2` | 2,096 |
+| 7 | `C13` | 1,825 |
+| 8 | `D2` | 1,553 |
+| 9 | `addr1` | 1,495 |
+| 10 | `V294` | 1,248 |
+
+Engineered features such as `amt_vs_addr_mean` and `card1_amt_mean` also rank among the strongest predictors, confirming the value of the feature-engineering stage.
 
 ---
 
 ## Dataset
 
-The dataset originates from the [IEEE-CIS Fraud Detection](https://www.kaggle.com/c/ieee-fraud-detection) Kaggle competition.
+The dataset is provided by **Vesta Corporation** through the [IEEE-CIS Fraud Detection](https://www.kaggle.com/c/ieee-fraud-detection) competition.
 
 | File | Rows | Description |
 |---|---|---|
 | `train_transaction` | ~590K | Transaction records with target (`isFraud`) |
-| `train_identity` | ~144K | Identity/device info (~25% coverage) |
-| `test_transaction` | ~506K | Test transactions (no labels) |
+| `train_identity` | ~144K | Identity/device information (~25% coverage) |
+| `test_transaction` | ~506K | Test transactions (unlabelled) |
 | `test_identity` | ~133K | Test identity data |
 
-### Feature Groups
+> The dataset is **not** included in this repository. Download it from Kaggle and place the CSVs in `data/raw/` (see [Getting Started](#getting-started)).
+
+---
+
+## Feature Groups
 
 | Group | Features | Description |
 |---|---|---|
 | **Transaction** | `TransactionAmt`, `ProductCD` | Basic transaction attributes |
 | **Card** | `card1`–`card6` | Payment card information |
-| **Address** | `addr1`, `addr2`, `dist1`, `dist2` | Billing address & distance |
-| **Email** | `P_emaildomain`, `R_emaildomain` | Purchaser & recipient email domains |
-| **Count** | `C1`–`C14` | Counting features (e.g., address matches) |
-| **Time Delta** | `D1`–`D15` | Time delta features |
-| **Vesta** | `V1`–`V339` | Anonymized engineered features by Vesta |
-| **Match** | `M1`–`M9` | Match features (T/F flags) |
-| **Identity** | `id_01`–`id_38` | Device & identity signals |
+| **Address** | `addr1`, `addr2`, `dist1`, `dist2` | Billing address and distances |
+| **Email** | `P_emaildomain`, `R_emaildomain` | Purchaser and recipient email domains |
+| **Count** | `C1`–`C14` | Counting features (e.g. address matches) |
+| **Time delta** | `D1`–`D15` | Time-delta features |
+| **Vesta** | `V1`–`V339` | Anonymised engineered features by Vesta |
+| **Match** | `M1`–`M9` | Match flags |
+| **Identity** | `id_01`–`id_38` | Device and identity signals |
 | **Device** | `DeviceType`, `DeviceInfo` | Device metadata |
-
----
-
-## Notebook Pipeline
-
-The analysis follows a structured, sequential notebook pipeline:
-
-```
-01 ──► 02 ──► 03
- │              │
- └────► 04 ────┤
-       │       │
-       ├──► 05 │
-       │       │
-       └──► 06 │
-              │
-              ▼
-       07 ──► 08 ──► 09 ──► 10 ──► 11 ──► 12 ──► 13 ──► 14 ──► 15
-```
-
-| # | Notebook | Status | Description |
-|---|---|---|---|
-| 01 | Data Loading Overview | Done | Load parquet files, merge tables, sanity checks |
-| 02 | EDA — Transaction Features | Done | Analyze transaction amount, product codes, card features |
-| 03 | EDA — Identity Features | Done | Explore device info, browser, OS, identity signals |
-| 04 | Missing Value Analysis | Done | Quantify missingness, define imputation strategies |
-| 05 | Target Distribution Imbalance | Done | Study class imbalance (~3.5% fraud) |
-| 06 | Feature Correlation Analysis | Done | Identify correlated & redundant feature groups |
-| 07 | Feature Engineering Exploration | Done | Create new features, transformations |
-| 08 | Feature Importance Selection | Done | LightGBM-based importance, select top features |
-| 09 | Baseline Model (Logistic Regression) | Done | Logistic regression baseline evaluation |
-| 10 | Advanced Model Training | Done | LightGBM, XGBoost, CatBoost with CV |
-| 11 | Hyperparameter Tuning | Done | Optuna-based optimisation (100 trials) |
-| 12 | Ensemble Methods | Done | Hard/soft voting + stacking ensembles |
-| 13 | Model Evaluation & Comparison | Done | ROC, PR, threshold, McNemar's test |
-| 14 | Error Analysis | Done | Segmentation, shift, FP/FN analysis |
-| 15 | Final Summary | Done | Pipeline recap & final results |
-
----
-
-## Key Findings
-
-### Feature Importance (Top 10)
-Based on LightGBM feature importance analysis:
-
-| Rank | Feature | Importance |
-|---|---|---|
-| 1 | `V258` | 47,798 |
-| 2 | `C1` | 22,748 |
-| 3 | `DeviceInfo` | 21,567 |
-| 4 | `C13` | 18,922 |
-| 5 | `V201` | 12,641 |
-| 6 | `R_emaildomain` | 12,605 |
-| 7 | `C14` | 11,127 |
-| 8 | `card2` | 10,688 |
-| 9 | `V294` | 8,967 |
-| 10 | `TransactionAmt` | 8,404 |
-
-### Missing Value Strategy
-- **130 redundant features** identified and flagged for removal
-- Imputation strategies defined per column based on missing percentage and data type
-- Features with >90% missing → indicator-only approach
-- Features with moderate missingness → median imputation + missing indicator
-
-### Memory Optimization
-- Shared `fraud_detect.data.reduce_mem_usage()` function for dtype downcasting
-- CSV → Parquet conversion via `scripts/prepare_data.py` for faster I/O and reduced storage (~60-70% compression)
-
-### Package Architecture
-The `src/fraud_detect/` package provides typed, documented utilities consumed by
-the notebooks so that I/O, feature engineering, plotting and modelling logic
-live in exactly one place:
-
-| Module | Responsibility |
-|---|---|
-| `config.py` | Paths, column groups, hyperparameters, tuning spaces |
-| `io.py` | Parquet/CSV read/write, `load_train_features()` with fallback |
-| `data.py` | `reduce_mem_usage`, `compute_missing_report`, imputation strategy |
-| `features.py` | Vectorised time/amount/email/card feature transforms |
-| `models.py` | Train/val split, logistic pipeline, LightGBM/XGBoost/CatBoost, CV |
-| `tuning.py` | Optuna hyperparameter optimisation, save/load best params |
-| `ensemble.py` | Hard/soft voting, stacking ensembles |
-| `evaluation.py` | Metrics, optimal threshold, model comparison, McNemar's test |
-| `error_analysis.py` | Error segmentation, distribution shift, FP/FN analysis |
-| `viz.py` | All plotting (EDA + evaluation + error analysis), 18 functions |
-| `_exceptions.py` | Domain exceptions (`FraudDetectError`, `MissingArtefactError`, `InvalidDataError`) |
 
 ---
 
@@ -275,12 +239,13 @@ live in exactly one place:
 |---|---|
 | **Language** | Python 3.10+ |
 | **Data** | Pandas, NumPy, PyArrow |
-| **Visualization** | Matplotlib, Seaborn |
-| **ML** | LightGBM, XGBoost, CatBoost, Scikit-learn |
-| **Tuning** | Optuna |
+| **Visualisation** | Matplotlib, Seaborn |
+| **Machine learning** | LightGBM, XGBoost, CatBoost, Scikit-learn |
+| **Hyperparameter tuning** | Optuna |
+| **Dashboard** | Streamlit |
 | **Testing** | Pytest, Hypothesis |
 | **QA** | Ruff, Pre-commit |
-| **Environment** | Jupyter Notebook, VS Code |
+| **Documentation** | Sphinx |
 | **Storage** | Parquet (Snappy compression) |
 
 ---
@@ -289,10 +254,8 @@ live in exactly one place:
 
 ### Prerequisites
 
-```bash
-Python >= 3.10
-pip or conda
-```
+- Python **3.10+**
+- `pip` or `conda`
 
 ### Installation
 
@@ -301,64 +264,50 @@ pip or conda
 git clone https://github.com/knsiuss/ieee-fraud-detection.git
 cd ieee-fraud-detection
 
-# Create a virtual environment (optional but recommended)
+# Create and activate a virtual environment (recommended)
 python -m venv .venv
-.venv\Scripts\activate        # Windows
-# source .venv/bin/activate   # macOS/Linux
+.venv\Scripts\activate          # Windows
+# source .venv/bin/activate     # macOS/Linux
 
-# Install the package in editable mode (pulls in all dependencies)
+# Install the package in editable mode (all dependencies)
 pip install -e ".[lgbm,dev]"
+```
 
-# Download the dataset from Kaggle
-# https://www.kaggle.com/c/ieee-fraud-detection/data
-# Place CSV files in data/raw/ folder
+### Prepare the Data
 
-# Convert CSV to Parquet (optimized storage)
+1. Download the dataset from the [Kaggle competition page](https://www.kaggle.com/c/ieee-fraud-detection/data).
+2. Place the CSV files in `data/raw/`.
+3. Convert them to Parquet for faster I/O and reduced storage:
+
+```bash
 python scripts/prepare_data.py
+```
 
-# Run the smoke tests (no dataset required)
+### Run the Test Suite
+
+The test suite runs without the dataset:
+
+```bash
 pytest
 ```
 
-> Notebooks that use the shared utilities import `fraud_detect`. They also
-> inject `src/` onto `sys.path` so they run without an editable install, but
-> `pip install -e .` is the recommended setup.
-
-### Run Notebooks
+### Run the Notebooks
 
 ```bash
 jupyter notebook notebook/
 ```
 
-Navigate notebooks in order (`01` → `09`) for the full analysis, feature engineering, and baseline modeling pipeline. Advanced modeling notebooks are upcoming.
+Execute notebooks in numerical order (`01` → `15`).
+
+### Run the Dashboard
+
+```bash
+streamlit run dashboard/app.py
+```
 
 ---
 
-## Roadmap
-
-- [x] Data loading & validation
-- [x] Exploratory data analysis (transaction + identity)
-- [x] Missing value analysis & imputation strategy
-- [x] Target distribution & imbalance study
-- [x] Feature correlation analysis
-- [x] Feature engineering exploration
-- [x] Feature importance & selection
-- [x] Full data preprocessing pipeline
-- [x] Baseline model (Logistic Regression)
-- [x] Advanced models (LightGBM, XGBoost, CatBoost)
-- [x] Hyperparameter tuning (Optuna)
-- [x] Ensemble methods (voting + stacking)
-- [x] Model evaluation & comparison
-- [x] Error analysis
-- [x] Documentation & final report
-
----
-
-## Contributing
-
-Contributions are welcome! Please see the [CONTRIBUTING.md](CONTRIBUTING.md) for detailed setup instructions, code conventions, and the PR workflow.
-
-Quickstart:
+## Development & QA
 
 ```bash
 pip install -e ".[lgbm,dev]"
@@ -366,6 +315,14 @@ pre-commit install
 make lint
 make test
 ```
+
+Continuous integration runs **lint and tests on Python 3.10, 3.11, and 3.12** for every push to `main` (`.github/workflows/ci.yml`), and the documentation is built and deployed to GitHub Pages on the main branch (`.github/workflows/docs.yml`).
+
+---
+
+## Contributing
+
+Contributions are welcome. Please open an issue to discuss proposed changes, and ensure the linting and test checks pass before submitting a pull request. The repo includes issue templates and a PR template under `.github/`.
 
 ---
 
@@ -390,12 +347,6 @@ This project is licensed under the **MIT License** — see the [LICENSE](LICENSE
 
 ---
 
-## Author
-
-**P. Kanisius Bagaskara**
-
----
-
 <p align="center">
-  <i>Pipeline complete — EDA, feature engineering, advanced models, tuning, ensemble, evaluation, and error analysis done.</i>
+  <i>Complete pipeline: EDA → feature engineering → model training → tuning → ensembling → evaluation → error analysis.</i>
 </p>
