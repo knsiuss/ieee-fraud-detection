@@ -22,6 +22,7 @@ from __future__ import annotations
 import io
 import os
 from functools import lru_cache
+from typing import Annotated
 
 import pandas as pd
 from fastapi import FastAPI, File, Header, HTTPException, UploadFile
@@ -31,7 +32,6 @@ from fastapi.staticfiles import StaticFiles
 from fraud_detect.serving import (
     align_features,
     explain_top_features,
-    median_baseline,
     predict_proba,
     risk_tier,
 )
@@ -55,7 +55,7 @@ app.add_middleware(
 _ADMIN_KEY = os.getenv("FRAUD_API_ADMIN_KEY")
 
 
-@lru_cache()
+@lru_cache
 def _current():
     """Cached handle to the served artefact; invalidated after a retrain."""
     return store.current_artefact()
@@ -77,8 +77,8 @@ def _build_row(values: dict[str, float], art) -> pd.DataFrame:
 def _score(values: dict[str, float]):
     """Return (probability, tier, action, version) for one transaction."""
     art = _current()
-    X = _build_row(values, art)
-    prob = float(predict_proba(art.model, X)[0])
+    x = _build_row(values, art)
+    prob = float(predict_proba(art.model, x)[0])
     tier = risk_tier(prob)
     return prob, tier, store.version(art)
 
@@ -120,7 +120,9 @@ def predict(req: schemas.PredictRequest) -> schemas.PredictResponse:
 
 
 @app.post("/api/predict/batch", response_model=schemas.BatchScoreResponse)
-async def predict_batch(file: UploadFile = File(...)) -> schemas.BatchScoreResponse:
+async def predict_batch(
+    file: Annotated[UploadFile, File()],
+) -> schemas.BatchScoreResponse:
     raw = await file.read()
     if len(raw) > 50 * 1024 * 1024:
         raise HTTPException(status_code=413, detail="File too large (limit 50 MB).")
@@ -130,8 +132,8 @@ async def predict_batch(file: UploadFile = File(...)) -> schemas.BatchScoreRespo
         raise HTTPException(status_code=400, detail="Could not parse CSV.") from exc
 
     art = _current()
-    X = align_features(df, art.features)
-    probs = predict_proba(art.model, X)
+    x = align_features(df, art.features)
+    probs = predict_proba(art.model, x)
 
     id_col = "TransactionID" if "TransactionID" in df.columns else None
     rows: list[schemas.BatchScoreRow] = []
@@ -156,10 +158,10 @@ async def predict_batch(file: UploadFile = File(...)) -> schemas.BatchScoreRespo
 @app.post("/api/explain", response_model=schemas.ExplainResponse)
 def explain(req: schemas.PredictRequest) -> schemas.ExplainResponse:
     art = _current()
-    X = _build_row(req.values, art)
-    prob = float(predict_proba(art.model, X)[0])
+    x = _build_row(req.values, art)
+    prob = float(predict_proba(art.model, x)[0])
     tier = risk_tier(prob)
-    top = explain_top_features(art.model, X, art.features, top_n=10)
+    top = explain_top_features(art.model, x, art.features, top_n=10)
     features = [
         schemas.ShapFeature(
             feature=r.feature,

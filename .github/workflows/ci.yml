@@ -19,8 +19,8 @@ jobs:
         with:
           python-version: "3.12"
       - run: pip install ruff
-      - run: ruff check src/fraud_detect/ tests/ data_prep.py
-      - run: ruff format --check src/fraud_detect/ tests/ data_prep.py
+      - run: ruff check api/ scripts/ src/fraud_detect/ tests/
+      - run: ruff format --check api/ scripts/ src/fraud_detect/ tests/
 
   test:
     runs-on: ubuntu-latest

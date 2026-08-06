@@ -17,7 +17,6 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-import numpy as np
 import pandas as pd
 from sklearn.metrics import roc_auc_score
 from sklearn.model_selection import train_test_split
@@ -45,6 +44,7 @@ HOLD_OUT_SEED: int = 42
 
 
 # Model store
+
 
 def current_artefact() -> ModelArtefact:
     """Load the served model artefact (raises if not trained yet)."""
@@ -78,13 +78,13 @@ def public_stats() -> dict[str, Any]:
     if mfi.exists():
         top = pd.read_csv(mfi).head(10)
         out["top_features"] = [
-            {"feature": str(r.feature), "importance": float(r.importance)}
-            for r in top.itertuples()
+            {"feature": str(r.feature), "importance": float(r.importance)} for r in top.itertuples()
         ]
     return out
 
 
 # Feedback pool
+
 
 def record_feedback(values: dict[str, float], verdict: int) -> int:
     """Persist one reviewed transaction into the retraining pool.
@@ -107,11 +107,7 @@ def feedback_pool_df() -> pd.DataFrame:
     """Load reviewed transactions as a DataFrame (``features`` + ``isFraud``)."""
     if not FEEDBACK_FILE.exists():
         return pd.DataFrame()
-    rows = [
-        json.loads(line)
-        for line in FEEDBACK_FILE.open(encoding="utf-8")
-        if line.strip()
-    ]
+    rows = [json.loads(line) for line in FEEDBACK_FILE.open(encoding="utf-8") if line.strip()]
     df = pd.DataFrame(rows)
     if "isFraud" not in df.columns:
         return pd.DataFrame()
@@ -126,6 +122,7 @@ def feedback_pool_size() -> int:
 
 
 # Training data
+
 
 def data_table() -> pd.DataFrame:
     """Resolve the base training table (processed -> merged -> demo sample)."""
@@ -156,12 +153,13 @@ def held_out_split(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
 
 def eval_auc(artefact: ModelArtefact, df: pd.DataFrame) -> float:
     """ROC-AUC of ``artefact`` on the labelled rows of ``df``."""
-    X = align_features(df, artefact.features)
+    x = align_features(df, artefact.features)
     y = df[config.TARGET_COLUMN].astype(int).to_numpy()
-    return float(roc_auc_score(y, predict_proba(artefact.model, X)))
+    return float(roc_auc_score(y, predict_proba(artefact.model, x)))
 
 
 # Retrain + gated swap
+
 
 def _base_params() -> dict[str, Any]:
     tuned = tuning.load_best_params(ModelBackend.LIGHTGBM, fallback_to_defaults=True)
@@ -197,7 +195,10 @@ def retrain_and_swap(data_df: pd.DataFrame | None = None) -> dict[str, Any]:
         feats = select_feature_columns(train_df)
         fb_aligned = align_features(feedback, feats)
         fb_aligned[config.TARGET_COLUMN] = feedback[config.TARGET_COLUMN].astype(int)
-        train_df = pd.concat([train_df[feats + [config.TARGET_COLUMN]], fb_aligned], ignore_index=True)
+        train_df = pd.concat(
+            [train_df[feats + [config.TARGET_COLUMN]], fb_aligned],
+            ignore_index=True,
+        )
 
     result = train_model(train_df, backend=ModelBackend.LIGHTGBM, params=_base_params())
     candidate = result.model

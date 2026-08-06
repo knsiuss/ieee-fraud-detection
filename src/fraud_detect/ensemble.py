@@ -1,3 +1,4 @@
+# ruff: noqa: N803, N806, PLR0913, ARG001  # deliberate ML naming/arity conventions
 """Ensemble methods for combining gradient-boosting model predictions.
 
 Supports hard / soft voting and stacking with a logistic-regression meta-learner.
@@ -8,7 +9,7 @@ Each function accepts a dictionary of ``ModelBackend → ModelResult`` from
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from enum import Enum
 from typing import Any
 
@@ -21,12 +22,14 @@ from .models import ModelBackend, ModelResult
 
 logger = logging.getLogger(__name__)
 
+
 class EnsembleStrategy(str, Enum):
     """Supported ensemble combination strategies."""
 
     HARD_VOTING = "hard_voting"
     SOFT_VOTING = "soft_voting"
     STACKING = "stacking"
+
 
 @dataclass
 class EnsembleConfig:
@@ -61,6 +64,7 @@ class EnsembleConfig:
             )
             raise ValueError(msg)
 
+
 def _predict_from_models(
     models_dict: dict[ModelBackend, ModelResult],
     X: pd.DataFrame,
@@ -81,12 +85,14 @@ def _predict_from_models(
             raise TypeError(msg)
     return preds
 
+
 def _normalise_weights(weights: list[float] | None, n: int) -> np.ndarray:
     """Normalise a weight list to sum to 1, or return uniform weights."""
     if weights is None:
         return np.full(n, 1.0 / n)
     w = np.asarray(weights, dtype=float)
     return w / w.sum()
+
 
 def build_voting_ensemble(
     models_dict: dict[ModelBackend, ModelResult],
@@ -162,6 +168,7 @@ def build_voting_ensemble(
             return (self.predict_proba(X)[:, 1] >= 0.5).astype(int)
 
     return _VotingEnsemble()
+
 
 def build_stacking_ensemble(
     models_dict: dict[ModelBackend, ModelResult],
@@ -243,6 +250,7 @@ def build_stacking_ensemble(
             return self.predict_proba(X)[:, 1] >= 0.5
 
     return _StackingEnsemble()
+
 
 def evaluate_ensemble(
     ensemble: Any,

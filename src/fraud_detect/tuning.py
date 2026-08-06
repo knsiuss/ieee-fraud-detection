@@ -1,3 +1,4 @@
+# ruff: noqa: N803, N806, PLR0913  # deliberate ML naming/arity conventions
 """Hyperparameter tuning with Optuna for gradient-boosting models.
 
 Each model backend (LightGBM, XGBoost, CatBoost) has a search space defined in
@@ -13,7 +14,6 @@ import logging
 from pathlib import Path
 from typing import Any
 
-import numpy as np
 import pandas as pd
 
 from . import config
@@ -26,10 +26,12 @@ try:
 except ImportError:  # pragma: no cover
     optuna = None  # type: ignore[assignment]
 
+
 def _get_space(backend: ModelBackend) -> dict[str, dict[str, Any]]:
     """Return the tuning search space dict for ``backend`` from ``config``."""
     name = config.BACKEND_TUNING_SPACE_MAP[backend.value]
     return dict(getattr(config, name, {}))
+
 
 def build_search_space(backend: ModelBackend) -> dict[str, dict[str, Any]]:
     """Return the Optuna search-space definition for the given backend.
@@ -54,6 +56,7 @@ def build_search_space(backend: ModelBackend) -> dict[str, dict[str, Any]]:
     """
     return _get_space(backend)
 
+
 def _suggest_from_space(trial: Any, space: dict[str, dict[str, Any]]) -> dict[str, Any]:
     """Suggest a set of hyperparameters from a search-space dict."""
     params: dict[str, Any] = {}
@@ -67,6 +70,7 @@ def _suggest_from_space(trial: Any, space: dict[str, dict[str, Any]]) -> dict[st
             params[name] = trial.suggest_float(name, low, high, log=is_log)
     return params
 
+
 def _objective_wrapper(
     trial: Any,
     backend: ModelBackend,
@@ -77,7 +81,6 @@ def _objective_wrapper(
     base_params: dict[str, Any] | None = None,
 ) -> float:
     """Optuna objective: train a model and return validation AUC."""
-    from sklearn.metrics import roc_auc_score
 
     from .models import _BACKEND_FIT_MAP
 
@@ -98,6 +101,7 @@ def _objective_wrapper(
         early_stopping_rounds=config.LGBM_EARLY_STOPPING_ROUNDS,
     )
     return float(val_auc)
+
 
 def tune_model(
     df: pd.DataFrame,
@@ -172,9 +176,11 @@ def tune_model(
     )
     return study
 
+
 def _best_params_path(backend: ModelBackend) -> Path:
     """Return the metadata path for saved best parameters."""
     return config.METADATA_DIR / f"{backend.value}_best_params.json"
+
 
 def save_best_params(backend: ModelBackend, params: dict[str, Any]) -> None:
     """Save best hyperparameters to a JSON file in the metadata directory.
@@ -194,6 +200,7 @@ def save_best_params(backend: ModelBackend, params: dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(params, indent=2, default=str))
     logger.info("Best params for %s saved to %s", backend.value, path)
+
 
 def load_best_params(
     backend: ModelBackend,

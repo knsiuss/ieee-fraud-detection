@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import numpy as np
 import pandas as pd
-import pytest
 
 from fraud_detect import serving
 from fraud_detect.serving import (
@@ -23,11 +22,21 @@ def _tiny_lightgbm(path, n: int = 200):
     import lightgbm as lgb
 
     rng = np.random.default_rng(1)
-    X = pd.DataFrame({"a": rng.standard_normal(n), "b": rng.standard_normal(n), "extra": rng.integers(0, 3, n)})
-    y = (X["a"] + X["b"] > 0).astype(int)
-    model = lgb.train({"objective": "binary", "verbose": -1}, lgb.Dataset(X, label=y), num_boost_round=6)
+    x = pd.DataFrame(
+        {
+            "a": rng.standard_normal(n),
+            "b": rng.standard_normal(n),
+            "extra": rng.integers(0, 3, n),
+        }
+    )
+    y = (x["a"] + x["b"] > 0).astype(int)
+    model = lgb.train(
+        {"objective": "binary", "verbose": -1},
+        lgb.Dataset(x, label=y),
+        num_boost_round=6,
+    )
     features = ["a", "b", "extra"]
-    baseline = median_baseline(features, X)
+    baseline = median_baseline(features, x)
     save_artefact(path, model, features, baseline, {"roc_auc": 0.9, "seed": 1})
     return model, features
 
@@ -76,8 +85,8 @@ class TestArtefactRoundtrip:
         assert art.features == features
         assert art.meta["roc_auc"] == 0.9
 
-        X = align_features(pd.DataFrame({"a": [0.5], "b": [-0.5]}), art.features)
-        prob = predict_proba(art.model, X)
+        x = align_features(pd.DataFrame({"a": [0.5], "b": [-0.5]}), art.features)
+        prob = predict_proba(art.model, x)
         assert prob.shape == (1,)
         assert 0.0 <= float(prob[0]) <= 1.0
 
@@ -86,7 +95,7 @@ class TestExplain:
     def test_top_n_and_direction(self, tmp_path):
         _tiny_lightgbm(tmp_path / "art")
         art = load_artefact(tmp_path / "art")
-        X = align_features(pd.DataFrame({"a": [2.0], "b": [2.0]}), art.features)
-        top = explain_top_features(art.model, X, art.features, top_n=2)
+        x = align_features(pd.DataFrame({"a": [2.0], "b": [2.0]}), art.features)
+        top = explain_top_features(art.model, x, art.features, top_n=2)
         assert len(top) <= 2
         assert set(top.columns) >= {"feature", "contribution", "direction"}

@@ -1,3 +1,4 @@
+# ruff: noqa: N803, N806, PLR0913  # deliberate ML naming/arity conventions
 """Plotting helpers shared across EDA notebooks.
 
 All functions are lazy about matplotlib state: they create their own
@@ -10,6 +11,7 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
+from typing import Any
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -21,6 +23,7 @@ from . import config
 _APPLIED_STYLE = False
 _logger = logging.getLogger(__name__)
 
+
 def configure_style() -> None:
     """Apply the project's matplotlib/seaborn defaults (idempotent)."""
     global _APPLIED_STYLE  # noqa: PLW0603
@@ -30,6 +33,7 @@ def configure_style() -> None:
     sns.set_palette("husl")
     pd.set_option("display.max_columns", 100)
     _APPLIED_STYLE = True
+
 
 def plot_target_distribution(
     y: pd.Series,
@@ -53,6 +57,7 @@ def plot_target_distribution(
     ax.set_title("Target distribution")
     return fig, ax
 
+
 def plot_fraud_rate_by_category(
     df: pd.DataFrame,
     cat_col: str,
@@ -72,6 +77,7 @@ def plot_fraud_rate_by_category(
     ax.invert_yaxis()
     return fig, ax
 
+
 def plot_target_correlation(
     df: pd.DataFrame,
     target: str = config.TARGET_COLUMN,
@@ -90,6 +96,7 @@ def plot_target_correlation(
     ax.set_title(f"Top {top_n} features by |corr| with {target}")
     ax.invert_yaxis()
     return fig, ax
+
 
 def save_figure(fig: plt.Figure, path: Path, dpi: int = 150) -> None:
     """Save a figure to disk, creating parent directories as needed.
@@ -114,7 +121,9 @@ def save_figure(fig: plt.Figure, path: Path, dpi: int = 150) -> None:
     fig.savefig(path, dpi=dpi, bbox_inches="tight")
     _logger.info("Figure saved to %s (dpi=%d)", path, dpi)
 
+
 # Phase 4 — Model Evaluation Plots
+
 
 def plot_roc_curves(
     y_true_dict: dict[str, pd.Series | np.ndarray],
@@ -171,6 +180,7 @@ def plot_roc_curves(
     ax.set_ylim(-0.02, 1.02)
     return fig, ax
 
+
 def plot_pr_curves(
     y_true_dict: dict[str, pd.Series | np.ndarray],
     y_pred_dict: dict[str, np.ndarray],
@@ -212,7 +222,9 @@ def plot_pr_curves(
 
     # No-skill line: positive ratio
     pos_ratio = sum(y_true_dict.values()).sum() / sum(len(v) for v in y_true_dict.values())
-    ax.axhline(y=pos_ratio, color="gray", linestyle="--", alpha=0.4, label=f"No-skill ({pos_ratio:.3f})")
+    ax.axhline(
+        y=pos_ratio, color="gray", linestyle="--", alpha=0.4, label=f"No-skill ({pos_ratio:.3f})"
+    )
     ax.set_xlabel("Recall")
     ax.set_ylabel("Precision")
     ax.set_title("Precision-Recall Curves — Comparison")
@@ -220,6 +232,7 @@ def plot_pr_curves(
     ax.set_xlim(-0.02, 1.02)
     ax.set_ylim(-0.02, 1.02)
     return fig, ax
+
 
 def plot_confusion_matrix(
     y_true: pd.Series | np.ndarray,
@@ -255,7 +268,7 @@ def plot_confusion_matrix(
     configure_style()
     fig, ax = plt.subplots(figsize=figsize) if ax is None else (ax.figure, ax)
 
-    disp = ConfusionMatrixDisplay.from_predictions(
+    ConfusionMatrixDisplay.from_predictions(
         y_true,
         y_pred,
         display_labels=labels,
@@ -267,6 +280,7 @@ def plot_confusion_matrix(
     )
     ax.set_title("Confusion Matrix" + (" (normalised)" if normalize else ""))
     return fig, ax
+
 
 def plot_metrics_comparison(
     comparison_df: pd.DataFrame,
@@ -322,6 +336,7 @@ def plot_metrics_comparison(
     plt.tight_layout()
     return fig, ax
 
+
 def plot_threshold_analysis(
     y_true: pd.Series | np.ndarray,
     y_pred_proba: np.ndarray,
@@ -376,8 +391,13 @@ def plot_threshold_analysis(
     ax.plot(thresholds, recalls, label="Recall", alpha=0.7)
     ax.plot(thresholds, f1s, label="F1", linewidth=2)
     ax.plot(thresholds, youdens, label="Youden's J", linestyle="--", alpha=0.7)
-    ax.axvline(x=thresholds[idx_best], color="red", linestyle=":", alpha=0.6,
-               label=f"Best threshold = {thresholds[idx_best]:.3f}")
+    ax.axvline(
+        x=thresholds[idx_best],
+        color="red",
+        linestyle=":",
+        alpha=0.6,
+        label=f"Best threshold = {thresholds[idx_best]:.3f}",
+    )
 
     ax.set_xlabel("Threshold")
     ax.set_ylabel("Score")
@@ -386,6 +406,7 @@ def plot_threshold_analysis(
     ax.set_xlim(0, 1)
     ax.set_ylim(0, 1.05)
     return fig, ax
+
 
 def plot_cumulative_gain(
     y_true: pd.Series | np.ndarray,
@@ -430,7 +451,9 @@ def plot_cumulative_gain(
     ax.plot(population_pct, population_pct, "k--", alpha=0.4, label="Random")
     # Perfect model
     n_pos = int(total_positives)
-    perfect = np.minimum(population_pct * len(y_sorted) / n_pos, 1.0) if n_pos > 0 else population_pct
+    perfect = (
+        np.minimum(population_pct * len(y_sorted) / n_pos, 1.0) if n_pos > 0 else population_pct
+    )
     ax.plot(population_pct, perfect, "g--", alpha=0.3, label="Perfect")
 
     ax.set_xlabel("Population percentage")
@@ -441,7 +464,9 @@ def plot_cumulative_gain(
     ax.set_ylim(0, 1.05)
     return fig, ax
 
+
 # Phase 5 — Error Analysis Plots
+
 
 def plot_error_rate_by_category(
     profile: Any,
@@ -485,7 +510,14 @@ def plot_error_rate_by_category(
     cat_seg = cat_seg.sort_values("error_rate", ascending=True).tail(top_n)
 
     if cat_seg.empty:
-        ax.text(0.5, 0.5, f"No data for column '{cat_col}'", ha="center", va="center", transform=ax.transAxes)
+        ax.text(
+            0.5,
+            0.5,
+            f"No data for column '{cat_col}'",
+            ha="center",
+            va="center",
+            transform=ax.transAxes,
+        )
         return fig, ax
 
     ax.barh(cat_seg["segment_value"], cat_seg["error_rate"], color="#c44e52")
@@ -494,6 +526,7 @@ def plot_error_rate_by_category(
     ax.invert_yaxis()
     plt.tight_layout()
     return fig, ax
+
 
 def plot_feature_shift_comparison(
     shift_df: pd.DataFrame,
@@ -535,6 +568,7 @@ def plot_feature_shift_comparison(
     ax.invert_yaxis()
     plt.tight_layout()
     return fig, ax
+
 
 def plot_confusion_by_amount(
     df: pd.DataFrame,
@@ -581,7 +615,9 @@ def plot_confusion_by_amount(
     x_pos = np.arange(len(result))
     bin_labels = [str(b) for b in result["amount_bin"].values]
 
-    ax.plot(x_pos, result["error_rate"].values, "o-", label="Error rate", color="#c44e52", linewidth=2)
+    ax.plot(
+        x_pos, result["error_rate"].values, "o-", label="Error rate", color="#c44e52", linewidth=2
+    )
     ax.plot(x_pos, result["fp_rate"].values, "s--", label="FP rate", color="#4c72b0", alpha=0.7)
     ax.plot(x_pos, result["fn_rate"].values, "d--", label="FN rate", color="#dd8452", alpha=0.7)
 
@@ -594,6 +630,7 @@ def plot_confusion_by_amount(
     ax.set_ylim(0, max(result[["error_rate", "fp_rate", "fn_rate"]].max()) * 1.2 + 0.05)
     plt.tight_layout()
     return fig, ax
+
 
 def plot_false_positive_examples(
     examples_df: pd.DataFrame,
@@ -631,7 +668,14 @@ def plot_false_positive_examples(
     )
     available = [c for c in feature_cols if c in examples_df.columns]
     if not available:
-        ax.text(0.5, 0.5, "No numeric columns available", ha="center", va="center", transform=ax.transAxes)
+        ax.text(
+            0.5,
+            0.5,
+            "No numeric columns available",
+            ha="center",
+            va="center",
+            transform=ax.transAxes,
+        )
         return fig, ax
 
     data = examples_df[available].copy()

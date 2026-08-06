@@ -48,9 +48,7 @@ def test_model_backend_all_backends() -> None:
 
 
 def test_train_lightgbm_returns_model_result(binary_df: pd.DataFrame) -> None:
-    result = models.train_model(
-        binary_df, ModelBackend.LIGHTGBM, num_boost_round=10
-    )
+    result = models.train_model(binary_df, ModelBackend.LIGHTGBM, num_boost_round=10)
     assert isinstance(result, ModelResult)
     assert result.backend == ModelBackend.LIGHTGBM
     assert 0.0 <= result.train_auc <= 1.0
@@ -60,9 +58,7 @@ def test_train_lightgbm_returns_model_result(binary_df: pd.DataFrame) -> None:
 
 
 def test_train_lightgbm_feature_importance(binary_df: pd.DataFrame) -> None:
-    result = models.train_model(
-        binary_df, ModelBackend.LIGHTGBM, num_boost_round=10
-    )
+    result = models.train_model(binary_df, ModelBackend.LIGHTGBM, num_boost_round=10)
     assert result.feature_importance is not None
     assert list(result.feature_importance.columns) == ["feature", "importance"]
     assert (result.feature_importance["importance"] >= 0).all()
@@ -74,9 +70,7 @@ def test_train_lightgbm_feature_importance(binary_df: pd.DataFrame) -> None:
 
 def test_train_xgboost_returns_model_result(binary_df: pd.DataFrame) -> None:
     pytest.importorskip("xgboost")
-    result = models.train_model(
-        binary_df, ModelBackend.XGBOOST, num_boost_round=10
-    )
+    result = models.train_model(binary_df, ModelBackend.XGBOOST, num_boost_round=10)
     assert isinstance(result, ModelResult)
     assert result.backend == ModelBackend.XGBOOST
     assert 0.0 <= result.train_auc <= 1.0
@@ -86,9 +80,7 @@ def test_train_xgboost_returns_model_result(binary_df: pd.DataFrame) -> None:
 
 def test_train_xgboost_feature_importance(binary_df: pd.DataFrame) -> None:
     pytest.importorskip("xgboost")
-    result = models.train_model(
-        binary_df, ModelBackend.XGBOOST, num_boost_round=10
-    )
+    result = models.train_model(binary_df, ModelBackend.XGBOOST, num_boost_round=10)
     # XGBoost may return an empty importance dict for very small data
     if result.feature_importance is not None and not result.feature_importance.empty:
         assert list(result.feature_importance.columns) == ["feature", "importance"]
@@ -99,9 +91,7 @@ def test_train_xgboost_feature_importance(binary_df: pd.DataFrame) -> None:
 
 def test_train_catboost_returns_model_result(binary_df: pd.DataFrame) -> None:
     pytest.importorskip("catboost")
-    result = models.train_model(
-        binary_df, ModelBackend.CATBOOST, num_boost_round=10
-    )
+    result = models.train_model(binary_df, ModelBackend.CATBOOST, num_boost_round=10)
     assert isinstance(result, ModelResult)
     assert result.backend == ModelBackend.CATBOOST
     assert 0.0 <= result.train_auc <= 1.0
@@ -111,9 +101,7 @@ def test_train_catboost_returns_model_result(binary_df: pd.DataFrame) -> None:
 
 def test_train_catboost_feature_importance(binary_df: pd.DataFrame) -> None:
     pytest.importorskip("catboost")
-    result = models.train_model(
-        binary_df, ModelBackend.CATBOOST, num_boost_round=10
-    )
+    result = models.train_model(binary_df, ModelBackend.CATBOOST, num_boost_round=10)
     assert result.feature_importance is not None
     assert list(result.feature_importance.columns) == ["feature", "importance"]
     assert (result.feature_importance["importance"] >= 0).all()
@@ -162,11 +150,13 @@ def test_train_all_models_returns_all_backends(binary_df: pd.DataFrame) -> None:
     available_backends = [ModelBackend.LIGHTGBM]
     try:
         import xgboost  # noqa: F401
+
         available_backends.append(ModelBackend.XGBOOST)
     except ImportError:
         pass
     try:
         import catboost  # noqa: F401
+
         available_backends.append(ModelBackend.CATBOOST)
     except ImportError:
         pass

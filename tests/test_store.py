@@ -14,10 +14,9 @@ _ROOT = Path(__file__).resolve().parents[1]
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
+from api import store  # noqa: E402
 from fraud_detect import config, serving  # noqa: E402
 from fraud_detect.models import ModelBackend, select_feature_columns, train_model  # noqa: E402
-
-from api import store  # noqa: E402
 
 
 def _build_df(seed: int = 0, n: int = 600) -> pd.DataFrame:
@@ -34,7 +33,7 @@ def _build_df(seed: int = 0, n: int = 600) -> pd.DataFrame:
 
 
 @pytest.fixture
-def isolated(tmp_path, monkeypatch):
+def _isolated(tmp_path, monkeypatch):
     """Point the store at a throwaway location and seed a served model."""
     current = tmp_path / "models" / "current"
     df = _build_df()
@@ -56,7 +55,7 @@ def isolated(tmp_path, monkeypatch):
 
 
 class TestFeedbackPool:
-    def test_record_and_read(self, isolated):
+    def test_record_and_read(self, _isolated):
         art = store.current_artefact()
         values = {f: 0.5 for f in art.features[:3]}
         size = store.record_feedback(values, 1)
@@ -68,20 +67,32 @@ class TestFeedbackPool:
         assert len(pool) == 1
         assert int(pool.iloc[0]["isFraud"]) == 1
 
-    def test_empty_pool(self, isolated):
+    def test_empty_pool(self, _isolated):
         assert store.feedback_pool_df().empty
         assert store.feedback_pool_size() == 0
 
 
 class TestRetrainGate:
-    def test_returns_summary(self, isolated):
+    def test_returns_summary(self, _isolated):
         result = store.retrain_and_swap(data_df=_build_df(seed=1))
         assert set(result) >= {"swapped", "old_auc", "new_auc", "reason"}
         assert isinstance(result["swapped"], bool)
         assert result["feedback_rows"] == 0
 
-    def test_strong_feedback_candidate_swaps(self, isolated):
+    def test_strong_feedback_candidate_swaps(self, _isolated):
         df = _build_df(seed=1)
+        # Serve a deliberately weak model (trained on a tiny slice) so the
+        # feedback-driven candidate reliably clears the gate.
+        weak = df.head(80)
+        feats_w = select_feature_columns(weak)
+        res_w = train_model(weak, backend=ModelBackend.LIGHTGBM, num_boost_round=8)
+        serving.save_artefact(
+            store.CURRENT_DIR,
+            res_w.model,
+            feats_w,
+            serving.median_baseline(feats_w, weak),
+            {"version": "weak"},
+        )
         # Perfectly separable feedback rows: x1 < 0 → safe, x1 > 0 → fraud.
         fb = pd.DataFrame(
             {
@@ -93,7 +104,11 @@ class TestRetrainGate:
         )
         with store.FEEDBACK_FILE.open("a", encoding="utf-8") as fh:
             for _, row in fb.iterrows():
-                fh.write(json.dumps({**{c: float(row[c]) for c in ["x1", "x2", "noise"]}, "isFraud": int(row["isFraud"])}) + "\n")
+                payload = {
+                    **{c: float(row[c]) for c in ["x1", "x2", "noise"]},
+                    "isFraud": int(row["isFraud"]),
+                }
+                fh.write(json.dumps(payload) + "\n")
 
         result = store.retrain_and_swap(data_df=df)
         assert result["swapped"] is True, result["reason"]

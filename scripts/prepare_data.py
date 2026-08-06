@@ -29,7 +29,7 @@ _SRC = Path(__file__).resolve().parents[1] / "src"
 if str(_SRC) not in sys.path:
     sys.path.insert(0, str(_SRC))
 
-from fraud_detect import config
+from fraud_detect import config  # noqa: E402
 from fraud_detect.data import reduce_mem_usage  # noqa: E402
 
 logger = logging.getLogger("data_prep")

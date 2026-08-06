@@ -96,7 +96,13 @@ def test_compare_models_returns_dataframe(binary_data):
     df = ev.compare_models({"A": r1, "B": r2})
     assert isinstance(df, pd.DataFrame)
     assert list(df.columns) == [
-        "model", "auc", "avg_precision", "f1", "precision", "recall", "best_threshold"
+        "model",
+        "auc",
+        "avg_precision",
+        "f1",
+        "precision",
+        "recall",
+        "best_threshold",
     ]
     assert len(df) == 2
 
