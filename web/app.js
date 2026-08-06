@@ -67,6 +67,7 @@ document.querySelectorAll(".tab").forEach((btn) => {
       p.classList.toggle("active", on);
       p.classList.toggle("hidden", !on);
     });
+    if (btn.dataset.tab === "operations") loadQueue();
   });
 });
 
@@ -193,41 +194,56 @@ $("#sim-form").addEventListener("submit", async (ev) => {
   }
 });
 
-/* Presets */
-document.querySelectorAll("#presets .chip").forEach((chip) => {
-  chip.addEventListener("click", () => {
-    const vals = PRESETS[chip.dataset.preset] || {};
-    Object.entries(vals).forEach(([name, val]) => {
-      const el = document.querySelector(`#score-form input[name="${name}"]`);
-      if (el) el.value = val;
+/* Raw features mode (IEEE payload) */
+$("#sample-payload").addEventListener("click", async () => {
+  try {
+    const res = await fetch(API_BASE + "/sample_transactions.csv");
+    const text = await res.text();
+    const lines = text.trim().split("\n");
+    const header = lines[0].split(",").map((s) => s.replace(/\r/g, ""));
+    const payload = {};
+    lines[1].split(",").forEach((v, i) => {
+      const key = header[i];
+      const num = Number(v.replace(/\r/g, ""));
+      if (key !== "TransactionID" && Number.isFinite(num)) payload[key] = num;
     });
-  });
+    $("#raw-payload").value = JSON.stringify(payload, null, 2);
+    $("#raw-hint").textContent = "Loaded the first row of the sample CSV as a JSON payload.";
+  } catch (e) {
+    $("#raw-hint").textContent = "Could not load the sample payload.";
+  }
 });
 
-/* Single scoring */
-$("#score-form").addEventListener("submit", async (ev) => {
-  ev.preventDefault();
-  const btn = $("#score-btn");
+$("#raw-btn").addEventListener("click", async () => {
+  const btn = $("#raw-btn");
   btn.disabled = true; btn.textContent = "Scoring…";
-  lastValues = {};
-  document.querySelectorAll("#score-form input[name]").forEach((el) => {
-    const v = parseFloat(el.value);
-    if (Number.isFinite(v)) lastValues[el.name] = v;
-  });
-
+  $("#raw-hint").textContent = "";
+  let values;
+  try {
+    values = JSON.parse($("#raw-payload").value);
+  } catch (e) {
+    $("#raw-hint").textContent = "Invalid JSON: " + e.message;
+    btn.disabled = false; btn.textContent = "Score & decide";
+    return;
+  }
   try {
     const pred = await api("/api/predict", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ values: lastValues }),
+      body: JSON.stringify({ values }),
     });
     renderResult(pred);
-    loadExplanation(lastValues);
+    const counts = (pred.feature_report && pred.feature_report.counts) || {};
+    $("#raw-hint").textContent =
+      `Decision ${pred.transaction_id}: ${counts.supplied ?? 0} features supplied, ` +
+      `${counts.defaulted ?? 0} defaulted, ${counts.rejected ?? 0} rejected.`;
+    loadExplanation(values);
     $("#result").classList.remove("hidden");
   } catch (e) {
-    alert("Scoring failed: " + e.message);
+    const detail = Array.isArray(e.message) ? e.message.join(" ") : e.message;
+    $("#raw-hint").textContent = "Rejected by the feature contract: " + detail;
   } finally {
-    btn.disabled = false; btn.textContent = "Score transaction";
+    btn.disabled = false; btn.textContent = "Score & decide";
   }
 });
 
@@ -236,6 +252,23 @@ function renderResult(pred) {
   $("#risk-tier").textContent = meta.label;
   $("#risk-tier").className = "tier " + meta.cls;
   $("#risk-action").textContent = pred.action;
+
+  const badge = $("#decision-badge");
+  if (pred.decision) {
+    badge.textContent = pred.decision;
+    badge.className = "tag " + (pred.decision === "APPROVE" ? "low" : pred.decision === "MANUAL_REVIEW" ? "medium" : "high");
+  }
+  if (pred.feature_usage) {
+    const fu = pred.feature_usage;
+    const note = $("#usage-note");
+    note.textContent =
+      `Demo scenario builder: ${fu.supplied_features.length} features set by the form, ` +
+      `${fu.defaulted_count} taken from the "${fu.profile}" profile median. ` +
+      "Not a payment-gateway integration.";
+    note.classList.remove("hidden");
+  } else {
+    $("#usage-note").classList.add("hidden");
+  }
 
   const pct = (pred.probability * 100).toFixed(2) + "%";
   $("#prob-label").textContent = pct;
@@ -456,3 +489,86 @@ function downloadBlob(name, content, type) {
 
 function showBatchError(msg) { const el = $("#batch-err"); el.textContent = msg; el.classList.remove("hidden"); }
 function hideBatchError() { $("#batch-err").classList.add("hidden"); }
+
+/* Operations — review queue */
+let selectedTx = null;
+
+async function loadQueue() {
+  const qs = new URLSearchParams();
+  if ($("#queue-decision").value) qs.set("decision", $("#queue-decision").value);
+  if ($("#queue-status").value) qs.set("status", $("#queue-status").value);
+  qs.set("limit", "100");
+  try {
+    const rows = await api("/api/review/queue?" + qs.toString());
+    renderQueue(rows);
+  } catch (e) { console.error("queue failed", e); }
+}
+
+function renderQueue(rows) {
+  $("#queue-table").innerHTML = rows.length
+    ? "<tr><th>Transaction</th><th>Time</th><th>Score</th><th>Decision</th><th>Policy</th><th>Status</th></tr>" +
+      rows.map((r) => {
+        const cls = r.decision === "APPROVE" ? "low" : r.decision === "MANUAL_REVIEW" ? "medium" : "high";
+        return `<tr class="clickable" data-tx="${r.transaction_id}">
+          <td>${r.transaction_id}</td>
+          <td>${(r.timestamp || "").slice(0, 19)}</td>
+          <td>${(r.score * 100).toFixed(2)}%</td>
+          <td><span class="tag ${cls}">${r.decision}</span></td>
+          <td>${r.policy_version}</td>
+          <td>${r.status}</td>
+        </tr>`;
+      }).join("")
+    : "<tr><td colspan='6'>No decisions yet.</td></tr>";
+
+  $("#queue-table").querySelectorAll("tr.clickable").forEach((tr) => {
+    tr.addEventListener("click", () => loadDetail(tr.dataset.tx));
+  });
+}
+
+async function loadDetail(tx) {
+  try {
+    const r = await api("/api/review/" + tx);
+    selectedTx = tx;
+    const cls = r.decision === "APPROVE" ? "low" : r.decision === "MANUAL_REVIEW" ? "medium" : "high";
+    const reasons = (r.reason_codes || [])
+      .map((d) => `${d.label || d.feature}: ${d.value_text ?? "?"} (${d.direction})`)
+      .join("; ") || "n/a";
+    const counts = (r.feature_report && r.feature_report.counts) || {};
+    $("#detail-body").innerHTML = `
+      <div class="summary">
+        <div class="kpi"><div class="k">Transaction</div><div class="v">${r.transaction_id}</div></div>
+        <div class="kpi"><div class="k">Score</div><div class="v">${(r.score * 100).toFixed(2)}%</div></div>
+        <div class="kpi"><div class="k">Decision</div><div class="v"><span class="tag ${cls}">${r.decision}</span></div></div>
+        <div class="kpi"><div class="k">Status</div><div class="v">${r.status}</div></div>
+      </div>
+      <p class="hint">Model ${r.model_version} · Contract ${r.contract_version} · Policy ${r.policy_version} · thresholds ${JSON.stringify(r.thresholds)}</p>
+      <p class="hint"><b>Feature report:</b> ${counts.supplied ?? 0} supplied, ${counts.defaulted ?? 0} defaulted, ${counts.rejected ?? 0} rejected.</p>
+      <p class="hint"><b>Reason codes:</b> ${reasons}</p>
+      <p class="hint"><b>Reviewer outcome:</b> ${r.reviewer_outcome || "not yet reviewed"}</p>
+    `;
+    $("#queue-detail").classList.remove("hidden");
+    $("#detail-note").classList.add("hidden");
+  } catch (e) { console.error("detail failed", e); }
+}
+
+async function sendOutcome(verdict) {
+  if (!selectedTx) return;
+  try {
+    await api("/api/review/" + selectedTx + "/outcome", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ verdict, note: "reviewed via operations console" }),
+    });
+    $("#detail-note").textContent = `Recorded as ${verdict}. The retraining pool is updated.`;
+    $("#detail-note").classList.remove("hidden");
+    loadQueue();
+  } catch (e) {
+    $("#detail-note").textContent = "Failed: " + e.message;
+  }
+}
+
+$("#detail-safe").addEventListener("click", () => sendOutcome("safe"));
+$("#detail-fraud").addEventListener("click", () => sendOutcome("fraud"));
+$("#queue-refresh").addEventListener("click", loadQueue);
+$("#queue-decision").addEventListener("change", loadQueue);
+$("#queue-status").addEventListener("change", loadQueue);

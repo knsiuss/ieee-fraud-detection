@@ -22,6 +22,7 @@
   <nav class="tabs">
     <button class="tab active" data-tab="score">Score</button>
     <button class="tab" data-tab="batch">Batch</button>
+    <button class="tab" data-tab="operations">Operations</button>
     <button class="tab" data-tab="model">Model</button>
   </nav>
 
@@ -32,12 +33,12 @@
         <p class="hint">Detect fraud from transaction details — or drop down to raw model features.</p>
 
         <div class="mode-toggle">
-          <button type="button" id="mode-checkout" class="mode active">Checkout</button>
-          <button type="button" id="mode-advanced" class="mode">Features</button>
+          <button type="button" id="mode-checkout" class="mode active">Demo scenario builder</button>
+          <button type="button" id="mode-advanced" class="mode">Raw features</button>
         </div>
 
         <form id="sim-form">
-          <p class="hint">Fill the transaction like a checkout. Fields you don't touch use a realistic profile median.</p>
+          <p class="hint"><b>Demo scenario builder</b> — maps a few friendly inputs onto the model's 400-feature schema over a scenario profile. This is a demo helper, not a payment-gateway integration, and the response tells you exactly which features came from the form vs the profile median.</p>
           <div class="grid" id="sim-fields"></div>
           <div class="grid">
             <label>Cardholder profile
@@ -52,36 +53,13 @@
         </form>
 
         <div id="advanced-wrap" class="hidden">
-          <div class="presets" id="presets">
-            <span class="hint" style="margin:0 6px 0 0">Quick start:</span>
-            <button type="button" class="chip" data-preset="typical">Typical</button>
-            <button type="button" class="chip" data-preset="high">High-risk pattern</button>
-            <button type="button" class="chip" data-preset="low">Low-risk pattern</button>
+          <p class="hint"><b>Raw features (IEEE payload).</b> Paste a valid IEEE-compatible transaction row of numeric model features. Unknown fields and missing critical fields (<code>TransactionAmt, card1, C1, D1</code>) are rejected by the feature contract.</p>
+          <div class="batch-tools">
+            <button type="button" class="secondary" id="sample-payload">Load sample payload</button>
           </div>
-          <p class="hint">Enter the fields you know. Everything left blank falls back to the training median.</p>
-          <form id="score-form">
-            <div class="grid">
-              <label>Transaction Amount (USD)
-                <input type="number" id="f-amt" name="TransactionAmt" value="150" min="0.1" step="1" />
-              </label>
-              <label>Card Issuer Code (card1)
-                <input type="number" id="f-card1" name="card1" value="9500" step="1" />
-              </label>
-              <label>Address Distance (dist1)
-                <input type="number" id="f-dist1" name="dist1" value="12" step="1" />
-              </label>
-              <label>Card Match Count (C1)
-                <input type="number" id="f-c1" name="C1" value="1" step="1" />
-              </label>
-              <label>Transaction Frequency (C13)
-                <input type="number" id="f-c13" name="C13" value="1" step="1" />
-              </label>
-              <label>Days Since Last Activity (D1)
-                <input type="number" id="f-d1" name="D1" value="0" step="1" />
-              </label>
-            </div>
-            <button type="submit" class="primary" id="score-btn">Score transaction</button>
-          </form>
+          <textarea id="raw-payload" rows="8" spellcheck="false" placeholder='{ &quot;TransactionAmt&quot;: 120.5, &quot;card1&quot;: 100, &quot;C1&quot;: 2, &quot;D1&quot;: 0, ... }'></textarea>
+          <button type="button" class="primary" id="raw-btn">Score &amp; decide</button>
+          <p id="raw-hint" class="hint"></p>
         </div>
       </div>
 
@@ -89,6 +67,7 @@
         <div class="result-head">
           <div>
             <h2 id="risk-tier" class="tier">–</h2>
+            <p><span id="decision-badge" class="tag">–</span></p>
             <p id="risk-action" class="hint"></p>
           </div>
           <div class="gauge">
@@ -97,6 +76,7 @@
             <div class="scale"><span>0</span><span>0.5</span><span>1</span></div>
           </div>
         </div>
+        <p id="usage-note" class="hint hidden"></p>
 
         <div class="why">
           <h3>Decision summary</h3>
@@ -148,6 +128,38 @@
           <div class="table-scroll"><table id="batch-table"></table></div>
         </div>
         <button id="batch-dl" class="secondary" style="margin-top:14px">Download scored CSV</button>
+      </div>
+    </section>
+
+    <section id="tab-operations" class="panel hidden">
+      <div class="card">
+        <h2>Review queue</h2>
+        <p class="hint">Every decision (single, batch, or demo scenario) is stored. Filter and inspect, then record an analyst outcome.</p>
+        <div class="batch-tools">
+          <select id="queue-decision">
+            <option value="">All decisions</option>
+            <option>APPROVE</option>
+            <option>MANUAL_REVIEW</option>
+            <option>DECLINE</option>
+          </select>
+          <select id="queue-status">
+            <option value="">All statuses</option>
+            <option>NEW</option>
+            <option>REVIEWED</option>
+          </select>
+          <button class="secondary" id="queue-refresh">Refresh</button>
+        </div>
+        <div class="table-scroll"><table id="queue-table"></table></div>
+      </div>
+
+      <div id="queue-detail" class="card hidden">
+        <h2>Decision detail / audit</h2>
+        <div id="detail-body"></div>
+        <div class="feedback-btns">
+          <button id="detail-safe" class="secondary">Mark safe</button>
+          <button id="detail-fraud" class="danger">Mark fraud</button>
+        </div>
+        <p id="detail-note" class="hint hidden"></p>
       </div>
     </section>
 

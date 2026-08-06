@@ -162,6 +162,20 @@ main { position: relative; z-index: 1; max-width: 1080px; margin: 0 auto; paddin
   margin-bottom: 16px;
 }
 label { font-size: 0.8rem; font-weight: 600; color: var(--muted); display: flex; flex-direction: column; gap: 6px; }
+textarea {
+  font-size: 0.85rem;
+  font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--surface-2);
+  color: var(--text);
+  resize: vertical;
+  margin-bottom: 12px;
+}
+textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent); }
+
 input[type="number"], input[type="file"], select {
   font-size: 0.95rem;
   font-weight: 500;
@@ -267,6 +281,7 @@ table { border-collapse: collapse; width: 100%; font-size: 0.84rem; }
 th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--border); white-space: nowrap; }
 th { background: var(--surface); position: sticky; top: 0; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
 tbody tr:hover { background: color-mix(in srgb, var(--accent) 5%, transparent); }
+tbody tr.clickable { cursor: pointer; }
 .tag { padding: 3px 10px; border-radius: 999px; font-size: 0.74rem; font-weight: 700; }
 .tag.low { background: color-mix(in srgb, var(--green) 14%, transparent); color: var(--green); }
 .tag.medium { background: color-mix(in srgb, var(--orange) 14%, transparent); color: var(--orange); }
