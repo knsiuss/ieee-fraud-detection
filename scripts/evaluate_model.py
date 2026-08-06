@@ -33,9 +33,9 @@ _SRC = Path(__file__).resolve().parents[1] / "src"
 if str(_SRC) not in sys.path:
     sys.path.insert(0, str(_SRC))
 
-import numpy as np
-import pandas as pd
 import lightgbm as lgb  # noqa: E402
+import numpy as np  # noqa: E402
+import pandas as pd  # noqa: E402
 from sklearn.metrics import (  # noqa: E402
     average_precision_score,
     brier_score_loss,
@@ -200,11 +200,23 @@ def main() -> None:
     OUT_PATH.write_text(json.dumps(report, indent=2), encoding="utf-8")
 
     print("\n=== Random split ===")
-    print(f"  ROC-AUC {random_report['roc_auc']:.4f} | PR-AUC {random_report['pr_auc']:.4f} | Brier {random_report['brier']:.4f}")
-    print(f"  precision@top1% {random_report['precision_top1pct']:.4f} | @top5% {random_report['precision_top5pct']:.4f}")
+    print(
+        f"  ROC-AUC {random_report['roc_auc']:.4f} | PR-AUC {random_report['pr_auc']:.4f}"
+        f" | Brier {random_report['brier']:.4f}"
+    )
+    print(
+        f"  precision@top1% {random_report['precision_top1pct']:.4f}"
+        f" | @top5% {random_report['precision_top5pct']:.4f}"
+    )
     print("\n=== Time-ordered split ===")
-    print(f"  ROC-AUC {time_report['roc_auc']:.4f} | PR-AUC {time_report['pr_auc']:.4f} | Brier {time_report['brier']:.4f}")
-    print(f"  precision@top1% {time_report['precision_top1pct']:.4f} | @top5% {time_report['precision_top5pct']:.4f}")
+    print(
+        f"  ROC-AUC {time_report['roc_auc']:.4f} | PR-AUC {time_report['pr_auc']:.4f}"
+        f" | Brier {time_report['brier']:.4f}"
+    )
+    print(
+        f"  precision@top1% {time_report['precision_top1pct']:.4f}"
+        f" | @top5% {time_report['precision_top5pct']:.4f}"
+    )
     print(f"\nReport written to {OUT_PATH}")
 
 
