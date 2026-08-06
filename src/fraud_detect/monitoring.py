@@ -64,7 +64,8 @@ def feature_drift(
         rows.append({"feature": col, "psi": psi(ref, cur, n_bins)})
     out = pd.DataFrame(rows).sort_values("psi", ascending=False).reset_index(drop=True)
     out["status"] = np.where(
-        out["psi"].isna(), "no-data",
+        out["psi"].isna(),
+        "no-data",
         np.where(out["psi"] >= PSI_DRIFT_WARN, "drifted", "ok"),
     )
     return out
