@@ -28,6 +28,7 @@ ImputationStrategy = Literal[
     "Constant (-999)",
 ]
 
+
 def _downcast_column(df: pd.DataFrame, col: str) -> None:
     """Downcast a single column in-place (helper for reduce_mem_usage)."""
     col_type = df[col].dtype
@@ -55,6 +56,7 @@ def _downcast_column(df: pd.DataFrame, col: str) -> None:
             df[col] = df[col].astype(np.float32)
         else:
             df[col] = df[col].astype(np.float64)
+
 
 def reduce_mem_usage(df: pd.DataFrame, verbose: bool = True) -> pd.DataFrame:
     """Downcast numeric columns to the smallest dtype that holds the data.
@@ -93,6 +95,7 @@ def reduce_mem_usage(df: pd.DataFrame, verbose: bool = True) -> pd.DataFrame:
         )
     return df
 
+
 def categorize_missing(pct: float) -> str:
     """Bucket a missing-percentage into a human-readable label."""
     if pct == 0:
@@ -104,6 +107,7 @@ def categorize_missing(pct: float) -> str:
     if pct < 75:
         return "50-75% Missing"
     return ">75% Missing"
+
 
 def get_imputation_strategy(
     col: str,  # noqa: ARG001 — kept for public API stability
@@ -134,6 +138,7 @@ def get_imputation_strategy(
         return "Median + Indicator" if is_numeric else "Mode + Indicator"
     return "Median" if is_numeric else "Mode + Indicator"
 
+
 def compute_missing_report(df: pd.DataFrame) -> pd.DataFrame:
     """Build a per-column missingness report with imputation strategies.
 
@@ -161,6 +166,7 @@ def compute_missing_report(df: pd.DataFrame) -> pd.DataFrame:
             }
         )
     return pd.DataFrame(records)
+
 
 def load_merged_train() -> pd.DataFrame:
     """Load the merged transaction+identity training parquet (notebook 01)."""

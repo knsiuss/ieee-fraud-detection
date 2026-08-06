@@ -147,9 +147,7 @@ def median_baseline(features: list[str], reference_df: pd.DataFrame) -> pd.DataF
     """
     medians: dict[str, float] = {}
     for col in features:
-        if col in reference_df.columns and pd.api.types.is_numeric_dtype(
-            reference_df[col]
-        ):
+        if col in reference_df.columns and pd.api.types.is_numeric_dtype(reference_df[col]):
             medians[col] = float(reference_df[col].median(skipna=True))
         else:
             medians[col] = FILL_VALUE
@@ -159,15 +157,15 @@ def median_baseline(features: list[str], reference_df: pd.DataFrame) -> pd.DataF
 
 def predict_proba(
     model: Any,
-    X: pd.DataFrame,
+    features: pd.DataFrame,
     n_threads: int = 1,
 ) -> np.ndarray:
-    """Return class-1 (fraud) probabilities for ``X``.
+    """Return class-1 (fraud) probabilities for ``features``.
 
     ``n_threads`` defaults to 1 to avoid the LightGBM OpenMP oversubscription
     hang that previously froze the dashboard in threaded web workers.
     """
-    probs = model.predict(X, num_threads=n_threads)
+    probs = model.predict(features, num_threads=n_threads)
     return np.asarray(probs, dtype="float64")
 
 
@@ -186,13 +184,9 @@ def save_artefact(
     out = Path(artefact_dir)
     out.mkdir(parents=True, exist_ok=True)
     joblib.dump(model, out / MODEL_FILE)
-    (out / FEATURES_FILE).write_text(
-        json.dumps(features), encoding="utf-8"
-    )
+    (out / FEATURES_FILE).write_text(json.dumps(features), encoding="utf-8")
     baseline.to_json(out / BASELINE_FILE, orient="records")
-    (out / META_FILE).write_text(
-        json.dumps(meta or {}, indent=2), encoding="utf-8"
-    )
+    (out / META_FILE).write_text(json.dumps(meta or {}, indent=2), encoding="utf-8")
     return out
 
 
@@ -232,11 +226,11 @@ def load_artefact(artefact_dir: Path | str) -> ModelArtefact:
 
 def explain_top_features(
     model: Any,
-    X: pd.DataFrame,
-    features: list[str],
+    features: pd.DataFrame,
+    feature_names: list[str],
     top_n: int = 10,
 ) -> pd.DataFrame:
-    """Return the top-``n`` SHAP contributors for the first row of ``X``.
+    """Return the top-``n`` SHAP contributors for the first row of ``features``.
 
     Positive contributions push the prediction toward fraud, negative ones
     toward safe. Columns: ``feature``, ``contribution``, ``direction``.
@@ -250,16 +244,13 @@ def explain_top_features(
         return pd.DataFrame(columns=["feature", "contribution", "direction"])
 
     explainer = shap.TreeExplainer(model)
-    raw = explainer.shap_values(X.iloc[:1].to_numpy())
+    raw = explainer.shap_values(features.iloc[:1].to_numpy())
 
     # Binary LightGBM returns [neg_class, pos_class]; keep the pos-class row.
-    if isinstance(raw, list):
-        values = np.asarray(raw[-1])
-    else:
-        values = np.asarray(raw)
+    values = np.asarray(raw[-1]) if isinstance(raw, list) else np.asarray(raw)
     values = np.ravel(values)
 
-    out = pd.DataFrame({"feature": features, "contribution": values})
+    out = pd.DataFrame({"feature": feature_names, "contribution": values})
     out["abs_contribution"] = out["contribution"].abs()
     out = out.sort_values("abs_contribution", ascending=False).head(top_n)
     out["direction"] = np.where(out["contribution"] >= 0, "fraud", "safe")

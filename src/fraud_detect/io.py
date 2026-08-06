@@ -14,10 +14,12 @@ import pandas as pd
 from . import config
 from ._exceptions import InvalidDataError, MissingArtefactError
 
+
 def ensure_dir(path: Path) -> Path:
     """Create ``path`` (and parents) if it does not exist; return ``path``."""
     path.mkdir(parents=True, exist_ok=True)
     return path
+
 
 def read_parquet(path: Path) -> pd.DataFrame:
     """Read a parquet file, raising a clear error when it is missing."""
@@ -28,10 +30,12 @@ def read_parquet(path: Path) -> pd.DataFrame:
         )
     return pd.read_parquet(path)
 
+
 def write_parquet(df: pd.DataFrame, path: Path) -> None:
     """Write ``df`` to ``path`` as snappy-compressed parquet (pyarrow)."""
     ensure_dir(path.parent)
     df.to_parquet(path, engine="pyarrow", compression="snappy")
+
 
 def read_csv(path: Path, **kwargs) -> pd.DataFrame:
     """Read a CSV with a clear error when missing."""
@@ -39,10 +43,12 @@ def read_csv(path: Path, **kwargs) -> pd.DataFrame:
         raise MissingArtefactError(f"Expected CSV artefact not found: {path}.")
     return pd.read_csv(path, **kwargs)
 
+
 def write_csv(df: pd.DataFrame, path: Path, **kwargs) -> None:
     """Write ``df`` to ``path`` as CSV, creating parent dirs as needed."""
     ensure_dir(path.parent)
     df.to_csv(path, **kwargs)
+
 
 def load_train_features() -> pd.DataFrame:
     """Load the engineered training table.

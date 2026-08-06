@@ -3,6 +3,7 @@
 Uses synthetic data and dummy model wrappers so tests run quickly without
 training real gradient-boosting models.
 """
+# ruff: noqa: N803, N806  (tests use `X` to mirror the package's modelling idiom)
 
 from __future__ import annotations
 
@@ -12,7 +13,6 @@ import pytest
 
 from fraud_detect import ensemble as en
 from fraud_detect.models import ModelBackend, ModelResult
-
 
 # Fixtures
 

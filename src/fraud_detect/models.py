@@ -1,3 +1,4 @@
+# ruff: noqa: N803, N806, PLR0913  # deliberate ML naming/arity conventions
 """Model training and evaluation helpers.
 
 Wraps the train/val split, baseline logistic-regression pipeline, and
@@ -22,6 +23,7 @@ from sklearn.preprocessing import StandardScaler
 
 from . import config
 
+
 @dataclass(frozen=True)
 class SplitResult:
     """Container for a stratified train/validation split."""
@@ -31,11 +33,13 @@ class SplitResult:
     y_train: pd.Series
     y_val: pd.Series
 
+
 def select_feature_columns(df: pd.DataFrame) -> list[str]:
     """Return numeric feature columns, excluding IDs / target / timestamps."""
     excluded = set(config.EXCLUDE_COLUMNS)
     numeric = df.select_dtypes(include="number").columns
     return [c for c in numeric if c not in excluded]
+
 
 def make_train_val_split(
     df: pd.DataFrame,
@@ -55,6 +59,7 @@ def make_train_val_split(
         random_state=random_state,
     )
     return SplitResult(X_train=X_train, X_val=X_val, y_train=y_train, y_val=y_val)
+
 
 def build_logistic_pipeline(random_state: int = config.RANDOM_STATE) -> Pipeline:
     """Median-impute → standardise → balanced logistic regression.
@@ -77,6 +82,7 @@ def build_logistic_pipeline(random_state: int = config.RANDOM_STATE) -> Pipeline
             ),
         ]
     )
+
 
 def evaluate_classifier(
     pipeline: Pipeline,
@@ -128,6 +134,7 @@ def evaluate_classifier(
         "overfitting_gap": float(train_auc - val_auc),
     }
 
+
 def compute_lightgbm_importance(
     df: pd.DataFrame,
     params: dict[str, Any] | None = None,
@@ -172,7 +179,9 @@ def compute_lightgbm_importance(
     )
     return importance
 
+
 # Phase 1 — Advanced Model Training (LightGBM, XGBoost, CatBoost)
+
 
 class ModelBackend(str, Enum):
     """Supported gradient-boosting backends for model training."""
@@ -180,6 +189,7 @@ class ModelBackend(str, Enum):
     LIGHTGBM = "lightgbm"
     XGBOOST = "xgboost"
     CATBOOST = "catboost"
+
 
 @dataclass
 class ModelResult:
@@ -209,6 +219,7 @@ class ModelResult:
     feature_importance: pd.DataFrame | None = None
     training_time: float = 0.0
 
+
 @dataclass
 class CrossValidationResult:
     """Container for k-fold cross-validation results.
@@ -237,6 +248,7 @@ class CrossValidationResult:
     def scores(self) -> list[float]:
         """Convenience: return just the AUC values."""
         return [score for _, score in self.fold_scores]
+
 
 def _lgb_fit(
     X_train: pd.DataFrame,
@@ -284,6 +296,7 @@ def _lgb_fit(
         .reset_index(drop=True)
     )
     return model, train_auc, val_auc, importance_df
+
 
 def _xgb_fit(
     X_train: pd.DataFrame,
@@ -335,6 +348,7 @@ def _xgb_fit(
     )
     return model, train_auc, val_auc, importance_df
 
+
 def _cb_fit(
     X_train: pd.DataFrame,
     y_train: pd.Series,
@@ -350,9 +364,7 @@ def _cb_fit(
     params = {**config.CB_PARAMS, **(params or {})}
 
     # Identify categorical features for CatBoost natively
-    _cat_features = list(
-        X_train.select_dtypes(include=["category", "object"]).columns
-    )
+    _cat_features = list(X_train.select_dtypes(include=["category", "object"]).columns)
 
     train_pool = Pool(X_train, label=y_train, cat_features=_cat_features)
     val_pool = Pool(X_val, label=y_val, cat_features=_cat_features)
@@ -382,12 +394,14 @@ def _cb_fit(
     )
     return model, train_auc, val_auc, importance_df
 
+
 #: Mapping of ModelBackend -> internal fit function.
 _BACKEND_FIT_MAP: dict[ModelBackend, Any] = {
     ModelBackend.LIGHTGBM: _lgb_fit,
     ModelBackend.XGBOOST: _xgb_fit,
     ModelBackend.CATBOOST: _cb_fit,
 }
+
 
 def train_model(
     df: pd.DataFrame,
@@ -476,6 +490,7 @@ def train_model(
         training_time=elapsed,
     )
 
+
 def train_all_models(
     df: pd.DataFrame,
     backends: list[ModelBackend] | None = None,
@@ -528,6 +543,7 @@ def train_all_models(
             early_stopping_rounds=early_stopping_rounds,
         )
     return results
+
 
 def cross_validate_model(
     df: pd.DataFrame,
@@ -583,12 +599,9 @@ def cross_validate_model(
     fold_scores: list[tuple[int, float]] = []
 
     start = time.perf_counter()
-    for fold_idx, (train_idx, val_idx) in enumerate(skf.split(X, y)):
-        X_train, X_val = X.iloc[train_idx], X.iloc[val_idx]
-        y_train, y_val = y.iloc[train_idx], y.iloc[val_idx]
-
+    for fold_idx, (train_idx, _) in enumerate(skf.split(X, y)):
         result = train_model(
-            df.iloc[train_idx].assign(**{config.TARGET_COLUMN: y_train}),
+            df.iloc[train_idx].assign(**{config.TARGET_COLUMN: y.iloc[train_idx]}),
             backend=backend,
             params=params,
             **kwargs,

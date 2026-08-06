@@ -33,6 +33,13 @@ from fraud_detect.data import (
     load_merged_train,
     reduce_mem_usage,
 )
+from fraud_detect.ensemble import (
+    EnsembleConfig,
+    EnsembleStrategy,
+    build_stacking_ensemble,
+    build_voting_ensemble,
+    evaluate_ensemble,
+)
 from fraud_detect.error_analysis import (
     ErrorProfile,
     compute_error_profile,
@@ -41,13 +48,6 @@ from fraud_detect.error_analysis import (
     segment_errors,
     top_false_negatives,
     top_false_positives,
-)
-from fraud_detect.ensemble import (
-    EnsembleConfig,
-    EnsembleStrategy,
-    build_stacking_ensemble,
-    build_voting_ensemble,
-    evaluate_ensemble,
 )
 from fraud_detect.evaluation import (
     EvaluationReport,

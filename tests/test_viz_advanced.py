@@ -89,13 +89,15 @@ def test_plot_confusion_matrix_normalised():
 
 
 def test_plot_metrics_comparison_returns_figure():
-    df = pd.DataFrame({
-        "model": ["A", "B", "C"],
-        "auc": [0.95, 0.93, 0.91],
-        "f1": [0.80, 0.78, 0.75],
-        "precision": [0.85, 0.82, 0.80],
-        "recall": [0.76, 0.74, 0.71],
-    })
+    df = pd.DataFrame(
+        {
+            "model": ["A", "B", "C"],
+            "auc": [0.95, 0.93, 0.91],
+            "f1": [0.80, 0.78, 0.75],
+            "precision": [0.85, 0.82, 0.80],
+            "recall": [0.76, 0.74, 0.71],
+        }
+    )
     fig, ax = viz.plot_metrics_comparison(df)
     assert isinstance(fig, plt.Figure)
     plt.close(fig)

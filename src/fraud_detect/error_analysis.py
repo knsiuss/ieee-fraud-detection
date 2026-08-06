@@ -1,3 +1,4 @@
+# ruff: noqa: N803, N806, PLR0913  # deliberate ML naming/arity conventions
 """Error analysis and segmentation for binary classification models.
 
 Provides tools to understand *where* a model fails: error rates segmented
@@ -9,7 +10,7 @@ and false negatives.
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 import numpy as np
 import pandas as pd
@@ -17,6 +18,7 @@ import pandas as pd
 from . import config
 
 logger = logging.getLogger(__name__)
+
 
 @dataclass
 class ErrorProfile:
@@ -40,6 +42,7 @@ class ErrorProfile:
     by_segment: pd.DataFrame
     worst_segments: pd.DataFrame
     feature_distribution_shift: pd.DataFrame | None = None
+
 
 def compute_error_profile(
     df: pd.DataFrame,
@@ -117,13 +120,15 @@ def compute_error_profile(
             continue
         grouped = pd.DataFrame({"error": errors, col: df[col]}).groupby(col)
         for name, group in grouped:
-            seg_records.append({
-                "segment_col": col,
-                "segment_value": str(name) if not pd.isna(name) else "NaN",
-                "n_samples": len(group),
-                "n_errors": int(group["error"].sum()),
-                "error_rate": round(group["error"].mean(), 5),
-            })
+            seg_records.append(
+                {
+                    "segment_col": col,
+                    "segment_value": str(name) if not pd.isna(name) else "NaN",
+                    "n_samples": len(group),
+                    "n_errors": int(group["error"].sum()),
+                    "error_rate": round(group["error"].mean(), 5),
+                }
+            )
 
     by_segment = pd.DataFrame(seg_records) if seg_records else pd.DataFrame()
     if not by_segment.empty:
@@ -138,6 +143,7 @@ def compute_error_profile(
         worst_segments=worst_segments,
     )
 
+
 def _default_segment_cols(df: pd.DataFrame) -> list[str]:
     """Return a sensible default set of columns for segmentation."""
     candidates = []
@@ -149,6 +155,7 @@ def _default_segment_cols(df: pd.DataFrame) -> list[str]:
     if "P_emaildomain" in df.columns:
         candidates.append("P_emaildomain")
     return candidates
+
 
 def segment_errors(
     df: pd.DataFrame,
@@ -185,9 +192,8 @@ def segment_errors(
     >>> len(result)
     2
     """
-    return compute_error_profile(
-        df, y_true, y_pred, segment_cols=segment_cols
-    ).by_segment
+    return compute_error_profile(df, y_true, y_pred, segment_cols=segment_cols).by_segment
+
 
 def feature_distribution_shift(
     df: pd.DataFrame,
@@ -255,20 +261,26 @@ def feature_distribution_shift(
             mean_error = float(error_vals.mean())
             mean_correct = float(correct_vals.mean())
             _, p_value = ks_2samp(error_vals, correct_vals)
-            records.append({
-                "feature": col,
-                "mean_correct": round(mean_correct, 4),
-                "mean_error": round(mean_error, 4),
-                "diff": round(mean_error - mean_correct, 4),
-                "p_value": round(p_value, 5),
-            })
+            records.append(
+                {
+                    "feature": col,
+                    "mean_correct": round(mean_correct, 4),
+                    "mean_error": round(mean_error, 4),
+                    "diff": round(mean_error - mean_correct, 4),
+                    "p_value": round(p_value, 5),
+                }
+            )
 
     result = pd.DataFrame(records) if records else pd.DataFrame()
     if not result.empty:
-        result = result.assign(abs_diff=result["diff"].abs()).sort_values(
-            "abs_diff", ascending=False
-        ).drop(columns="abs_diff").reset_index(drop=True)
+        result = (
+            result.assign(abs_diff=result["diff"].abs())
+            .sort_values("abs_diff", ascending=False)
+            .drop(columns="abs_diff")
+            .reset_index(drop=True)
+        )
     return result
+
 
 def top_false_positives(
     df: pd.DataFrame,
@@ -322,6 +334,7 @@ def top_false_positives(
     result["predicted_probability"] = y_pred_proba[top_indices]
     return result.reset_index(drop=True)
 
+
 def top_false_negatives(
     df: pd.DataFrame,
     y_true: pd.Series | np.ndarray,
@@ -363,6 +376,7 @@ def top_false_negatives(
     result = df.iloc[top_indices].copy()
     result["predicted_probability"] = y_pred_proba[top_indices]
     return result.reset_index(drop=True)
+
 
 def confusion_by_amount_bins(
     df: pd.DataFrame,

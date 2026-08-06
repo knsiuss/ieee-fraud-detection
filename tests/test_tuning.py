@@ -7,10 +7,6 @@ it is not installed.
 
 from __future__ import annotations
 
-import json
-from pathlib import Path
-from tempfile import TemporaryDirectory
-
 import numpy as np
 import pandas as pd
 import pytest

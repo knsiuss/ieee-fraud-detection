@@ -13,6 +13,7 @@ import pandas as pd
 
 from . import config
 
+
 def add_time_features(
     df: pd.DataFrame,
     dt_col: str = config.TRANSACTION_DT_COLUMN,
@@ -41,6 +42,7 @@ def add_time_features(
     out["is_night"] = ((out["hour"] >= 22) | (out["hour"] <= 5)).astype(np.int8)
     out["is_weekend"] = out["day_of_week"].isin([5, 6]).astype(np.int8)
     return out
+
 
 def add_amount_features(
     df: pd.DataFrame,
@@ -77,6 +79,7 @@ def add_amount_features(
     out["amt_decimal"] = (out[amt_col] - out[amt_col].astype(int)).round(3)
     out["amt_is_round"] = (out["amt_decimal"] == 0).astype(np.int8)
     return out
+
 
 def add_email_features(
     df: pd.DataFrame,
@@ -122,6 +125,7 @@ def add_email_features(
     out["r_email_is_free"] = (out[recipient_col].fillna("").isin(free)).astype(np.int8)
     return out
 
+
 def add_card_aggregations(df: pd.DataFrame) -> pd.DataFrame:
     """Add per-card aggregation features.
 
@@ -150,6 +154,7 @@ def add_card_aggregations(df: pd.DataFrame) -> pd.DataFrame:
         out["amt_vs_card_mean"] = (out["TransactionAmt"] - out["card1_amt_mean"]).round(3)
     return out
 
+
 def add_identity_features(df: pd.DataFrame) -> pd.DataFrame:
     """Add a binary flag indicating whether identity data is available.
 
@@ -164,6 +169,7 @@ def add_identity_features(df: pd.DataFrame) -> pd.DataFrame:
     else:
         out["has_identity"] = 0
     return out
+
 
 def build_all_features(df: pd.DataFrame) -> pd.DataFrame:
     """Apply the full feature-engineering pipeline used in notebook 07."""

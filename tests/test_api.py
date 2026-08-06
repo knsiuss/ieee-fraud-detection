@@ -18,10 +18,9 @@ _ROOT = Path(__file__).resolve().parents[1]
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
+from api import main, store  # noqa: E402
 from fraud_detect import config, serving  # noqa: E402
 from fraud_detect.models import ModelBackend, select_feature_columns, train_model  # noqa: E402
-
-from api import main, store  # noqa: E402
 
 
 @pytest.fixture
@@ -39,7 +38,7 @@ def client(tmp_path, monkeypatch):
     )
     monkeypatch.setattr(store, "CURRENT_DIR", current)
     monkeypatch.setattr(store, "FEEDBACK_FILE", tmp_path / "feedback.jsonl")
-    monkeypatch.setattr(store, "data_table", lambda: _synthetic())
+    monkeypatch.setattr(store, "data_table", _synthetic)
     monkeypatch.setattr(config, "LGBM_NUM_BOOST_ROUND", 20)
     monkeypatch.setattr(config, "LGBM_EARLY_STOPPING_ROUNDS", 5)
     main._clear_cache()

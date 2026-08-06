@@ -1,3 +1,4 @@
+# ruff: noqa: N803, N806, PLR0913, ARG001  # deliberate ML naming/arity conventions
 """Model evaluation and comparison utilities.
 
 Provides comprehensive evaluation reports (AUC, precision, recall, F1,
@@ -20,6 +21,7 @@ from sklearn.metrics import (
     recall_score,
     roc_auc_score,
 )
+
 
 @dataclass
 class EvaluationReport:
@@ -59,6 +61,7 @@ class EvaluationReport:
     confusion_matrix: np.ndarray
     best_threshold: float
     youden_index: float
+
 
 def find_best_threshold(
     y_true: pd.Series | np.ndarray,
@@ -102,6 +105,7 @@ def find_best_threshold(
     youden = tpr - fpr
     best_idx = int(np.argmax(youden))
     return float(thresholds[best_idx]), float(youden[best_idx])
+
 
 def compute_evaluation(
     y_true: pd.Series | np.ndarray,
@@ -166,6 +170,7 @@ def compute_evaluation(
         youden_index=youden,
     )
 
+
 def compare_models(
     reports: dict[str, EvaluationReport],
 ) -> pd.DataFrame:
@@ -206,11 +211,8 @@ def compare_models(
         }
         for name, report in reports.items()
     ]
-    return (
-        pd.DataFrame(records)
-        .sort_values("auc", ascending=False)
-        .reset_index(drop=True)
-    )
+    return pd.DataFrame(records).sort_values("auc", ascending=False).reset_index(drop=True)
+
 
 def mcnemar_test(
     preds_model1: np.ndarray,
@@ -270,7 +272,9 @@ def mcnemar_test(
 
     statistic = float((abs(n10 - n01) - 1) ** 2 / n_total)
     p_value = float(1.0 - chi2.cdf(statistic, df=1))
-    conclusion = "Significant difference (p < 0.05)" if p_value < 0.05 else "No significant difference"
+    conclusion = (
+        "Significant difference (p < 0.05)" if p_value < 0.05 else "No significant difference"
+    )
 
     return {
         "statistic": round(statistic, 4),

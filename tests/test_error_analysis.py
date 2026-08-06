@@ -17,12 +17,14 @@ def sample_data() -> tuple[pd.DataFrame, pd.Series, np.ndarray]:
     """Small synthetic DataFrame with predictions."""
     rng = np.random.default_rng(42)
     n = 200
-    df = pd.DataFrame({
-        "ProductCD": rng.choice(["W", "H", "C"], n),
-        "DeviceType": rng.choice(["desktop", "mobile"], n),
-        "TransactionAmt": rng.uniform(1, 500, n),
-        "hour": rng.integers(0, 23, n),
-    })
+    df = pd.DataFrame(
+        {
+            "ProductCD": rng.choice(["W", "H", "C"], n),
+            "DeviceType": rng.choice(["desktop", "mobile"], n),
+            "TransactionAmt": rng.uniform(1, 500, n),
+            "hour": rng.integers(0, 23, n),
+        }
+    )
     y_true = pd.Series(rng.integers(0, 2, n))
     y_pred = rng.integers(0, 2, n)
     return df, y_true, y_pred
@@ -56,7 +58,13 @@ def test_segment_errors_returns_dataframe(sample_data):
     df, y_true, y_pred = sample_data
     seg = ea.segment_errors(df, y_true, y_pred, ["ProductCD"])
     assert isinstance(seg, pd.DataFrame)
-    assert list(seg.columns) == ["segment_col", "segment_value", "n_samples", "n_errors", "error_rate"]
+    assert list(seg.columns) == [
+        "segment_col",
+        "segment_value",
+        "n_samples",
+        "n_errors",
+        "error_rate",
+    ]
     assert len(seg) >= 1
 
 
