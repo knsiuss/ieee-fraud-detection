@@ -178,6 +178,7 @@ ieee-fraud-detection/
 │
 ├── docs/
 │   ├── MODEL_CARD.md            #   Intended use, honest metrics, risks, monitoring
+│   ├── DEMO_WALKTHROUGH.md      #   End-to-end decisioning demo (exact commands)
 │   ├── DEPLOYMENT.md            #   Free-tier deployment guide
 │   ├── EXTERNAL_DATA.md         #   External-dataset comparability research
 │   ├── RELEASE_CHECKLIST.md     #   Launch-readiness checklist
