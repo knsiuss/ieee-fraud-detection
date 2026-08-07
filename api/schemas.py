@@ -23,6 +23,7 @@ class PredictRequest(BaseModel):
 
     values: dict[str, float] = Field(default_factory=dict)
     transaction_id: str | None = None
+    profile: Literal["typical", "nonfraud", "fraud"] | None = None
 
 
 class PredictResponse(RiskResponse):
