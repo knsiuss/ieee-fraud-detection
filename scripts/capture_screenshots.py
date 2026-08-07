@@ -78,6 +78,17 @@ def capture(base: str) -> None:
         page.screenshot(path=OUT_DIR / "batch-results.png", full_page=True)
 
         # --- Model tab ---
+        # --- Operations tab: review queue + audit detail ---
+        page.click(".tab[data-tab='operations']")
+        page.wait_for_selector("#queue-table tr.clickable", timeout=20000)
+        page.wait_for_timeout(300)
+        page.screenshot(path=OUT_DIR / "operations-queue.png", full_page=True)
+        page.click("#queue-table tr.clickable")
+        page.wait_for_selector("#queue-detail:not(.hidden)", timeout=20000)
+        page.wait_for_timeout(300)
+        page.screenshot(path=OUT_DIR / "operations-detail.png", full_page=True)
+
+        # --- Model tab ---
         page.click(".tab[data-tab='model']")
         page.wait_for_selector("#model-cards .kpi")
         page.screenshot(path=OUT_DIR / "model-overview.png", full_page=True)

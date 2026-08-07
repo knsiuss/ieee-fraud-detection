@@ -100,6 +100,20 @@ deployed, live data exists**.
 - **Infrastructure** → the service is a portfolio demo. It ships with a
   public-test-only scope: never wire it to a payment gateway.
 
+## Decision policy & audit trail
+
+Prediction and decision are separate. The model outputs a probability; a
+**versioned decision policy** maps it to APPROVE / MANUAL_REVIEW / DECLINE
+(defaults: review ≥ 0.15, decline ≥ 0.50 — overridable via
+`DECISION_REVIEW_ABOVE` / `DECISION_DECLINE_ABOVE` without retraining).
+
+Every decision is stored with: transaction id, timestamp, model version,
+feature-contract version, policy version + thresholds, score, decision, SHAP
+reason codes, per-field feature report (supplied / defaulted / rejected), and
+the analyst's final outcome when reviewed. Raw payloads are validated against
+the strict feature contract — unknown fields and missing critical fields are
+rejected (422), never silently filled.
+
 ## Environment / reproducibility
 
 - `python scripts/train_model.py` reproduces the served artefact.

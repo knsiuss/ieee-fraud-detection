@@ -136,7 +136,9 @@ ieee-fraud-detection/
 │   ├── error_analysis.py        #   Error segmentation, distribution-shift, FP/FN analysis
 │   ├── viz.py                   #   Plotting helpers (18 functions)
 │   ├── serving.py               #   Model serving: artefacts, prediction, risk tiers, SHAP
-│   ├── sim.py                   #   Checkout-style inputs → model features + profiles
+│   ├── policy.py                #   Versioned decision policy (APPROVE / REVIEW / DECLINE)
+│   ├── contract.py              #   Strict versioned input schema + validation
+│   ├── sim.py                   #   Demo scenario builder inputs → features + profiles
 │   ├── monitoring.py            #   PSI drift + data-quality checks
 │   └── _exceptions.py           #   Domain exceptions
 │
@@ -251,35 +253,60 @@ The trained model is exposed through a **FastAPI** service with a browser-based 
 | `GET` | `/api/health` | Service status + model presence |
 | `GET` | `/api/model` | Served model metadata (version, ROC-AUC) |
 | `GET` | `/api/stats` | Dataset overview + top features (for the UI) |
-| `POST` | `/api/predict` | Score a single transaction → probability, risk tier, action |
-| `POST` | `/api/predict/batch` | Upload a CSV of transactions → scored rows |
-| `POST` | `/api/explain` | SHAP top contributors for one transaction |
-| `POST` | `/api/feedback` | Record a reviewer verdict into the retrain pool |
-| `POST` | `/api/retrain` | Train a candidate; swap if it beats the gate (admin) |
+| `POST` | `/api/predict` | Raw IEEE payload → score + **decision** (APPROVE / MANUAL_REVIEW / DECLINE), persisted, idempotent by `transaction_id` |
+| `POST` | `/api/predict/batch` | Upload a CSV → per-row score + decision, persisted |
+| `POST` | `/api/simulate` | **Demo scenario builder** — friendly inputs mapped to features (clearly labeled, reports feature usage) |
+| `POST` | `/api/explain` | SHAP contributors + plain-English decision summary |
+| `GET` | `/api/review/queue` | Analyst review queue (filter by decision/status) |
+| `GET` | `/api/review/{id}` | Full audit record for one decision |
+| `POST` | `/api/review/{id}/outcome` | Record analyst verdict → feedback pool + audit status |
+| `GET` | `/api/monitor/summary` | Decision-history aggregates (score drift, counts) |
+| `POST` | `/api/retrain` | Train a candidate; swap only if it beats the served model (admin) |
 
 Interactive API docs are available at `/docs`.
 
+### Decisioning & audit
+
+Prediction and decision are **separate**: the joblib model returns a
+probability, and a **versioned, configurable policy** (`fraud_detect.policy`,
+env `DECISION_REVIEW_ABOVE` / `DECISION_DECLINE_ABOVE`) maps it to
+APPROVE / MANUAL_REVIEW / DECLINE without retraining. Every decision is
+stored in a durable local store with transaction id, timestamp, model /
+contract / policy versions, the thresholds used, score, decision, and reason
+codes. Malformed raw payloads are rejected by the strict feature contract
+(`fraud_detect.contract`); the fields the model saw are always reported.
+
 ### Frontend tabs
 
-- **Score** — enter a few transaction fields (the rest default to the training median); see a probability gauge, risk tier, recommended action, and a SHAP bar chart explaining *why*.
-- **Batch** — upload a CSV, inspect the risk-tier breakdown and preview table, and download the scored CSV.
+- **Score** — two truthful modes: **Demo scenario builder** (friendly inputs
+  mapped to features; reports exactly which fields came from the form vs the
+  profile median) and **Raw features** (paste an IEEE-compatible JSON payload,
+  validated by the contract).
+- **Batch** — upload a CSV, inspect decisions and per-row contract errors, and
+  download the scored CSV.
+- **Operations** — the analyst review queue: filter by decision/status, open an
+  audit record (score, versions, reason codes, feature report), and mark it
+  safe / fraud to feed the retraining pool.
 - **Model** — served model metadata, dataset overview, and top predictive features.
 
 ### Feedback & auto-retraining
 
-Reviewers mark a transaction safe or fraud; each vote is appended to `data/feedback/`
-(gitignored). A scheduled retrain (`scripts/retrain.py`) folds that pool into the next
-run and **only swaps the served model when the candidate scores ≥ the current model on a
-held-out validation split** — an anti-regression gate. A failed gate never touches the
-deployed model, so the loop is safe to run on a cron.
+Reviewers mark a transaction safe or fraud (via the Operations console or the
+review API); each verdict updates the audit record and appends to
+`data/feedback/` (gitignored). A scheduled retrain folds the pool into the next
+run and **only swaps the served model when the candidate scores ≥ the current
+model on a held-out validation split** — an anti-regression gate. A failed gate
+never touches the deployed model.
 
 ---
 
 ## Screenshots
 
-![Checkout-style scoring with decision summary](docs/screenshots/score-checkout.png)
+![Demo scenario scoring with decision summary](docs/screenshots/score-checkout.png)
 ![Batch upload](docs/screenshots/batch-upload.png)
-![Batch results with risk-tier breakdown](docs/screenshots/batch-results.png)
+![Batch results with decisions](docs/screenshots/batch-results.png)
+![Operations review queue](docs/screenshots/operations-queue.png)
+![Operations decision detail / audit](docs/screenshots/operations-detail.png)
 ![Model & dataset overview](docs/screenshots/model-overview.png)
 
 Screenshots are generated from the running app by
