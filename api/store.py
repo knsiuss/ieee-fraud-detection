@@ -609,6 +609,23 @@ def metrics_summary() -> dict[str, Any]:
             except Exception:
                 band_1h += 1
 
+        sla_compliant = 0
+        sla_total = 0
+        for r in conn.execute(
+            "SELECT d.timestamp AS created, f.reviewed_at AS reviewed "
+            "FROM feedback f JOIN decisions d ON f.transaction_id = d.transaction_id "
+            "WHERE d.decision = 'MANUAL_REVIEW'"
+        ):
+            try:
+                created = datetime.fromisoformat(r["created"].replace("Z", "+00:00"))
+                reviewed = datetime.fromisoformat(r["reviewed"].replace("Z", "+00:00"))
+                sla_total += 1
+                if (reviewed - created).total_seconds() <= 4 * 3600:
+                    sla_compliant += 1
+            except Exception:
+                continue
+        sla_compliance_pct = round(sla_compliant / max(sla_total, 1) * 100.0, 1)
+
         return {
             "total_decisions": total,
             "counts": {
@@ -638,6 +655,7 @@ def metrics_summary() -> dict[str, Any]:
                 "under_4h": band_4h,
                 "over_4h": band_gt4h,
             },
+            "sla_compliance_pct": sla_compliance_pct,
             "epoch": datetime.now(timezone.utc).isoformat(),
         }
     finally:

@@ -24,20 +24,20 @@ export const KpiCard: React.FC<KpiCardProps> = ({
   icon,
   pulse = false,
 }) => {
-  const accentColors = {
-    teal: 'border-l-accent-teal hover:border-accent-teal/40',
-    cyan: 'border-l-accent-cyan hover:border-accent-cyan/40',
-    emerald: 'border-l-status-approve hover:border-status-approve/40',
-    amber: 'border-l-status-review hover:border-status-review/40',
-    crimson: 'border-l-status-block hover:border-status-block/40',
+  const accentBorders = {
+    teal: 'border-l-accent-teal hover:border-l-accent-teal hover:shadow-[0_4px_20px_-4px_rgba(20,184,166,0.2)]',
+    cyan: 'border-l-accent-cyan hover:border-l-accent-cyan hover:shadow-[0_4px_20px_-4px_rgba(6,182,212,0.2)]',
+    emerald: 'border-l-status-approve hover:border-l-status-approve hover:shadow-[0_4px_20px_-4px_rgba(16,185,129,0.2)]',
+    amber: 'border-l-status-review hover:border-l-status-review hover:shadow-[0_4px_20px_-4px_rgba(245,158,11,0.2)]',
+    crimson: 'border-l-status-block hover:border-l-status-block hover:shadow-[0_4px_20px_-4px_rgba(244,63,94,0.2)]',
   };
 
   return (
     <div
-      className={`relative bg-surface-1 border border-border-subtle border-l-4 ${accentColors[accent]} rounded-lg p-4 transition-all duration-200 hover:bg-surface-2 flex flex-col justify-between`}
+      className={`relative bg-surface-1/90 backdrop-blur-sm border border-border-subtle border-l-[3px] ${accentBorders[accent]} rounded-lg p-4 transition-all duration-200 ease-out hover:-translate-y-0.5 hover:bg-surface-2 flex flex-col justify-between shadow-xs group`}
     >
       <div className="flex items-center justify-between gap-2">
-        <span className="text-xs font-medium uppercase tracking-wider text-text-secondary">
+        <span className="text-[11px] font-semibold uppercase tracking-wider text-text-secondary group-hover:text-text-primary transition-colors">
           {title}
         </span>
         <div className="flex items-center gap-2">
@@ -47,35 +47,39 @@ export const KpiCard: React.FC<KpiCardProps> = ({
               <span className="relative inline-flex rounded-full h-2 w-2 bg-accent-teal"></span>
             </span>
           )}
-          {icon && <span className="text-text-muted">{icon}</span>}
+          {icon && (
+            <span className="text-text-muted group-hover:text-text-secondary transition-colors">
+              {icon}
+            </span>
+          )}
         </div>
       </div>
 
-      <div className="mt-2 flex items-baseline justify-between gap-2">
+      <div className="mt-2.5 flex items-baseline justify-between gap-2">
         <span className="text-2xl font-bold font-mono tracking-tight text-text-primary">
           {value}
         </span>
 
         {trend && (
           <div
-            className={`inline-flex items-center gap-1 text-xs font-mono font-medium ${
+            className={`inline-flex items-center gap-1 text-xs font-mono font-medium px-1.5 py-0.5 rounded ${
               trend.direction === 'up'
-                ? 'text-status-approve'
+                ? 'text-status-approve bg-status-approve/10'
                 : trend.direction === 'down'
-                ? 'text-status-block'
-                : 'text-text-muted'
+                ? 'text-status-block bg-status-block/10'
+                : 'text-text-muted bg-surface-hover'
             }`}
           >
-            {trend.direction === 'up' && <TrendingUp className="w-3.5 h-3.5" />}
-            {trend.direction === 'down' && <TrendingDown className="w-3.5 h-3.5" />}
-            {trend.direction === 'neutral' && <Minus className="w-3.5 h-3.5" />}
+            {trend.direction === 'up' && <TrendingUp className="w-3 h-3" />}
+            {trend.direction === 'down' && <TrendingDown className="w-3 h-3" />}
+            {trend.direction === 'neutral' && <Minus className="w-3 h-3" />}
             <span>{trend.value}</span>
           </div>
         )}
       </div>
 
       {(subtitle || trend?.label) && (
-        <div className="mt-1 text-[11px] text-text-muted truncate">
+        <div className="mt-1.5 text-[11px] text-text-muted truncate font-mono">
           {subtitle || trend?.label}
         </div>
       )}

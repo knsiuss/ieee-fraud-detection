@@ -125,9 +125,6 @@ def save_figure(fig: plt.Figure, path: Path, dpi: int = 150) -> None:
     _logger.info("Figure saved to %s (dpi=%d)", path, dpi)
 
 
-# Phase 4 — Model Evaluation Plots
-
-
 def plot_roc_curves(
     y_true_dict: dict[str, pd.Series | np.ndarray],
     y_pred_dict: dict[str, np.ndarray],
@@ -466,9 +463,6 @@ def plot_cumulative_gain(
     ax.set_xlim(0, 1)
     ax.set_ylim(0, 1.05)
     return fig, ax
-
-
-# Phase 5 — Error Analysis Plots
 
 
 def plot_error_rate_by_category(

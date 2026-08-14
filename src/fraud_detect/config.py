@@ -97,14 +97,10 @@ LGBM_BASE_PARAMS: Final[dict[str, float | int | str]] = {
     "verbose": -1,
 }
 
-# Modelling — cross-validation & training
+# Cross-validation & Optuna tuning
 
 CV_FOLDS: Final[int] = 5
 N_TRIALS: Final[int] = 100  # default Optuna trials
-
-# Optuna tuning — search spaces
-
-OPTUNA_STORAGE_PATH: Final[Path] = METADATA_DIR / "optuna_study.db"
 OPTUNA_N_TRIALS: Final[int] = N_TRIALS
 
 LGBM_TUNING_SPACE: Final[dict[str, dict[str, float | int | bool]]] = {
@@ -146,17 +142,10 @@ BACKEND_TUNING_SPACE_MAP: Final[dict[str, str]] = {
 # LightGBM base parameters
 
 LGBM_PARAMS: Final[dict[str, float | int | str]] = {
-    "objective": "binary",
-    "metric": "auc",
-    "num_leaves": 31,
-    "learning_rate": 0.1,
-    "feature_fraction": 0.8,
-    "bagging_fraction": 0.8,
-    "bagging_freq": 5,
+    **LGBM_BASE_PARAMS,
     "min_child_samples": 20,
     "reg_alpha": 0.0,
     "reg_lambda": 0.0,
-    "verbose": -1,
     "random_state": RANDOM_STATE,
 }
 LGBM_NUM_BOOST_ROUND: Final[int] = 500
@@ -193,6 +182,7 @@ CB_PARAMS: Final[dict[str, float | int | str]] = {
     "verbose": False,
     "allow_writing_files": False,
 }
+CB_NUM_BOOST_ROUND: Final[int] = 500
 CB_EARLY_STOPPING_ROUNDS: Final[int] = 50
 
 # Missing-value strategy thresholds

@@ -5,7 +5,7 @@ import { GaugeChart } from '../../components/charts/GaugeChart';
 import { ShapWaterfallChart } from '../../components/charts/ShapWaterfallChart';
 import { StatusBadge } from '../../components/ui/StatusBadge';
 import { InsightCallout } from '../../components/ui/InsightCallout';
-import { Play, Sparkles, Code2, AlertTriangle, CheckCircle2, ShieldAlert } from 'lucide-react';
+import { Play, Sparkles, AlertTriangle, CheckCircle2, ShieldAlert } from 'lucide-react';
 
 export const Simulator: React.FC = () => {
   const [profile, setProfile] = useState<'typical' | 'nonfraud' | 'fraud'>('typical');
@@ -84,7 +84,6 @@ export const Simulator: React.FC = () => {
       const res = await api.simulate(req);
       setResult(res);
 
-      // Fetch SHAP explanation for mapped values
       if (res.mapped_values) {
         try {
           const exp = await api.explain(res.mapped_values);
@@ -103,7 +102,7 @@ export const Simulator: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between bg-surface-1 border border-border-subtle p-4 rounded-lg">
+      <div className="flex items-center justify-between bg-surface-1/90 backdrop-blur border border-border-subtle p-4 rounded-lg shadow-xs">
         <div>
           <h2 className="text-base font-bold text-text-primary tracking-tight">
             SIMULATION &amp; EXPLAINABLE AI (XAI) STUDIO
@@ -115,7 +114,7 @@ export const Simulator: React.FC = () => {
       </div>
 
       {/* Preset Buttons */}
-      <div className="flex flex-wrap items-center gap-3">
+      <div className="flex flex-wrap items-center gap-2.5">
         <span className="text-xs font-mono text-text-muted">Scenario Presets:</span>
         {presets.map((p) => {
           const Icon = p.icon;
@@ -123,7 +122,7 @@ export const Simulator: React.FC = () => {
             <button
               key={p.name}
               onClick={() => handleApplyPreset(p)}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-surface-1 hover:bg-surface-2 border border-border-subtle hover:border-accent-teal/40 rounded-md text-xs font-mono text-text-secondary hover:text-text-primary transition-all"
+              className="btn-interactive inline-flex items-center gap-1.5 px-3 py-1.5 bg-surface-1/90 hover:bg-surface-2 border border-border-subtle hover:border-accent-teal/40 rounded-md text-xs font-mono text-text-secondary hover:text-text-primary shadow-xs transition-all"
             >
               <Icon className="w-3.5 h-3.5 text-accent-teal" />
               <span>{p.name}</span>
@@ -134,10 +133,12 @@ export const Simulator: React.FC = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Left Form (5 Cols) */}
-        <div className="lg:col-span-5 bg-surface-1 border border-border-subtle rounded-lg p-5 space-y-4">
+        <div className="lg:col-span-5 bg-surface-1/90 backdrop-blur border border-border-subtle rounded-lg p-5 space-y-4 shadow-xs">
           <h3 className="text-xs font-semibold uppercase tracking-wider text-text-primary border-b border-border-subtle pb-2 flex items-center justify-between">
             <span>Transaction Parameters</span>
-            <span className="text-[10px] font-mono text-accent-teal">400 Auto-Imputed Feats</span>
+            <span className="text-[10px] font-mono text-accent-teal px-1.5 py-0.2 rounded bg-accent-teal/10">
+              400 Auto-Imputed Feats
+            </span>
           </h3>
 
           <div className="space-y-3.5 text-xs font-mono">
@@ -146,7 +147,7 @@ export const Simulator: React.FC = () => {
               <select
                 value={profile}
                 onChange={(e) => setProfile(e.target.value as any)}
-                className="w-full bg-surface-2 border border-border-subtle text-text-primary px-3 py-1.5 rounded focus:outline-none focus:border-accent-teal"
+                className="w-full bg-surface-2 border border-border-subtle text-text-primary px-3 py-1.5 rounded focus:outline-none focus:border-accent-teal transition-colors shadow-xs"
               >
                 <option value="typical">Typical Baseline (Median distribution)</option>
                 <option value="nonfraud">Known Non-Fraud Benchmark</option>
@@ -161,7 +162,7 @@ export const Simulator: React.FC = () => {
                   type="number"
                   value={amount}
                   onChange={(e) => setAmount(Number(e.target.value))}
-                  className="w-full bg-surface-2 border border-border-subtle text-text-primary px-3 py-1.5 rounded focus:outline-none focus:border-accent-teal"
+                  className="w-full bg-surface-2 border border-border-subtle text-text-primary px-3 py-1.5 rounded focus:outline-none focus:border-accent-teal transition-colors shadow-xs"
                 />
               </div>
 
@@ -170,7 +171,7 @@ export const Simulator: React.FC = () => {
                 <select
                   value={cardBrand}
                   onChange={(e) => setCardBrand(e.target.value)}
-                  className="w-full bg-surface-2 border border-border-subtle text-text-primary px-3 py-1.5 rounded focus:outline-none focus:border-accent-teal"
+                  className="w-full bg-surface-2 border border-border-subtle text-text-primary px-3 py-1.5 rounded focus:outline-none focus:border-accent-teal transition-colors shadow-xs"
                 >
                   <option value="visa">Visa (6200)</option>
                   <option value="mastercard">Mastercard (10200)</option>
@@ -187,7 +188,7 @@ export const Simulator: React.FC = () => {
                   type="number"
                   value={billingDistance}
                   onChange={(e) => setBillingDistance(Number(e.target.value))}
-                  className="w-full bg-surface-2 border border-border-subtle text-text-primary px-3 py-1.5 rounded focus:outline-none focus:border-accent-teal"
+                  className="w-full bg-surface-2 border border-border-subtle text-text-primary px-3 py-1.5 rounded focus:outline-none focus:border-accent-teal transition-colors shadow-xs"
                 />
               </div>
 
@@ -197,7 +198,7 @@ export const Simulator: React.FC = () => {
                   type="number"
                   value={cardMatchCount}
                   onChange={(e) => setCardMatchCount(Number(e.target.value))}
-                  className="w-full bg-surface-2 border border-border-subtle text-text-primary px-3 py-1.5 rounded focus:outline-none focus:border-accent-teal"
+                  className="w-full bg-surface-2 border border-border-subtle text-text-primary px-3 py-1.5 rounded focus:outline-none focus:border-accent-teal transition-colors shadow-xs"
                 />
               </div>
             </div>
@@ -209,7 +210,7 @@ export const Simulator: React.FC = () => {
                   type="number"
                   value={purchaseFrequency}
                   onChange={(e) => setPurchaseFrequency(Number(e.target.value))}
-                  className="w-full bg-surface-2 border border-border-subtle text-text-primary px-3 py-1.5 rounded focus:outline-none focus:border-accent-teal"
+                  className="w-full bg-surface-2 border border-border-subtle text-text-primary px-3 py-1.5 rounded focus:outline-none focus:border-accent-teal transition-colors shadow-xs"
                 />
               </div>
 
@@ -219,7 +220,7 @@ export const Simulator: React.FC = () => {
                   type="number"
                   value={daysSinceActivity}
                   onChange={(e) => setDaysSinceActivity(Number(e.target.value))}
-                  className="w-full bg-surface-2 border border-border-subtle text-text-primary px-3 py-1.5 rounded focus:outline-none focus:border-accent-teal"
+                  className="w-full bg-surface-2 border border-border-subtle text-text-primary px-3 py-1.5 rounded focus:outline-none focus:border-accent-teal transition-colors shadow-xs"
                 />
               </div>
             </div>
@@ -227,10 +228,10 @@ export const Simulator: React.FC = () => {
             <button
               onClick={handleRunSimulation}
               disabled={isLoading}
-              className="w-full mt-2 py-2.5 bg-accent-teal hover:bg-accent-teal/90 text-white font-semibold rounded shadow-xs flex items-center justify-center gap-2 transition-colors cursor-pointer"
+              className="btn-interactive w-full mt-3 py-2.5 bg-accent-teal hover:bg-accent-teal/90 text-white font-semibold rounded shadow-[0_0_15px_rgba(20,184,166,0.25)] flex items-center justify-center gap-2 transition-all cursor-pointer"
             >
               {isLoading ? (
-                <span>Executing LightGBM Model...</span>
+                <span className="animate-pulse">Executing LightGBM Model...</span>
               ) : (
                 <>
                   <Play className="w-4 h-4" />
@@ -246,7 +247,7 @@ export const Simulator: React.FC = () => {
         {/* Right Results & SHAP Inspector (7 Cols) */}
         <div className="lg:col-span-7 space-y-4">
           {result ? (
-            <div className="bg-surface-1 border border-border-subtle rounded-lg p-5 space-y-5">
+            <div className="bg-surface-1/90 backdrop-blur border border-border-subtle rounded-lg p-5 space-y-5 shadow-xs animate-fade-in">
               {/* Top Decision Header */}
               <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border-subtle pb-4">
                 <div>
@@ -267,7 +268,7 @@ export const Simulator: React.FC = () => {
                   <GaugeChart score={result.probability} title="INFERENCE SCORE" height="220px" />
                 </div>
 
-                <div className="bg-surface-2 p-4 rounded-lg border border-border-subtle space-y-2 text-xs font-mono">
+                <div className="bg-surface-2/80 p-4 rounded-lg border border-border-subtle space-y-2 text-xs font-mono shadow-xs">
                   <div className="flex justify-between text-text-secondary">
                     <span>Risk Tier:</span>
                     <span className="font-bold text-text-primary uppercase">{result.risk_tier}</span>
@@ -278,11 +279,11 @@ export const Simulator: React.FC = () => {
                   </div>
                   <div className="flex justify-between text-text-secondary">
                     <span>Model Version:</span>
-                    <span className="text-accent-cyan">{result.model_version}</span>
+                    <span className="text-accent-cyan font-bold">{result.model_version}</span>
                   </div>
                   <div className="flex justify-between text-text-secondary">
                     <span>Latency:</span>
-                    <span className="text-status-approve">
+                    <span className="text-status-approve font-bold">
                       {String(result.feature_report?.latency_ms || 12.4)}ms
                     </span>
                   </div>
@@ -304,12 +305,12 @@ export const Simulator: React.FC = () => {
               )}
             </div>
           ) : (
-            <div className="bg-surface-1 border border-dashed border-border-subtle rounded-lg p-12 text-center text-text-muted flex flex-col items-center justify-center">
-              <Sparkles className="w-8 h-8 text-accent-teal opacity-50 mb-3" />
+            <div className="bg-surface-1/60 border border-dashed border-border-subtle rounded-lg p-12 text-center text-text-muted flex flex-col items-center justify-center">
+              <Sparkles className="w-8 h-8 text-accent-teal opacity-50 mb-3 animate-pulse" />
               <h3 className="text-sm font-semibold text-text-primary mb-1">
                 Awaiting Simulation Execution
               </h3>
-              <p className="text-xs max-w-sm">
+              <p className="text-xs max-w-sm font-mono">
                 Select a scenario preset on the left or customize parameters, then click &quot;Run Real-Time Score&quot; to inspect model inference and SHAP explainability.
               </p>
             </div>

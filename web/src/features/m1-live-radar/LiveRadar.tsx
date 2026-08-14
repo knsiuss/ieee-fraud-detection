@@ -114,7 +114,7 @@ export const LiveRadar: React.FC = () => {
       accessorKey: 'transaction_id',
       header: 'Transaction ID',
       cell: ({ row }) => (
-        <span className="font-bold text-text-primary hover:text-accent-teal transition-colors">
+        <span className="font-bold text-text-primary group-hover:text-accent-teal transition-colors">
           #{row.original.transaction_id.slice(-8)}
         </span>
       ),
@@ -127,9 +127,9 @@ export const LiveRadar: React.FC = () => {
         const color = score > 0.8 ? 'text-status-block' : score > 0.2 ? 'text-status-review' : 'text-status-approve';
         return (
           <div className="flex items-center gap-2">
-            <div className="w-12 bg-surface-hover h-1.5 rounded-full overflow-hidden">
+            <div className="w-14 bg-surface-hover h-1.5 rounded-full overflow-hidden">
               <div
-                className={`h-full ${
+                className={`h-full transition-all duration-300 ${
                   score > 0.8 ? 'bg-status-block' : score > 0.2 ? 'bg-status-review' : 'bg-status-approve'
                 }`}
                 style={{ width: `${Math.round(score * 100)}%` }}
@@ -149,16 +149,16 @@ export const LiveRadar: React.FC = () => {
     },
     {
       id: 'actions',
-      header: 'Inspect',
+      header: 'Forensics',
       cell: ({ row }) => (
         <button
           onClick={(e) => {
             e.stopPropagation();
             openDrawer(row.original);
           }}
-          className="px-2 py-1 bg-surface-2 hover:bg-surface-hover border border-border-subtle rounded text-[10px] text-accent-sky font-semibold transition-colors"
+          className="btn-interactive px-2.5 py-1 bg-surface-2 hover:bg-surface-hover border border-border-subtle hover:border-accent-sky/40 rounded text-[11px] text-accent-sky font-semibold transition-colors"
         >
-          Forensics →
+          Inspect →
         </button>
       ),
     },
@@ -167,20 +167,20 @@ export const LiveRadar: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Top Real-time Control Strip */}
-      <div className="flex flex-wrap items-center justify-between gap-4 bg-surface-1 border border-border-subtle p-3.5 rounded-lg">
+      <div className="flex flex-wrap items-center justify-between gap-4 bg-surface-1/90 backdrop-blur border border-border-subtle p-3.5 rounded-lg shadow-xs">
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 px-2.5 py-1 bg-surface-2 rounded-md border border-border-subtle font-mono text-xs">
+          <div className="flex items-center gap-2 px-3 py-1.5 bg-surface-2/80 rounded-md border border-border-subtle font-mono text-xs shadow-xs">
             <span className="relative flex h-2 w-2">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-status-approve opacity-75"></span>
               <span className="relative inline-flex rounded-full h-2 w-2 bg-status-approve"></span>
             </span>
-            <span className="text-text-primary font-medium">LIVE STREAM RADAR</span>
+            <span className="text-text-primary font-medium">LIVE RADAR STREAM</span>
             <span className="text-text-muted text-[11px]">({rollingTps} TPS)</span>
           </div>
 
           <button
             onClick={togglePause}
-            className={`inline-flex items-center gap-1.5 px-3 py-1 text-xs font-mono rounded border transition-colors ${
+            className={`btn-interactive inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono rounded border shadow-xs transition-all ${
               isPaused
                 ? 'bg-status-review/15 text-status-review border-status-review/30 hover:bg-status-review/25'
                 : 'bg-surface-2 text-text-secondary border-border-subtle hover:text-text-primary hover:bg-surface-hover'
@@ -192,12 +192,12 @@ export const LiveRadar: React.FC = () => {
         </div>
 
         {/* Traffic Simulation Controls */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2.5">
           <span className="text-xs font-mono text-text-muted">Simulate Load:</span>
           <select
             value={simSpeed}
             onChange={(e) => setSimSpeed(Number(e.target.value))}
-            className="bg-surface-2 border border-border-subtle text-text-primary text-xs font-mono px-2 py-1 rounded"
+            className="bg-surface-2 border border-border-subtle text-text-primary text-xs font-mono px-2.5 py-1.5 rounded focus:outline-none focus:border-accent-teal shadow-xs"
           >
             <option value={1}>1x (1 tx/s)</option>
             <option value={3}>3x (3 tx/s)</option>
@@ -206,32 +206,33 @@ export const LiveRadar: React.FC = () => {
 
           <button
             onClick={handleToggleSimulation}
-            className={`inline-flex items-center gap-1.5 px-3 py-1 text-xs font-mono rounded border transition-all ${
+            className={`btn-interactive inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono rounded border shadow-xs transition-all ${
               isSimulating
-                ? 'bg-accent-teal text-white border-accent-teal shadow-xs'
+                ? 'bg-accent-teal text-white border-accent-teal shadow-[0_0_15px_rgba(20,184,166,0.3)]'
                 : 'bg-surface-2 text-accent-teal border-accent-teal/30 hover:bg-accent-teal/10'
             }`}
           >
-            <Zap className="w-3.5 h-3.5" />
-            <span>{isSimulating ? 'Injecting Traffic...' : 'Inject Simulated Traffic'}</span>
+            <Zap className={`w-3.5 h-3.5 ${isSimulating ? 'animate-bounce' : ''}`} />
+            <span>{isSimulating ? 'Injecting Traffic...' : 'Inject Traffic'}</span>
           </button>
 
           <button
             onClick={() => refetchSummary()}
-            className="p-1 text-text-muted hover:text-text-primary hover:bg-surface-hover rounded border border-border-subtle"
+            className="btn-interactive p-1.5 text-text-muted hover:text-text-primary hover:bg-surface-hover rounded border border-border-subtle shadow-xs"
             title="Refresh metrics"
+            aria-label="Refresh metrics"
           >
             <RefreshCw className="w-4 h-4" />
           </button>
         </div>
       </div>
 
-      {/* Row 1: KPI Cards Grid */}
+      {/* Row 1: KPI Cards Grid with subtle lift & soft glow */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3.5">
         <KpiCard
           title="Total Volume"
           value={(summary?.total_decisions || 0).toLocaleString()}
-          subtitle={`$${((summary?.gmv_total || 0) / 1000).toFixed(1)}k GMV Evaluated`}
+          subtitle={`$${((summary?.gmv_total || 0) / 1000).toFixed(1)}k GMV`}
           trend={{ value: `${rollingTps} TPS`, direction: 'up' }}
           accent="cyan"
           pulse={!isPaused}
@@ -253,7 +254,7 @@ export const LiveRadar: React.FC = () => {
         <KpiCard
           title="Declined (Fraud)"
           value={`${summary?.percentages.DECLINE || 0}%`}
-          subtitle={`$${((summary?.loss_prevented || 0) / 1000).toFixed(1)}k Loss Prevented`}
+          subtitle={`$${((summary?.loss_prevented || 0) / 1000).toFixed(1)}k Saved`}
           trend={{ value: `${counts.DECLINE} live`, direction: 'down' }}
           accent="crimson"
         />
@@ -266,15 +267,15 @@ export const LiveRadar: React.FC = () => {
         <KpiCard
           title="Chargeback BPS"
           value={`${summary?.chargeback_bps || 16.4}`}
-          subtitle="Visa/MC Threshold: 90 BPS"
+          subtitle="Limit: 90 BPS"
           trend={{ value: 'Nominal', direction: 'up' }}
           accent="teal"
         />
       </div>
 
-      {/* Row 2: Charts Split (Velocity Area Chart + Risk Distribution) */}
+      {/* Row 2: Charts Split */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <div className="lg:col-span-2 bg-surface-1 border border-border-subtle rounded-lg p-4">
+        <div className="lg:col-span-2 bg-surface-1/90 backdrop-blur border border-border-subtle rounded-lg p-4 shadow-xs">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
               <Activity className="w-4 h-4 text-accent-cyan" />
@@ -282,12 +283,12 @@ export const LiveRadar: React.FC = () => {
                 Real-Time Transaction Velocity &amp; Anomaly Spike Stream
               </h3>
             </div>
-            <span className="text-[11px] font-mono text-text-muted">30m Rolling Window (60s Buckets)</span>
+            <span className="text-[11px] font-mono text-text-muted">30m Rolling (60s Buckets)</span>
           </div>
           <TimeseriesChart data={timeseries || []} height="280px" />
         </div>
 
-        <div className="bg-surface-1 border border-border-subtle rounded-lg p-4 flex flex-col justify-between">
+        <div className="bg-surface-1/90 backdrop-blur border border-border-subtle rounded-lg p-4 flex flex-col justify-between shadow-xs">
           <div>
             <div className="flex items-center justify-between mb-2">
               <h3 className="text-xs font-semibold uppercase tracking-wider text-text-primary">
@@ -309,7 +310,7 @@ export const LiveRadar: React.FC = () => {
       </div>
 
       {/* Row 3: Live Feed Table + Search & Filter */}
-      <div className="bg-surface-1 border border-border-subtle rounded-lg p-4 space-y-4">
+      <div className="bg-surface-1/90 backdrop-blur border border-border-subtle rounded-lg p-4 space-y-4 shadow-xs">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h3 className="text-xs font-semibold uppercase tracking-wider text-text-primary">
@@ -321,7 +322,7 @@ export const LiveRadar: React.FC = () => {
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            <div className="flex items-center gap-1 bg-surface-2 border border-border-subtle px-2 py-1 rounded text-xs font-mono">
+            <div className="flex items-center gap-1.5 bg-surface-2 border border-border-subtle px-2.5 py-1 rounded text-xs font-mono shadow-xs">
               <Filter className="w-3.5 h-3.5 text-text-muted" />
               <select
                 value={filterDecision}
@@ -340,7 +341,7 @@ export const LiveRadar: React.FC = () => {
               placeholder="Search TxID or Action..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="bg-surface-2 border border-border-subtle text-text-primary text-xs font-mono px-3 py-1 rounded w-48 placeholder:text-text-muted focus:outline-none focus:border-accent-teal"
+              className="bg-surface-2 border border-border-subtle text-text-primary text-xs font-mono px-3 py-1.5 rounded w-52 placeholder:text-text-muted focus:outline-none focus:border-accent-teal shadow-xs transition-colors"
             />
           </div>
         </div>
@@ -354,7 +355,7 @@ export const LiveRadar: React.FC = () => {
         />
       </div>
 
-      {/* Key Insight for Credit & SOC Analysts */}
+      {/* Key Insight */}
       <InsightCallout title="SOC & Fraud Analyst Operations Insight" variant="tip">
         Real-time pipeline is processing traffic at optimal latency (<b>{summary?.latency.p95_ms || 14.2}ms p95</b>).
         Current automatic approval rate is healthy at <b>{summary?.percentages.APPROVE || 0}%</b>, preventing an estimated{' '}

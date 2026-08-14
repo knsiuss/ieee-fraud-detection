@@ -38,10 +38,10 @@ export function DataTable<TData>({
   });
 
   return (
-    <div className="w-full overflow-hidden border border-border-subtle rounded-lg bg-surface-1">
+    <div className="w-full overflow-hidden border border-border-subtle rounded-lg bg-surface-1/90 backdrop-blur-sm shadow-xs">
       <div className="overflow-x-auto max-h-[560px]">
         <table className="w-full text-left text-xs border-collapse">
-          <thead className="bg-surface-2/90 backdrop-blur sticky top-0 z-10 border-b border-border-subtle text-text-secondary uppercase tracking-wider font-mono text-[11px]">
+          <thead className="bg-surface-2/95 backdrop-blur-md sticky top-0 z-10 border-b border-border-subtle text-text-secondary uppercase tracking-wider font-mono text-[11px]">
             {table.getHeaderGroups().map((headerGroup) => (
               <tr key={headerGroup.id}>
                 {headerGroup.headers.map((header) => {
@@ -51,7 +51,7 @@ export function DataTable<TData>({
                   return (
                     <th
                       key={header.id}
-                      className={`px-4 py-3 font-semibold select-none ${
+                      className={`px-4 py-3 font-semibold select-none transition-colors ${
                         canSort ? 'cursor-pointer hover:text-text-primary' : ''
                       }`}
                       onClick={header.column.getToggleSortingHandler()}
@@ -61,9 +61,9 @@ export function DataTable<TData>({
                         {canSort && (
                           <span className="text-text-muted">
                             {isSorted === 'asc' ? (
-                              <ChevronUp className="w-3.5 h-3.5 text-accent-teal" />
+                              <ChevronUp className="w-3.5 h-3.5 text-accent-teal animate-fade-in" />
                             ) : isSorted === 'desc' ? (
-                              <ChevronDown className="w-3.5 h-3.5 text-accent-teal" />
+                              <ChevronDown className="w-3.5 h-3.5 text-accent-teal animate-fade-in" />
                             ) : (
                               <ChevronsUpDown className="w-3 h-3 opacity-50" />
                             )}
@@ -76,18 +76,18 @@ export function DataTable<TData>({
               </tr>
             ))}
           </thead>
-          <tbody className="divide-y divide-border-subtle/50 font-mono">
+          <tbody className="divide-y divide-border-subtle/40 font-mono">
             {table.getRowModel().rows.length === 0 ? (
               <tr>
                 <td
                   colSpan={columns.length}
-                  className="px-4 py-12 text-center text-text-muted text-sm"
+                  className="px-4 py-12 text-center text-text-muted text-xs"
                 >
                   {emptyMessage}
                 </td>
               </tr>
             ) : (
-              table.getRowModel().rows.map((row) => {
+              table.getRowModel().rows.map((row, idx) => {
                 const rowId = idAccessor ? idAccessor(row.original) : undefined;
                 const isSelected = selectedRowId && rowId === selectedRowId;
 
@@ -95,12 +95,12 @@ export function DataTable<TData>({
                   <tr
                     key={row.id}
                     onClick={() => onRowClick && onRowClick(row.original)}
-                    className={`transition-colors duration-150 ${
+                    className={`transition-all duration-150 group ${
                       onRowClick ? 'cursor-pointer' : ''
                     } ${
                       isSelected
-                        ? 'bg-accent-teal/10 hover:bg-accent-teal/15 text-text-primary font-medium'
-                        : 'hover:bg-surface-2 text-text-secondary hover:text-text-primary'
+                        ? 'bg-accent-teal/15 text-text-primary font-semibold border-l-2 border-l-accent-teal'
+                        : 'hover:bg-surface-2/80 text-text-secondary hover:text-text-primary'
                     }`}
                   >
                     {row.getVisibleCells().map((cell) => (

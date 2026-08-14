@@ -180,9 +180,6 @@ def compute_lightgbm_importance(
     return importance
 
 
-# Phase 1 — Advanced Model Training (LightGBM, XGBoost, CatBoost)
-
-
 class ModelBackend(str, Enum):
     """Supported gradient-boosting backends for model training."""
 
@@ -480,7 +477,7 @@ def train_model(
     _boost_map: dict[str, tuple[int, int]] = {
         "lightgbm": (config.LGBM_NUM_BOOST_ROUND, config.LGBM_EARLY_STOPPING_ROUNDS),
         "xgboost": (config.XGB_NUM_BOOST_ROUND, config.XGB_EARLY_STOPPING_ROUNDS),
-        "catboost": (config.LGBM_NUM_BOOST_ROUND, config.CB_EARLY_STOPPING_ROUNDS),
+        "catboost": (config.CB_NUM_BOOST_ROUND, config.CB_EARLY_STOPPING_ROUNDS),
     }
     _num_boost = num_boost_round or _boost_map[backend.value][0]
     _early_stop = early_stopping_rounds or _boost_map[backend.value][1]

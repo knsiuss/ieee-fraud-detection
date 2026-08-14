@@ -125,9 +125,19 @@ from fraud_detect.tuning import (
 )
 from fraud_detect.viz import (
     configure_style,
+    plot_confusion_by_amount,
+    plot_confusion_matrix,
+    plot_cumulative_gain,
+    plot_error_rate_by_category,
+    plot_false_positive_examples,
+    plot_feature_shift_comparison,
     plot_fraud_rate_by_category,
+    plot_metrics_comparison,
+    plot_pr_curves,
+    plot_roc_curves,
     plot_target_correlation,
     plot_target_distribution,
+    plot_threshold_analysis,
     save_figure,
 )
 
