@@ -11,6 +11,9 @@ export interface DecisionItem {
   decision: DecisionType;
   action?: string;
   policy_version?: string;
+  reason_code?: string;
+  auto_actioned?: boolean;
+  audit_sampled?: boolean;
   thresholds?: {
     approve?: number;
     decline?: number;

@@ -22,30 +22,30 @@ export function SegmentedTabs<T extends string = string>({
   size = 'md',
 }: SegmentedTabsProps<T>) {
   return (
-    <div className="flex items-center gap-1 bg-surface-1 border border-border-subtle p-1 rounded-lg">
+    <div className="flex items-center gap-1 panel p-1">
       {tabs.map((tab) => {
         const isActive = activeTab === tab.id;
-        const paddingClass = size === 'sm' ? 'px-3 py-1.5 text-xs' : 'px-4 py-2 text-xs font-medium';
+        const paddingClass = size === 'sm' ? 'px-2.5 py-1 text-xs' : 'px-3.5 py-1.5 text-xs';
 
         return (
           <button
             key={tab.id}
             onClick={() => onChange(tab.id)}
-            className={`relative flex items-center gap-2 rounded-md transition-all duration-150 ${paddingClass} ${
+            className={`btn-interactive relative flex items-center gap-1.5 rounded-[2px] font-mono transition-colors ${paddingClass} ${
               isActive
-                ? 'bg-surface-2 text-text-primary shadow-xs font-semibold'
-                : 'text-text-secondary hover:text-text-primary hover:bg-surface-hover/50'
+                ? 'bg-surface-2 text-text-primary border border-border-subtle font-bold'
+                : 'text-text-secondary hover:text-text-primary hover:bg-surface-hover'
             }`}
           >
-            {tab.icon && <span className="opacity-80">{tab.icon}</span>}
+            {tab.icon && <span className="opacity-70">{tab.icon}</span>}
             <span>{tab.label}</span>
 
             {tab.count !== undefined && (
               <span
-                className={`font-mono text-[10px] px-1.5 py-0.2 rounded-full ${
+                className={`font-mono text-[10px] px-1.5 py-0.2 rounded-[2px] ${
                   isActive
-                    ? 'bg-accent-teal/20 text-accent-teal'
-                    : 'bg-surface-hover text-text-muted'
+                    ? 'bg-surface-1 text-text-primary font-bold'
+                    : 'bg-surface-2 text-text-muted'
                 }`}
               >
                 {tab.count}
@@ -53,13 +53,9 @@ export function SegmentedTabs<T extends string = string>({
             )}
 
             {tab.badge && (
-              <span className="bg-status-review/20 text-status-review text-[10px] font-mono px-1.5 py-0.5 rounded font-bold">
+              <span className="bg-status-review-soft text-status-review text-[10px] font-mono px-1 py-0.2 rounded-[2px] font-bold">
                 {tab.badge}
               </span>
-            )}
-
-            {isActive && (
-              <span className="absolute bottom-0 left-2 right-2 h-[2px] bg-accent-teal rounded-full" />
             )}
           </button>
         );

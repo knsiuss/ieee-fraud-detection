@@ -13,7 +13,7 @@ interface EChartBaseProps {
 
 export const EChartBase: React.FC<EChartBaseProps> = ({
   option,
-  height = '300px',
+  height = '280px',
   className = '',
   onEvents,
 }) => {
@@ -26,26 +26,26 @@ export const EChartBase: React.FC<EChartBaseProps> = ({
     }
   }, [theme]);
 
-  // Merge default theme styling (Dark vs Light)
   const isDark = theme === 'dark';
-  const textColor = isDark ? '#9CA3AF' : '#4B5563';
-  const borderColor = isDark ? '#222634' : '#E5E7EB';
-  const splitLineColor = isDark ? 'rgba(148, 163, 184, 0.08)' : 'rgba(100, 116, 139, 0.12)';
+  const textColor = isDark ? '#A8A49A' : '#6E6A62';
+  const borderColor = isDark ? 'rgba(230, 227, 218, 0.10)' : '#DCD8CE';
+  const splitLineColor = isDark ? 'rgba(230, 227, 218, 0.05)' : 'rgba(110, 106, 98, 0.08)';
 
   const mergedOption: EChartsOption = {
     backgroundColor: 'transparent',
     textStyle: {
-      fontFamily: 'JetBrains Mono, SF Mono, Geist, sans-serif',
+      fontFamily: 'IBM Plex Mono, JetBrains Mono, monospace',
       color: textColor,
     },
     tooltip: {
-      backgroundColor: isDark ? '#171A24' : '#FFFFFF',
+      backgroundColor: isDark ? '#26252B' : '#FFFFFF',
       borderColor: borderColor,
       borderWidth: 1,
+      padding: [8, 12],
       textStyle: {
-        color: isDark ? '#E6E8EE' : '#111827',
-        fontSize: 12,
-        fontFamily: 'JetBrains Mono, monospace',
+        color: isDark ? '#F6F4EF' : '#17161A',
+        fontSize: 11,
+        fontFamily: 'IBM Plex Mono, JetBrains Mono, monospace',
       },
       ...option.tooltip,
     },
@@ -69,8 +69,6 @@ export const EChartBase: React.FC<EChartBaseProps> = ({
         option={mergedOption}
         style={{ height: '100%', width: '100%' }}
         onEvents={onEvents}
-        notMerge={true}
-        lazyUpdate={true}
       />
     </div>
   );

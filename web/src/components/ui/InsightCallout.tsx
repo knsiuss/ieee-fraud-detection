@@ -1,5 +1,5 @@
 import React from 'react';
-import { Lightbulb, Info, AlertOctagon, CheckCircle } from 'lucide-react';
+import { Info } from 'lucide-react';
 
 interface InsightCalloutProps {
   title?: string;
@@ -8,41 +8,15 @@ interface InsightCalloutProps {
 }
 
 export const InsightCallout: React.FC<InsightCalloutProps> = ({
-  title = 'Analyst Insight',
+  title = 'Analyst Note',
   children,
-  variant = 'info',
 }) => {
-  const styles = {
-    info: {
-      bg: 'bg-surface-2 border-border-subtle text-text-primary',
-      icon: Info,
-      iconColor: 'text-accent-sky',
-    },
-    tip: {
-      bg: 'bg-accent-teal/8 border-accent-teal/20 text-text-primary',
-      icon: Lightbulb,
-      iconColor: 'text-accent-teal',
-    },
-    warning: {
-      bg: 'bg-status-review/8 border-status-review/20 text-text-primary',
-      icon: AlertOctagon,
-      iconColor: 'text-status-review',
-    },
-    success: {
-      bg: 'bg-status-approve/8 border-status-approve/20 text-text-primary',
-      icon: CheckCircle,
-      iconColor: 'text-status-approve',
-    },
-  };
-
-  const { bg, icon: Icon, iconColor } = styles[variant];
-
   return (
-    <div className={`border rounded-lg p-3.5 flex items-start gap-3 text-xs leading-relaxed ${bg}`}>
-      <Icon className={`w-4 h-4 shrink-0 mt-0.5 ${iconColor}`} />
+    <div className="panel p-3 flex items-start gap-2.5 text-xs font-mono leading-relaxed bg-surface-1 text-text-primary">
+      <Info className="w-3.5 h-3.5 shrink-0 mt-0.5 text-text-muted" />
       <div>
-        {title && <span className="font-semibold block mb-0.5">{title}: </span>}
-        <div className="text-text-secondary">{children}</div>
+        {title && <span className="font-semibold text-text-primary mr-1.5">{title}:</span>}
+        <span className="text-text-secondary">{children}</span>
       </div>
     </div>
   );

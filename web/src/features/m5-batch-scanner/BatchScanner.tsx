@@ -3,8 +3,9 @@ import { api } from '../../lib/api';
 import type { BatchScoreResponse, BatchScoreRow } from '../../lib/types';
 import { DataTable } from '../../components/ui/DataTable';
 import { StatusBadge } from '../../components/ui/StatusBadge';
+import { ScoreBar } from '../../components/ui/ScoreBar';
 import { InsightCallout } from '../../components/ui/InsightCallout';
-import { Upload, FileSpreadsheet, Download, CheckCircle2, AlertTriangle, XCircle, FileText } from 'lucide-react';
+import { Upload, Download, FileText } from 'lucide-react';
 import type { ColumnDef } from '@tanstack/react-table';
 
 export const BatchScanner: React.FC = () => {
@@ -76,7 +77,7 @@ export const BatchScanner: React.FC = () => {
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement('a');
     link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `sentinel_scored_batch_${Date.now()}.csv`);
+    link.setAttribute('download', `ledger_batch_scored_${Date.now()}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -85,7 +86,7 @@ export const BatchScanner: React.FC = () => {
   const columns: ColumnDef<BatchScoreRow, any>[] = [
     {
       accessorKey: 'id',
-      header: 'CSV Index',
+      header: 'Index',
       cell: ({ row }) => <span className="font-mono text-text-muted">#{row.original.id ?? row.index + 1}</span>,
     },
     {
@@ -95,18 +96,18 @@ export const BatchScanner: React.FC = () => {
     },
     {
       accessorKey: 'probability',
-      header: 'Fraud Probability',
-      cell: ({ row }) => {
-        const p = row.original.probability;
-        const color = p > 0.8 ? 'text-status-block' : p > 0.2 ? 'text-status-review' : 'text-status-approve';
-        return <span className={`font-mono font-bold ${color}`}>{(p * 100).toFixed(1)}%</span>;
-      },
+      header: 'Risk Probability Track',
+      cell: ({ row }) => (
+        <div className="w-48">
+          <ScoreBar probability={row.original.probability} compact={true} />
+        </div>
+      ),
     },
     {
       accessorKey: 'risk_tier',
-      header: 'Risk Tier',
+      header: 'Tier',
       cell: ({ row }) => (
-        <span className="uppercase font-mono text-[11px] text-text-secondary">
+        <span className="uppercase font-mono text-[10px] text-text-secondary">
           {row.original.risk_tier}
         </span>
       ),
@@ -127,117 +128,96 @@ export const BatchScanner: React.FC = () => {
   const declined = response?.rows.filter((r) => r.decision === 'DECLINE').length || 0;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Header */}
-      <div className="flex items-center justify-between bg-surface-1 border border-border-subtle p-4 rounded-lg">
+      <div className="flex items-center justify-between panel p-3.5">
         <div>
-          <h2 className="text-base font-bold text-text-primary tracking-tight">
-            BATCH DATASET SCORING &amp; HIGH-THROUGHPUT SCANNER
+          <h2 className="text-sm font-mono font-bold text-text-primary tracking-tight">
+            BATCH DATASET SCORING &amp; SCANNER
           </h2>
           <p className="text-xs font-mono text-text-muted">
-            Upload CSV datasets of unlabelled transactions for bulk high-speed inference and automated triage
+            Upload CSV datasets of transactions for high-speed offline inference and triage
           </p>
         </div>
       </div>
 
-      {/* Upload Zone */}
-      <div className="bg-surface-1 border border-border-subtle rounded-lg p-6 space-y-4">
-        <div className="border-2 border-dashed border-border-subtle hover:border-accent-teal/50 rounded-lg p-8 text-center bg-surface-2/40 flex flex-col items-center justify-center transition-colors">
-          <Upload className="w-10 h-10 text-accent-teal mb-3" />
-          <h3 className="text-sm font-semibold text-text-primary mb-1">
-            Drag &amp; Drop CSV File or Select from Computer
-          </h3>
-          <p className="text-xs text-text-muted mb-4 font-mono">
-            Supported columns: TransactionAmt, card1..card6, dist1, P_emaildomain, C1..C14, D1..D15...
-          </p>
-
-          <div className="flex flex-wrap items-center gap-3">
-            <label className="px-4 py-2 bg-accent-teal hover:bg-accent-teal/90 text-white text-xs font-mono font-semibold rounded cursor-pointer transition-colors">
-              Browse CSV File
+      {/* Upload Box */}
+      <div className="panel p-4 space-y-3">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <label className="btn-interactive inline-flex items-center gap-1.5 px-3 py-1.5 bg-surface-2 hover:bg-surface-hover border border-border-subtle rounded-[2px] text-xs font-mono text-text-primary cursor-pointer">
+              <Upload className="w-3.5 h-3.5 text-text-muted" />
+              <span>{file ? file.name : 'Select CSV File...'}</span>
               <input type="file" accept=".csv" onChange={handleFileChange} className="hidden" />
             </label>
 
             <button
-              onClick={handleLoadSample}
-              disabled={isLoading}
-              className="px-4 py-2 bg-surface-2 hover:bg-surface-hover border border-border-subtle text-text-primary text-xs font-mono rounded flex items-center gap-1.5 transition-colors"
+              onClick={handleUpload}
+              disabled={!file || isLoading}
+              className="btn-interactive px-3 py-1.5 bg-surface-hover text-text-primary border border-border-muted rounded-[2px] text-xs font-mono font-semibold disabled:opacity-50"
             >
-              <FileSpreadsheet className="w-4 h-4 text-accent-cyan" />
-              <span>Load Pre-built Demo Batch</span>
+              {isLoading ? 'Processing Batch...' : 'Execute Batch Score'}
             </button>
           </div>
 
-          {file && (
-            <div className="mt-4 text-xs font-mono text-accent-teal flex items-center gap-1.5">
-              <CheckCircle2 className="w-4 h-4" />
-              <span>Selected: <b>{file.name}</b> ({(file.size / 1024).toFixed(1)} KB)</span>
-            </div>
-          )}
-        </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleLoadSample}
+              disabled={isLoading}
+              className="btn-interactive inline-flex items-center gap-1 px-2.5 py-1 bg-surface-2 hover:bg-surface-hover border border-border-subtle rounded-[2px] text-xs font-mono text-text-secondary hover:text-text-primary"
+            >
+              <FileText className="w-3 h-3 text-text-muted" />
+              <span>Load 6-Row Sample CSV</span>
+            </button>
 
-        {file && !response && (
-          <button
-            onClick={handleUpload}
-            disabled={isLoading}
-            className="w-full py-2.5 bg-accent-teal hover:bg-accent-teal/90 text-white font-mono text-xs font-bold rounded shadow-xs transition-colors"
-          >
-            {isLoading ? 'Scoring Batch on LightGBM Engine...' : 'Execute Bulk Scoring'}
-          </button>
-        )}
+            {response && (
+              <button
+                onClick={handleExportCsv}
+                className="btn-interactive inline-flex items-center gap-1 px-2.5 py-1 bg-surface-2 hover:bg-surface-hover border border-border-subtle rounded-[2px] text-xs font-mono text-text-primary"
+              >
+                <Download className="w-3 h-3 text-text-muted" />
+                <span>Export Scored CSV</span>
+              </button>
+            )}
+          </div>
+        </div>
 
         {error && <div className="text-status-block text-xs font-mono">{error}</div>}
       </div>
 
-      {/* Results Summary & Table */}
+      {/* Batch Summary Counters */}
       {response && (
-        <div className="bg-surface-1 border border-border-subtle rounded-lg p-5 space-y-4">
-          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border-subtle pb-4">
-            <div>
-              <h3 className="text-sm font-bold text-text-primary">
-                Evaluation Results: {total} Transactions Scored
-              </h3>
-              <p className="text-xs font-mono text-text-muted">
-                Model: {response.model_version} | Status: Ready
-              </p>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <button
-                onClick={handleExportCsv}
-                className="px-3 py-1.5 bg-surface-2 hover:bg-surface-hover border border-border-subtle text-text-primary text-xs font-mono rounded flex items-center gap-1.5 transition-colors"
-              >
-                <Download className="w-3.5 h-3.5" />
-                <span>Export Scored CSV</span>
-              </button>
-            </div>
+        <div className="grid grid-cols-4 gap-3 font-mono text-xs">
+          <div className="panel p-3">
+            <span className="text-text-muted uppercase text-[10px] block">Total Processed</span>
+            <span className="text-xl font-bold text-text-primary tabular-nums">{total}</span>
           </div>
-
-          {/* Quick Metrics Bar */}
-          <div className="grid grid-cols-3 gap-3 text-center font-mono text-xs">
-            <div className="p-3 bg-status-approve/10 border border-status-approve/25 rounded-lg text-status-approve">
-              <span className="block text-lg font-bold">{approved}</span>
-              <span className="text-[11px] opacity-80">Approved ({((approved / total) * 100).toFixed(0)}%)</span>
-            </div>
-            <div className="p-3 bg-status-review/10 border border-status-review/25 rounded-lg text-status-review">
-              <span className="block text-lg font-bold">{reviewed}</span>
-              <span className="text-[11px] opacity-80">Manual Review ({((reviewed / total) * 100).toFixed(0)}%)</span>
-            </div>
-            <div className="p-3 bg-status-block/10 border border-status-block/25 rounded-lg text-status-block">
-              <span className="block text-lg font-bold">{declined}</span>
-              <span className="text-[11px] opacity-80">Declined / Blocked ({((declined / total) * 100).toFixed(0)}%)</span>
-            </div>
+          <div className="panel p-3">
+            <span className="text-text-muted uppercase text-[10px] block">Auto-Approved</span>
+            <span className="text-xl font-bold text-status-approve tabular-nums">{approved}</span>
           </div>
-
-          <DataTable
-            columns={columns}
-            data={response.rows}
-            idAccessor={(row) => String(row.id || row.transaction_id)}
-          />
+          <div className="panel p-3">
+            <span className="text-text-muted uppercase text-[10px] block">Flagged for Review</span>
+            <span className="text-xl font-bold text-status-review tabular-nums">{reviewed}</span>
+          </div>
+          <div className="panel p-3">
+            <span className="text-text-muted uppercase text-[10px] block">Auto-Declined</span>
+            <span className="text-xl font-bold text-status-block tabular-nums">{declined}</span>
+          </div>
         </div>
       )}
 
-      <InsightCallout title="High-Throughput Offline Batch Processing" variant="info">
-        Batch scoring executes in-memory vectorization via LightGBM C++ API, maintaining throughput upwards of 12,000 transactions per second for offline historical audits.
+      {/* Batch Table */}
+      {response && (
+        <DataTable
+          columns={columns}
+          data={response.rows}
+          emptyMessage="No rows evaluated in batch."
+        />
+      )}
+
+      <InsightCallout title="High-Throughput Batch Inference">
+        Batch requests run through LightGBM optimized matrix scoring with auto-imputation across all 400 IEEE-CIS features.
       </InsightCallout>
     </div>
   );

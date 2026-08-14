@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { api } from '../../lib/api';
 import type { SimulateResponse, ExplainResponse, SimulateRequest } from '../../lib/types';
-import { GaugeChart } from '../../components/charts/GaugeChart';
+import { ScoreBar } from '../../components/ui/ScoreBar';
 import { ShapWaterfallChart } from '../../components/charts/ShapWaterfallChart';
 import { StatusBadge } from '../../components/ui/StatusBadge';
 import { InsightCallout } from '../../components/ui/InsightCallout';
@@ -99,55 +99,64 @@ export const Simulator: React.FC = () => {
     }
   };
 
+  // Extract top SHAP driver if available
+  const topShapFeature = explanation?.features?.[0];
+  const topDriver = topShapFeature
+    ? {
+        label: topShapFeature.feature,
+        direction: topShapFeature.contribution > 0 ? ('fraud' as const) : ('safe' as const),
+      }
+    : undefined;
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Header */}
-      <div className="flex items-center justify-between bg-surface-1/90 backdrop-blur border border-border-subtle p-4 rounded-lg shadow-xs">
+      <div className="flex items-center justify-between panel p-3.5">
         <div>
-          <h2 className="text-base font-bold text-text-primary tracking-tight">
-            SIMULATION &amp; EXPLAINABLE AI (XAI) STUDIO
+          <h2 className="text-sm font-mono font-bold text-text-primary tracking-tight">
+            SIMULATION &amp; EXPLAINABILITY (XAI) STUDIO
           </h2>
           <p className="text-xs font-mono text-text-muted">
-            Construct synthetic IEEE-CIS 400-feature payloads and inspect real-time SHAP waterfall explanations
+            Construct synthetic transaction parameters and inspect real-time SHAP feature attribution
           </p>
         </div>
       </div>
 
       {/* Preset Buttons */}
-      <div className="flex flex-wrap items-center gap-2.5">
-        <span className="text-xs font-mono text-text-muted">Scenario Presets:</span>
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-xs font-mono text-text-muted">Presets:</span>
         {presets.map((p) => {
           const Icon = p.icon;
           return (
             <button
               key={p.name}
               onClick={() => handleApplyPreset(p)}
-              className="btn-interactive inline-flex items-center gap-1.5 px-3 py-1.5 bg-surface-1/90 hover:bg-surface-2 border border-border-subtle hover:border-accent-teal/40 rounded-md text-xs font-mono text-text-secondary hover:text-text-primary shadow-xs transition-all"
+              className="btn-interactive inline-flex items-center gap-1.5 px-2.5 py-1 bg-surface-1 hover:bg-surface-hover border border-border-subtle rounded-[2px] text-xs font-mono text-text-secondary hover:text-text-primary transition-colors"
             >
-              <Icon className="w-3.5 h-3.5 text-accent-teal" />
+              <Icon className="w-3 h-3 text-text-muted" />
               <span>{p.name}</span>
             </button>
           );
         })}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
         {/* Left Form (5 Cols) */}
-        <div className="lg:col-span-5 bg-surface-1/90 backdrop-blur border border-border-subtle rounded-lg p-5 space-y-4 shadow-xs">
-          <h3 className="text-xs font-semibold uppercase tracking-wider text-text-primary border-b border-border-subtle pb-2 flex items-center justify-between">
+        <div className="lg:col-span-5 panel p-4 space-y-3">
+          <h3 className="text-xs font-mono font-semibold uppercase tracking-wider text-text-primary border-b border-border-subtle pb-2 flex items-center justify-between">
             <span>Transaction Parameters</span>
-            <span className="text-[10px] font-mono text-accent-teal px-1.5 py-0.2 rounded bg-accent-teal/10">
+            <span className="text-[10px] font-mono text-text-muted">
               400 Auto-Imputed Feats
             </span>
           </h3>
 
-          <div className="space-y-3.5 text-xs font-mono">
+          <div className="space-y-3 text-xs font-mono">
             <div>
               <label className="block text-text-secondary mb-1">Base Feature Profile</label>
               <select
                 value={profile}
                 onChange={(e) => setProfile(e.target.value as any)}
-                className="w-full bg-surface-2 border border-border-subtle text-text-primary px-3 py-1.5 rounded focus:outline-none focus:border-accent-teal transition-colors shadow-xs"
+                className="w-full bg-surface-2 border border-border-subtle text-text-primary px-2.5 py-1 rounded-[2px] focus:outline-none"
               >
                 <option value="typical">Typical Baseline (Median distribution)</option>
                 <option value="nonfraud">Known Non-Fraud Benchmark</option>
@@ -155,14 +164,14 @@ export const Simulator: React.FC = () => {
               </select>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-2.5">
               <div>
-                <label className="block text-text-secondary mb-1">Transaction Amount ($)</label>
+                <label className="block text-text-secondary mb-1">Amount ($)</label>
                 <input
                   type="number"
                   value={amount}
                   onChange={(e) => setAmount(Number(e.target.value))}
-                  className="w-full bg-surface-2 border border-border-subtle text-text-primary px-3 py-1.5 rounded focus:outline-none focus:border-accent-teal transition-colors shadow-xs"
+                  className="w-full bg-surface-2 border border-border-subtle text-text-primary px-2.5 py-1 rounded-[2px] focus:outline-none"
                 />
               </div>
 
@@ -171,7 +180,7 @@ export const Simulator: React.FC = () => {
                 <select
                   value={cardBrand}
                   onChange={(e) => setCardBrand(e.target.value)}
-                  className="w-full bg-surface-2 border border-border-subtle text-text-primary px-3 py-1.5 rounded focus:outline-none focus:border-accent-teal transition-colors shadow-xs"
+                  className="w-full bg-surface-2 border border-border-subtle text-text-primary px-2.5 py-1 rounded-[2px] focus:outline-none"
                 >
                   <option value="visa">Visa (6200)</option>
                   <option value="mastercard">Mastercard (10200)</option>
@@ -181,14 +190,14 @@ export const Simulator: React.FC = () => {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-2.5">
               <div>
-                <label className="block text-text-secondary mb-1">Distance to Billing (dist1)</label>
+                <label className="block text-text-secondary mb-1">Billing Distance (dist1)</label>
                 <input
                   type="number"
                   value={billingDistance}
                   onChange={(e) => setBillingDistance(Number(e.target.value))}
-                  className="w-full bg-surface-2 border border-border-subtle text-text-primary px-3 py-1.5 rounded focus:outline-none focus:border-accent-teal transition-colors shadow-xs"
+                  className="w-full bg-surface-2 border border-border-subtle text-text-primary px-2.5 py-1 rounded-[2px] focus:outline-none"
                 />
               </div>
 
@@ -198,19 +207,19 @@ export const Simulator: React.FC = () => {
                   type="number"
                   value={cardMatchCount}
                   onChange={(e) => setCardMatchCount(Number(e.target.value))}
-                  className="w-full bg-surface-2 border border-border-subtle text-text-primary px-3 py-1.5 rounded focus:outline-none focus:border-accent-teal transition-colors shadow-xs"
+                  className="w-full bg-surface-2 border border-border-subtle text-text-primary px-2.5 py-1 rounded-[2px] focus:outline-none"
                 />
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-2.5">
               <div>
                 <label className="block text-text-secondary mb-1">Hourly Velocity (C2)</label>
                 <input
                   type="number"
                   value={purchaseFrequency}
                   onChange={(e) => setPurchaseFrequency(Number(e.target.value))}
-                  className="w-full bg-surface-2 border border-border-subtle text-text-primary px-3 py-1.5 rounded focus:outline-none focus:border-accent-teal transition-colors shadow-xs"
+                  className="w-full bg-surface-2 border border-border-subtle text-text-primary px-2.5 py-1 rounded-[2px] focus:outline-none"
                 />
               </div>
 
@@ -220,7 +229,7 @@ export const Simulator: React.FC = () => {
                   type="number"
                   value={daysSinceActivity}
                   onChange={(e) => setDaysSinceActivity(Number(e.target.value))}
-                  className="w-full bg-surface-2 border border-border-subtle text-text-primary px-3 py-1.5 rounded focus:outline-none focus:border-accent-teal transition-colors shadow-xs"
+                  className="w-full bg-surface-2 border border-border-subtle text-text-primary px-2.5 py-1 rounded-[2px] focus:outline-none"
                 />
               </div>
             </div>
@@ -228,14 +237,14 @@ export const Simulator: React.FC = () => {
             <button
               onClick={handleRunSimulation}
               disabled={isLoading}
-              className="btn-interactive w-full mt-3 py-2.5 bg-accent-teal hover:bg-accent-teal/90 text-white font-semibold rounded shadow-[0_0_15px_rgba(20,184,166,0.25)] flex items-center justify-center gap-2 transition-all cursor-pointer"
+              className="btn-interactive w-full mt-2 py-2 bg-surface-2 hover:bg-surface-hover border border-border-subtle text-text-primary font-mono font-semibold rounded-[2px] flex items-center justify-center gap-2 cursor-pointer"
             >
               {isLoading ? (
-                <span className="animate-pulse">Executing LightGBM Model...</span>
+                <span>Executing Model Inference...</span>
               ) : (
                 <>
-                  <Play className="w-4 h-4" />
-                  <span>Run Real-Time Score &amp; Explain</span>
+                  <Play className="w-3.5 h-3.5 text-text-secondary" />
+                  <span>Run Inference &amp; Explain</span>
                 </>
               )}
             </button>
@@ -245,81 +254,66 @@ export const Simulator: React.FC = () => {
         </div>
 
         {/* Right Results & SHAP Inspector (7 Cols) */}
-        <div className="lg:col-span-7 space-y-4">
+        <div className="lg:col-span-7 space-y-3">
           {result ? (
-            <div className="bg-surface-1/90 backdrop-blur border border-border-subtle rounded-lg p-5 space-y-5 shadow-xs animate-fade-in">
+            <div className="panel p-4 space-y-4">
               {/* Top Decision Header */}
-              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border-subtle pb-4">
+              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border-subtle pb-3">
                 <div>
-                  <span className="text-[11px] font-mono text-text-muted">Transaction ID:</span>
-                  <div className="font-mono font-bold text-text-primary text-sm">
+                  <span className="text-[10px] font-mono text-text-muted">Transaction ID:</span>
+                  <div className="font-mono font-bold text-text-primary text-xs">
                     #{result.transaction_id}
                   </div>
                 </div>
-                <div className="flex items-center gap-3">
-                  <span className="text-xs font-mono text-text-secondary">Model Decision:</span>
-                  <StatusBadge status={result.decision} size="lg" />
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-mono text-text-secondary">Decision:</span>
+                  <StatusBadge status={result.decision} size="md" />
                 </div>
               </div>
 
-              {/* Gauge & Metrics Split */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
-                <div>
-                  <GaugeChart score={result.probability} title="INFERENCE SCORE" height="220px" />
+              {/* ScoreBar Instrument Track */}
+              <div className="p-3 bg-surface-2 rounded-[2px] border border-border-subtle space-y-2">
+                <div className="flex justify-between text-[11px] font-mono text-text-secondary">
+                  <span>Calculated Probability Track:</span>
+                  <span className="text-text-muted">Latency: {String(result.feature_report?.latency_ms || 12.4)}ms</span>
                 </div>
-
-                <div className="bg-surface-2/80 p-4 rounded-lg border border-border-subtle space-y-2 text-xs font-mono shadow-xs">
-                  <div className="flex justify-between text-text-secondary">
-                    <span>Risk Tier:</span>
-                    <span className="font-bold text-text-primary uppercase">{result.risk_tier}</span>
-                  </div>
-                  <div className="flex justify-between text-text-secondary">
-                    <span>Policy Action:</span>
-                    <span className="font-bold text-text-primary">{result.action}</span>
-                  </div>
-                  <div className="flex justify-between text-text-secondary">
-                    <span>Model Version:</span>
-                    <span className="text-accent-cyan font-bold">{result.model_version}</span>
-                  </div>
-                  <div className="flex justify-between text-text-secondary">
-                    <span>Latency:</span>
-                    <span className="text-status-approve font-bold">
-                      {String(result.feature_report?.latency_ms || 12.4)}ms
-                    </span>
-                  </div>
-                </div>
+                <ScoreBar
+                  probability={result.probability}
+                  topDriver={topDriver}
+                  showPercentage={true}
+                />
               </div>
 
               {/* SHAP Waterfall Attribution */}
               {explanation && (
-                <div className="pt-3 border-t border-border-subtle">
+                <div className="pt-2 border-t border-border-subtle">
                   <div className="flex items-center justify-between mb-2">
-                    <h4 className="text-xs font-semibold uppercase tracking-wider text-text-primary flex items-center gap-1.5">
-                      <Sparkles className="w-3.5 h-3.5 text-accent-teal" />
-                      <span>SHAP Feature Attribution (TreeExplainer)</span>
+                    <h4 className="text-xs font-mono font-semibold uppercase tracking-wider text-text-primary flex items-center gap-1.5">
+                      <Sparkles className="w-3 h-3 text-text-muted" />
+                      <span>SHAP Feature Drivers (TreeExplainer)</span>
                     </h4>
-                    <span className="text-[10px] font-mono text-text-muted">Top Contributing Drivers</span>
+                    <span className="text-[10px] font-mono text-text-muted">Top Contributing Values</span>
                   </div>
-                  <ShapWaterfallChart features={explanation.features} height="260px" />
+                  <ShapWaterfallChart features={explanation.features} height="240px" />
                 </div>
               )}
             </div>
           ) : (
-            <div className="bg-surface-1/60 border border-dashed border-border-subtle rounded-lg p-12 text-center text-text-muted flex flex-col items-center justify-center">
-              <Sparkles className="w-8 h-8 text-accent-teal opacity-50 mb-3 animate-pulse" />
-              <h3 className="text-sm font-semibold text-text-primary mb-1">
-                Awaiting Simulation Execution
+            <div className="panel p-10 text-center text-text-muted flex flex-col items-center justify-center">
+              <Sparkles className="w-6 h-6 text-text-muted mb-2 opacity-40" />
+              <h3 className="text-xs font-mono font-semibold text-text-primary mb-1">
+                Awaiting Simulation Request
               </h3>
-              <p className="text-xs max-w-sm font-mono">
-                Select a scenario preset on the left or customize parameters, then click &quot;Run Real-Time Score&quot; to inspect model inference and SHAP explainability.
+              <p className="text-[11px] max-w-sm font-mono text-text-muted">
+                Select a preset on the left or customize parameters, then click &quot;Run Inference &amp; Explain&quot;.
               </p>
             </div>
           )}
         </div>
       </div>
 
-      <InsightCallout title="Decision Engine Interpretability" variant="info">
-        SHAP (SHapley Additive exPlanations) isolates the exact mathematical push of each feature on the final fraud score. Red positive bars indicate fraud drivers (e.g. extreme velocity or high transaction amounts), while green negative bars reflect trust anchors (e.g. verified issuer BIN or consistent card history).
+      <InsightCallout title="Interpretability Note">
+        SHAP isolations quantify exact feature pushes on the final probability score. Positive drivers increase fraud risk, while negative drivers reflect trust anchors.
       </InsightCallout>
     </div>
   );

@@ -19,8 +19,12 @@ export const FraudRingGraph: React.FC<FraudRingGraphProps> = ({
     if (!containerRef.current) return;
 
     const isDark = theme === 'dark';
-    const textColor = isDark ? '#E6E8EE' : '#111827';
-    const edgeColor = isDark ? '#2E3447' : '#D1D5DB';
+    const textColor = isDark ? '#F6F4EF' : '#17161A';
+    const edgeColor = isDark ? 'rgba(230, 227, 218, 0.15)' : '#DCD8CE';
+    const blockColor = isDark ? '#B23B2E' : '#A83A2E';
+    const reviewColor = isDark ? '#B8863A' : '#A87B34';
+    const approveColor = isDark ? '#4F7A5C' : '#3B5A44';
+    const surfaceBg = isDark ? '#26252B' : '#EFEDE5';
 
     const cy = cytoscape({
       container: containerRef.current,
@@ -30,13 +34,13 @@ export const FraudRingGraph: React.FC<FraudRingGraphProps> = ({
           style: {
             label: 'data(label)',
             color: textColor,
-            'font-family': 'JetBrains Mono, monospace',
+            'font-family': 'IBM Plex Mono, JetBrains Mono, monospace',
             'font-size': '10px',
             'text-valign': 'bottom',
-            'text-margin-y': 6,
-            width: 32,
-            height: 32,
-            'border-width': 2,
+            'text-margin-y': 5,
+            width: 28,
+            height: 28,
+            'border-width': 1.5,
             'border-color': 'data(borderColor)',
             'background-color': 'data(bgColor)',
           },
@@ -45,33 +49,33 @@ export const FraudRingGraph: React.FC<FraudRingGraphProps> = ({
           selector: 'node[type = "transaction"]',
           style: {
             shape: 'round-rectangle',
-            width: 38,
-            height: 26,
+            width: 36,
+            height: 24,
           },
         },
         {
           selector: 'node[type = "card"]',
           style: {
             shape: 'diamond',
-            width: 30,
-            height: 30,
+            width: 28,
+            height: 28,
           },
         },
         {
           selector: 'edge',
           style: {
-            width: 1.5,
+            width: 1,
             'line-color': edgeColor,
             'curve-style': 'bezier',
             'target-arrow-shape': 'none',
-            opacity: 0.7,
+            opacity: 0.8,
           },
         },
         {
           selector: 'edge[fraud = "true"]',
           style: {
-            'line-color': '#F43F5E',
-            width: 2.5,
+            'line-color': blockColor,
+            width: 1.5,
             'line-style': 'dashed',
             opacity: 0.9,
           },
@@ -79,24 +83,24 @@ export const FraudRingGraph: React.FC<FraudRingGraphProps> = ({
         {
           selector: ':selected',
           style: {
-            'border-color': '#14B8A6',
-            'border-width': 4,
+            'border-color': textColor,
+            'border-width': 2.5,
           },
         },
       ],
       elements: [
         // Seed cluster 1: Card syndicate
-        { data: { id: 'c1', label: 'Card •••• 4912', type: 'card', bgColor: '#1A1E2B', borderColor: '#F43F5E' } },
-        { data: { id: 'tx1', label: 'TX-98421 ($1.4k)', type: 'transaction', bgColor: '#F43F5E', borderColor: '#F43F5E' } },
-        { data: { id: 'tx2', label: 'TX-98422 ($850)', type: 'transaction', bgColor: '#F43F5E', borderColor: '#F43F5E' } },
-        { data: { id: 'ip1', label: 'IP 185.220.101.5 (Tor)', type: 'ip', bgColor: '#1E2230', borderColor: '#F59E0B' } },
-        { data: { id: 'em1', label: 'tempmail-99@xyz.org', type: 'email', bgColor: '#1E2230', borderColor: '#F43F5E' } },
+        { data: { id: 'c1', label: 'Card •••• 4912', type: 'card', bgColor: surfaceBg, borderColor: blockColor } },
+        { data: { id: 'tx1', label: 'TX-98421 ($1.4k)', type: 'transaction', bgColor: surfaceBg, borderColor: blockColor } },
+        { data: { id: 'tx2', label: 'TX-98422 ($850)', type: 'transaction', bgColor: surfaceBg, borderColor: blockColor } },
+        { data: { id: 'ip1', label: 'IP 185.220.101.5 (Tor)', type: 'ip', bgColor: surfaceBg, borderColor: reviewColor } },
+        { data: { id: 'em1', label: 'tempmail-99@xyz.org', type: 'email', bgColor: surfaceBg, borderColor: blockColor } },
         
         // Seed cluster 2: Identity proxy syndicate
-        { data: { id: 'c2', label: 'Card •••• 8821', type: 'card', bgColor: '#1A1E2B', borderColor: '#F59E0B' } },
-        { data: { id: 'tx3', label: 'TX-98430 ($420)', type: 'transaction', bgColor: '#F59E0B', borderColor: '#F59E0B' } },
-        { data: { id: 'dev1', label: 'Device: Linux/Chrome Headless', type: 'device', bgColor: '#171A24', borderColor: '#06B6D4' } },
-        { data: { id: 'tx4', label: 'TX-98435 ($310)', type: 'transaction', bgColor: '#10B981', borderColor: '#10B981' } },
+        { data: { id: 'c2', label: 'Card •••• 8821', type: 'card', bgColor: surfaceBg, borderColor: reviewColor } },
+        { data: { id: 'tx3', label: 'TX-98430 ($420)', type: 'transaction', bgColor: surfaceBg, borderColor: reviewColor } },
+        { data: { id: 'dev1', label: 'Device: Linux/Chrome Headless', type: 'device', bgColor: surfaceBg, borderColor: textColor } },
+        { data: { id: 'tx4', label: 'TX-98435 ($310)', type: 'transaction', bgColor: surfaceBg, borderColor: approveColor } },
 
         // Edges
         { data: { id: 'e1', source: 'tx1', target: 'c1', fraud: 'true' } },
@@ -111,9 +115,9 @@ export const FraudRingGraph: React.FC<FraudRingGraphProps> = ({
       layout: {
         name: 'cose',
         animate: false,
-        padding: 30,
-        nodeRepulsion: () => 4500,
-        idealEdgeLength: () => 70,
+        padding: 24,
+        nodeRepulsion: () => 4000,
+        idealEdgeLength: () => 65,
       },
     });
 
@@ -132,10 +136,10 @@ export const FraudRingGraph: React.FC<FraudRingGraphProps> = ({
   }, [theme, onNodeClick]);
 
   return (
-    <div className="relative w-full rounded-lg bg-surface-1 border border-border-subtle overflow-hidden">
-      <div className="absolute top-3 left-3 z-10 flex items-center gap-2 bg-surface-2/90 backdrop-blur px-3 py-1.5 rounded-md border border-border-subtle text-[11px] font-mono">
-        <span className="w-2 h-2 rounded-full bg-status-block"></span>
-        <span>High-Risk Syndicate Cluster Detected</span>
+    <div className="relative w-full panel overflow-hidden">
+      <div className="absolute top-2.5 left-2.5 z-10 flex items-center gap-1.5 bg-surface-2 px-2.5 py-1 rounded-[2px] border border-border-subtle text-[10px] font-mono text-text-secondary">
+        <span className="w-1.5 h-1.5 rounded-full bg-status-block"></span>
+        <span>Syndicate Cluster Entity Graph</span>
       </div>
       <div ref={containerRef} style={{ height, width: '100%' }} />
     </div>

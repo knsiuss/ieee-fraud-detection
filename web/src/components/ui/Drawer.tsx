@@ -34,18 +34,18 @@ export const Drawer: React.FC<DrawerProps> = ({
     <div className="fixed inset-0 z-50 overflow-hidden">
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity"
+        className="fixed inset-0 bg-black/60 transition-opacity"
         onClick={onClose}
       />
 
       <div className="fixed inset-y-0 right-0 flex max-w-full pl-10">
         <div
-          className={`w-screen ${widthClass} bg-surface-1 border-l border-border-subtle shadow-2xl flex flex-col justify-between`}
+          className={`w-screen ${widthClass} bg-surface-1 border-l border-border-subtle flex flex-col justify-between`}
         >
           {/* Header */}
-          <div className="px-6 py-4 border-b border-border-subtle flex items-center justify-between bg-surface-2/70">
+          <div className="px-5 py-3.5 border-b border-border-subtle flex items-center justify-between bg-surface-2">
             <div>
-              <h2 className="text-base font-semibold text-text-primary tracking-tight">
+              <h2 className="text-sm font-semibold text-text-primary tracking-tight">
                 {title}
               </h2>
               {subtitle && (
@@ -54,14 +54,14 @@ export const Drawer: React.FC<DrawerProps> = ({
             </div>
             <button
               onClick={onClose}
-              className="rounded-md p-1.5 text-text-muted hover:text-text-primary hover:bg-surface-hover transition-colors"
+              className="rounded p-1 text-text-muted hover:text-text-primary hover:bg-surface-hover transition-colors"
             >
-              <X className="w-5 h-5" />
+              <X className="w-4 h-4" />
             </button>
           </div>
 
           {/* Content body */}
-          <div className="flex-1 overflow-y-auto p-6 space-y-6">{children}</div>
+          <div className="flex-1 overflow-y-auto p-5 space-y-5">{children}</div>
         </div>
       </div>
     </div>

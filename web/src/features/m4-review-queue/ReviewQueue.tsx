@@ -4,9 +4,11 @@ import { api } from '../../lib/api';
 import type { DecisionItem } from '../../lib/types';
 import { useSelectedTxStore } from '../../stores/useSelectedTxStore';
 import { StatusBadge } from '../../components/ui/StatusBadge';
+import { AuditSampledBadge } from '../../components/ui/AuditSampledBadge';
+import { ScoreBar } from '../../components/ui/ScoreBar';
 import { DataTable } from '../../components/ui/DataTable';
 import { InsightCallout } from '../../components/ui/InsightCallout';
-import { Check, X, ShieldAlert, Clock, RefreshCw, AlertTriangle } from 'lucide-react';
+import { Check, X, Clock, RefreshCw } from 'lucide-react';
 import type { ColumnDef } from '@tanstack/react-table';
 
 export const ReviewQueue: React.FC = () => {
@@ -15,7 +17,7 @@ export const ReviewQueue: React.FC = () => {
   const [selectedStatus, setSelectedStatus] = useState<string>('NEW');
   const [feedbackNote, setFeedbackNote] = useState<string>('');
 
-  const { data: queue = [], isLoading, refetch } = useQuery({
+  const { data: queue = [], refetch } = useQuery({
     queryKey: ['review-queue', selectedStatus],
     queryFn: () => api.getReviewQueue(selectedStatus),
     refetchInterval: 10000,
@@ -38,37 +40,37 @@ export const ReviewQueue: React.FC = () => {
   const columns: ColumnDef<DecisionItem, any>[] = [
     {
       accessorKey: 'status',
-      header: 'Queue Status',
+      header: 'Queue State',
       cell: ({ row }) => (
-        <span className="px-2 py-0.5 rounded bg-surface-2 border border-border-subtle text-[11px] font-mono font-medium">
-          {row.original.status || 'NEW'}
-        </span>
+        <div className="flex items-center gap-1.5">
+          <span className="px-1.5 py-0.5 rounded-[2px] bg-surface-2 border border-border-subtle text-[11px] font-mono font-medium">
+            {row.original.status || 'NEW'}
+          </span>
+          {row.original.audit_sampled && <AuditSampledBadge />}
+        </div>
       ),
     },
     {
       accessorKey: 'transaction_id',
       header: 'Transaction ID',
       cell: ({ row }) => (
-        <span className="font-bold text-text-primary hover:text-accent-teal cursor-pointer">
+        <span className="font-bold text-text-primary">
           #{row.original.transaction_id.slice(-8)}
         </span>
       ),
     },
     {
       accessorKey: 'score',
-      header: 'Fraud Probability',
+      header: 'Risk Probability Track',
       cell: ({ row }) => (
-        <div className="flex items-center gap-2">
-          <span className="font-bold text-status-review">
-            {(row.original.score * 100).toFixed(1)}%
-          </span>
-          <StatusBadge status={row.original.decision} size="sm" showIcon={false} />
+        <div className="w-48">
+          <ScoreBar probability={row.original.score} compact={true} />
         </div>
       ),
     },
     {
       accessorKey: 'timestamp',
-      header: 'Queued At',
+      header: 'Queued At (UTC)',
       cell: ({ row }) => {
         try {
           return new Date(row.original.timestamp).toLocaleString();
@@ -85,22 +87,22 @@ export const ReviewQueue: React.FC = () => {
           <button
             onClick={() => handleAction(row.original.transaction_id, 'safe')}
             disabled={outcomeMutation.isPending}
-            className="px-2.5 py-1 bg-status-approve/12 hover:bg-status-approve/25 border border-status-approve/30 text-status-approve rounded text-[11px] font-semibold flex items-center gap-1 transition-colors"
+            className="btn-interactive px-2 py-0.5 bg-status-approve-soft text-status-approve border border-status-approve/30 rounded-[2px] text-[11px] font-mono font-semibold flex items-center gap-1"
           >
-            <Check className="w-3.5 h-3.5" />
+            <Check className="w-3 h-3" />
             <span>Approve (Safe)</span>
           </button>
           <button
             onClick={() => handleAction(row.original.transaction_id, 'fraud')}
             disabled={outcomeMutation.isPending}
-            className="px-2.5 py-1 bg-status-block/12 hover:bg-status-block/25 border border-status-block/30 text-status-block rounded text-[11px] font-semibold flex items-center gap-1 transition-colors"
+            className="btn-interactive px-2 py-0.5 bg-status-block-soft text-status-block border border-status-block/30 rounded-[2px] text-[11px] font-mono font-semibold flex items-center gap-1"
           >
-            <X className="w-3.5 h-3.5" />
+            <X className="w-3 h-3" />
             <span>Confirm Fraud</span>
           </button>
           <button
             onClick={() => openDrawer(row.original)}
-            className="px-2 py-1 bg-surface-2 hover:bg-surface-hover border border-border-subtle text-text-muted hover:text-text-primary rounded text-[11px] transition-colors"
+            className="btn-interactive px-2 py-0.5 bg-surface-2 hover:bg-surface-hover border border-border-subtle text-text-secondary hover:text-text-primary rounded-[2px] text-[11px] font-mono"
           >
             Details
           </button>
@@ -110,47 +112,49 @@ export const ReviewQueue: React.FC = () => {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Header & SLA Badges */}
-      <div className="flex flex-wrap items-center justify-between gap-4 bg-surface-1 border border-border-subtle p-4 rounded-lg">
+      <div className="flex flex-wrap items-center justify-between gap-3 panel p-3.5">
         <div>
-          <h2 className="text-base font-bold text-text-primary tracking-tight">
+          <h2 className="text-sm font-mono font-bold text-text-primary tracking-tight">
             MANUAL REVIEW &amp; CASE RESOLUTION QUEUE
           </h2>
           <p className="text-xs font-mono text-text-muted">
-            Human-in-the-loop analyst triage queue. Outcomes automatically fold into the continuous retraining pool.
+            Human-in-the-loop analyst triage ledger. Confirmed outcomes feed bandit policy rewards.
           </p>
         </div>
 
         <div className="flex items-center gap-2 font-mono text-xs">
-          <div className="flex items-center gap-1.5 px-3 py-1.5 bg-surface-2 rounded-md border border-border-subtle">
-            <Clock className="w-3.5 h-3.5 text-accent-teal" />
-            <span>SLA Target: &lt; 2 Hours</span>
+          <div className="flex items-center gap-1.5 px-2.5 py-1 bg-surface-2 rounded-[2px] border border-border-subtle text-text-secondary">
+            <Clock className="w-3 h-3 text-text-muted" />
+            <span>SLA: &lt; 2 Hours</span>
           </div>
           <button
             onClick={() => refetch()}
-            className="p-1.5 bg-surface-2 hover:bg-surface-hover rounded-md border border-border-subtle text-text-secondary hover:text-text-primary transition-colors"
+            className="btn-interactive p-1 bg-surface-2 hover:bg-surface-hover rounded-[2px] border border-border-subtle text-text-secondary hover:text-text-primary"
+            title="Refresh review queue"
+            aria-label="Refresh review queue"
           >
-            <RefreshCw className="w-4 h-4" />
+            <RefreshCw className="w-3.5 h-3.5" />
           </button>
         </div>
       </div>
 
       {/* Queue Filter Bar */}
-      <div className="flex items-center justify-between gap-3 bg-surface-1 border border-border-subtle p-3 rounded-lg">
+      <div className="flex items-center justify-between gap-3 panel p-3">
         <div className="flex items-center gap-2">
-          <span className="text-xs font-mono text-text-muted">Status:</span>
-          {['NEW', 'REVIEWED', 'ALL'].map((st) => (
+          <span className="text-xs font-mono text-text-secondary">Filter Queue:</span>
+          {['NEW', 'IN_PROGRESS', 'RESOLVED'].map((s) => (
             <button
-              key={st}
-              onClick={() => setSelectedStatus(st)}
-              className={`px-3 py-1 text-xs font-mono rounded border transition-colors ${
-                selectedStatus === st
-                  ? 'bg-accent-teal/15 text-accent-teal border-accent-teal/40 font-bold'
-                  : 'bg-surface-2 text-text-secondary border-border-subtle hover:text-text-primary'
+              key={s}
+              onClick={() => setSelectedStatus(s)}
+              className={`btn-interactive px-2.5 py-1 rounded-[2px] text-xs font-mono border ${
+                selectedStatus === s
+                  ? 'bg-surface-hover text-text-primary border-border-muted font-bold'
+                  : 'bg-surface-2 text-text-secondary border-border-subtle hover:bg-surface-hover'
               }`}
             >
-              {st}
+              {s}
             </button>
           ))}
         </div>
@@ -158,37 +162,25 @@ export const ReviewQueue: React.FC = () => {
         <div className="flex items-center gap-2">
           <input
             type="text"
-            placeholder="Optional disposition note (e.g. Cardholder verified via SMS)..."
+            placeholder="Disposition note (optional)..."
             value={feedbackNote}
             onChange={(e) => setFeedbackNote(e.target.value)}
-            className="bg-surface-2 border border-border-subtle text-text-primary text-xs font-mono px-3 py-1.5 rounded w-80 placeholder:text-text-muted focus:outline-none focus:border-accent-teal"
+            className="bg-surface-2 border border-border-subtle text-text-primary text-xs font-mono px-2.5 py-1 rounded-[2px] w-64 placeholder:text-text-muted focus:outline-none"
           />
         </div>
       </div>
 
-      {/* Table List */}
-      <div className="bg-surface-1 border border-border-subtle rounded-lg p-4 space-y-3">
-        <div className="flex items-center justify-between">
-          <h3 className="text-xs font-semibold uppercase tracking-wider text-text-primary">
-            Active Review Cases ({queue.length})
-          </h3>
-          <span className="text-[11px] font-mono text-text-muted">
-            Sorted by Risk Priority (Descending)
-          </span>
-        </div>
+      {/* Queue Table */}
+      <DataTable
+        columns={columns}
+        data={queue}
+        onRowClick={(row) => openDrawer(row)}
+        idAccessor={(row) => row.transaction_id}
+        emptyMessage={`No cases currently in ${selectedStatus} status.`}
+      />
 
-        <DataTable
-          columns={columns}
-          data={queue}
-          onRowClick={(row) => openDrawer(row)}
-          idAccessor={(row) => row.transaction_id}
-          emptyMessage="Review queue is currently empty. No transactions require analyst intervention."
-        />
-      </div>
-
-      <InsightCallout title="Feedback Loop Gating" variant="tip">
-        Every reviewer outcome recorded here is cryptographically audited and automatically synced to{' '}
-        <code className="text-accent-teal font-mono">data/feedback/feedback.jsonl</code>. During candidate model retraining, this ground truth is ingested into training folds while held-out validation stays pristine to guard against regression.
+      <InsightCallout title="Human-in-the-Loop Policy Feedback">
+        Dispositions recorded here automatically emit reward signals to the LinUCB contextual bandit policy (`bandit_policy.py`) to reduce false positive friction over time.
       </InsightCallout>
     </div>
   );

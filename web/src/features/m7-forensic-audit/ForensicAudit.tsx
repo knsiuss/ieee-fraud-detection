@@ -5,17 +5,20 @@ import type { DecisionItem } from '../../lib/types';
 import { useSelectedTxStore } from '../../stores/useSelectedTxStore';
 import { DataTable } from '../../components/ui/DataTable';
 import { StatusBadge } from '../../components/ui/StatusBadge';
+import { AuditSampledBadge } from '../../components/ui/AuditSampledBadge';
+import { ScoreBar } from '../../components/ui/ScoreBar';
+import { AIDisclaimer } from '../../components/ui/AIDisclaimer';
 import { InsightCallout } from '../../components/ui/InsightCallout';
-import { Search, FileText, Undo2, ShieldCheck, CheckCircle2, Bot } from 'lucide-react';
+import { Search, Undo2, Bot } from 'lucide-react';
 import type { ColumnDef } from '@tanstack/react-table';
 
 export const ForensicAudit: React.FC = () => {
   const queryClient = useQueryClient();
   const openDrawer = useSelectedTxStore((s) => s.openDrawer);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedAuditReport, setSelectedAuditReport] = useState<{ id: string; report: string } | null>(null);
+  const [selectedAuditReport, setSelectedAuditReport] = useState<{ id: string; report: string; source: string } | null>(null);
 
-  const { data: decisions = [], isLoading } = useQuery({
+  const { data: decisions = [] } = useQuery({
     queryKey: ['audit-queue'],
     queryFn: () => api.getReviewQueue('ALL', 200),
   });
@@ -32,11 +35,12 @@ export const ForensicAudit: React.FC = () => {
   const handleFetchReport = async (txId: string) => {
     try {
       const rep = await api.getAuditReport(txId);
-      setSelectedAuditReport({ id: txId, report: rep.report });
-    } catch (err: any) {
+      setSelectedAuditReport({ id: txId, report: rep.report, source: (rep as any).source || 'llm' });
+    } catch {
       setSelectedAuditReport({
         id: txId,
         report: `Automated Forensic Summary: Transaction #${txId} was flagged due to elevated card velocity anomaly combined with unusual billing distance deviation. Decision was reached deterministically via served LightGBM model.`,
+        source: 'template',
       });
     }
   };
@@ -56,9 +60,12 @@ export const ForensicAudit: React.FC = () => {
       accessorKey: 'transaction_id',
       header: 'Transaction ID',
       cell: ({ row }) => (
-        <span className="font-mono font-bold text-text-primary">
-          #{row.original.transaction_id.slice(-8)}
-        </span>
+        <div className="flex items-center gap-1.5">
+          <span className="font-mono font-bold text-text-primary">
+            #{row.original.transaction_id.slice(-8)}
+          </span>
+          {row.original.audit_sampled && <AuditSampledBadge />}
+        </div>
       ),
     },
     {
@@ -68,18 +75,18 @@ export const ForensicAudit: React.FC = () => {
     },
     {
       accessorKey: 'score',
-      header: 'Score',
+      header: 'Probability Track',
       cell: ({ row }) => (
-        <span className="font-mono font-bold text-text-primary">
-          {(row.original.score * 100).toFixed(1)}%
-        </span>
+        <div className="w-44">
+          <ScoreBar probability={row.original.score} compact={true} />
+        </div>
       ),
     },
     {
       accessorKey: 'model_version',
-      header: 'Model Artefact',
+      header: 'Model Artifact',
       cell: ({ row }) => (
-        <span className="font-mono text-xs text-accent-cyan">{row.original.model_version}</span>
+        <span className="font-mono text-xs text-text-secondary">{row.original.model_version}</span>
       ),
     },
     {
@@ -90,10 +97,10 @@ export const ForensicAudit: React.FC = () => {
         if (!out) return <span className="text-text-muted font-mono text-xs">—</span>;
         return (
           <span
-            className={`font-mono text-xs font-semibold px-2 py-0.5 rounded ${
+            className={`font-mono text-xs font-semibold px-1.5 py-0.5 rounded-[2px] ${
               out === 'fraud'
-                ? 'bg-status-block/15 text-status-block'
-                : 'bg-status-approve/15 text-status-approve'
+                ? 'bg-status-block-soft text-status-block'
+                : 'bg-status-approve-soft text-status-approve'
             }`}
           >
             {out.toUpperCase()}
@@ -103,15 +110,15 @@ export const ForensicAudit: React.FC = () => {
     },
     {
       id: 'actions',
-      header: 'Forensics & Appeal',
+      header: 'Audit Actions',
       cell: ({ row }) => (
         <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
           <button
             onClick={() => handleFetchReport(row.original.transaction_id)}
-            className="px-2 py-1 bg-surface-2 hover:bg-surface-hover border border-border-subtle text-accent-sky rounded text-[11px] font-mono flex items-center gap-1 transition-colors"
+            className="btn-interactive px-2 py-0.5 bg-surface-2 hover:bg-surface-hover border border-border-subtle text-text-primary rounded-[2px] text-[11px] font-mono flex items-center gap-1"
           >
-            <Bot className="w-3.5 h-3.5" />
-            <span>AI Report</span>
+            <Bot className="w-3 h-3 text-text-muted" />
+            <span>Audit Narrative</span>
           </button>
 
           {row.original.decision === 'DECLINE' && row.original.reviewer_outcome !== 'fraud' && (
@@ -123,16 +130,16 @@ export const ForensicAudit: React.FC = () => {
                 })
               }
               disabled={appealMutation.isPending}
-              className="px-2 py-1 bg-status-approve/12 hover:bg-status-approve/25 border border-status-approve/30 text-status-approve rounded text-[11px] font-mono flex items-center gap-1 transition-colors"
+              className="btn-interactive px-2 py-0.5 bg-status-approve-soft text-status-approve border border-status-approve/30 rounded-[2px] text-[11px] font-mono flex items-center gap-1"
             >
-              <Undo2 className="w-3.5 h-3.5" />
-              <span>Overturn (Safe)</span>
+              <Undo2 className="w-3 h-3" />
+              <span>Overturn</span>
             </button>
           )}
 
           <button
             onClick={() => openDrawer(row.original)}
-            className="px-2 py-1 bg-surface-2 hover:bg-surface-hover border border-border-subtle text-text-muted hover:text-text-primary rounded text-[11px] font-mono transition-colors"
+            className="btn-interactive px-2 py-0.5 bg-surface-2 hover:bg-surface-hover border border-border-subtle text-text-secondary hover:text-text-primary rounded-[2px] text-[11px] font-mono"
           >
             Payload
           </button>
@@ -142,74 +149,64 @@ export const ForensicAudit: React.FC = () => {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Header */}
-      <div className="flex items-center justify-between bg-surface-1 border border-border-subtle p-4 rounded-lg">
+      <div className="flex items-center justify-between panel p-3.5">
         <div>
-          <h2 className="text-base font-bold text-text-primary tracking-tight">
-            FORENSIC AUDIT TRAIL &amp; APPEAL SYSTEM
+          <h2 className="text-sm font-mono font-bold text-text-primary tracking-tight">
+            FORENSIC AUDIT &amp; DECISION APPEAL TRAIL
           </h2>
           <p className="text-xs font-mono text-text-muted">
-            Immutable, reproducible record of every inference payload, SHAP reason code, and one-click appeal reversal path
+            Durable immutable decision log with AI-synthesized audit memos and one-click reversal path
           </p>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <div className="relative">
+            <Search className="w-3.5 h-3.5 absolute left-2.5 top-2 text-text-muted" />
+            <input
+              type="text"
+              placeholder="Filter by TxID, decision..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="bg-surface-2 border border-border-subtle text-text-primary text-xs font-mono pl-8 pr-3 py-1 rounded-[2px] w-56 placeholder:text-text-muted focus:outline-none"
+            />
+          </div>
         </div>
       </div>
 
-      {/* Search Bar */}
-      <div className="flex items-center gap-3 bg-surface-1 border border-border-subtle p-3 rounded-lg">
-        <Search className="w-4 h-4 text-text-muted ml-1" />
-        <input
-          type="text"
-          placeholder="Filter by Transaction ID, Model Version, or Decision..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="bg-transparent text-text-primary text-xs font-mono w-full focus:outline-none placeholder:text-text-muted"
-        />
-      </div>
-
-      {/* AI Audit Report Modal / Card */}
+      {/* Selected Audit Narrative Panel */}
       {selectedAuditReport && (
-        <div className="p-5 bg-surface-1 border border-accent-sky/30 rounded-lg space-y-3">
-          <div className="flex items-center justify-between border-b border-border-subtle pb-3">
-            <div className="flex items-center gap-2">
-              <Bot className="w-4 h-4 text-accent-sky" />
-              <h3 className="text-xs font-bold font-mono text-text-primary">
-                AI Forensic Investigation Report: #{selectedAuditReport.id}
-              </h3>
-            </div>
+        <div className="panel p-4 space-y-3">
+          <div className="flex items-center justify-between border-b border-border-subtle pb-2">
+            <h3 className="text-xs font-mono font-semibold uppercase tracking-wider text-text-primary">
+              AI Decision Narrative Record · Tx #{selectedAuditReport.id.slice(-8)}
+            </h3>
             <button
               onClick={() => setSelectedAuditReport(null)}
-              className="text-xs font-mono text-text-muted hover:text-text-primary"
+              className="btn-interactive text-[11px] font-mono text-text-muted hover:text-text-primary"
             >
-              Close ✕
+              Close Record [×]
             </button>
           </div>
-          <div className="text-xs font-mono text-text-secondary leading-relaxed bg-surface-2 p-4 rounded border border-border-subtle">
+
+          <AIDisclaimer source={selectedAuditReport.source}>
             {selectedAuditReport.report}
-          </div>
+          </AIDisclaimer>
         </div>
       )}
 
       {/* Ledger Table */}
-      <div className="bg-surface-1 border border-border-subtle rounded-lg p-4 space-y-3">
-        <div className="flex items-center justify-between">
-          <h3 className="text-xs font-semibold uppercase tracking-wider text-text-primary">
-            Durable Decision Ledger ({filtered.length})
-          </h3>
-          <span className="text-[11px] font-mono text-text-muted">Persisted in SQLite Store</span>
-        </div>
+      <DataTable
+        columns={columns}
+        data={filtered}
+        onRowClick={(row) => openDrawer(row)}
+        idAccessor={(row) => row.transaction_id}
+        emptyMessage="No historical records match your filter criteria."
+      />
 
-        <DataTable
-          columns={columns}
-          data={filtered}
-          onRowClick={(row) => openDrawer(row)}
-          idAccessor={(row) => row.transaction_id}
-          emptyMessage="No historical audit records found matching search query."
-        />
-      </div>
-
-      <InsightCallout title="Anti-False-Positive Governance" variant="info">
-        The one-click appeal mechanism allows human operators to overturn false declines in under 5 seconds. The reversal automatically feeds the training pool with a &quot;safe&quot; ground truth label to calibrate future candidate models.
+      <InsightCallout title="Compliance &amp; Reversal Path">
+        Overturns recorded on this page immediately invoke POST /api/review/:id/appeal to reverse the decision disposition and update audit logs for regulatory compliance.
       </InsightCallout>
     </div>
   );

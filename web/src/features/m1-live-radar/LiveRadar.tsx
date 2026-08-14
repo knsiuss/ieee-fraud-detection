@@ -6,6 +6,8 @@ import { useSelectedTxStore } from '../../stores/useSelectedTxStore';
 import type { DecisionItem } from '../../lib/types';
 import { KpiCard } from '../../components/ui/KpiCard';
 import { StatusBadge } from '../../components/ui/StatusBadge';
+import { AuditSampledBadge } from '../../components/ui/AuditSampledBadge';
+import { ScoreBar } from '../../components/ui/ScoreBar';
 import { DataTable } from '../../components/ui/DataTable';
 import { TimeseriesChart } from '../../components/charts/TimeseriesChart';
 import { DistributionChart } from '../../components/charts/DistributionChart';
@@ -41,12 +43,6 @@ export const LiveRadar: React.FC = () => {
     queryKey: ['metrics-timeseries'],
     queryFn: () => api.getMetricsTimeseries(30, 60),
     refetchInterval: 5000,
-  });
-
-  const { data: rules } = useQuery({
-    queryKey: ['metrics-rules'],
-    queryFn: api.getMetricsRules,
-    refetchInterval: 10000,
   });
 
   // Simulator helper: triggers rapid transactions
@@ -100,7 +96,12 @@ export const LiveRadar: React.FC = () => {
     {
       accessorKey: 'decision',
       header: 'Decision',
-      cell: ({ row }) => <StatusBadge status={row.original.decision} size="sm" />,
+      cell: ({ row }) => (
+        <div className="flex items-center gap-1.5">
+          <StatusBadge status={row.original.decision} size="sm" />
+          {row.original.audit_sampled && <AuditSampledBadge />}
+        </div>
+      ),
     },
     {
       accessorKey: 'timestamp',
@@ -120,325 +121,192 @@ export const LiveRadar: React.FC = () => {
       accessorKey: 'transaction_id',
       header: 'Transaction ID',
       cell: ({ row }) => (
-        <span className="font-bold text-text-primary group-hover:text-accent-teal transition-colors">
+        <span className="font-bold text-text-primary">
           #{row.original.transaction_id.slice(-8)}
         </span>
       ),
     },
     {
       accessorKey: 'score',
-      header: 'Risk Score',
-      cell: ({ row }) => {
-        const score = row.original.score;
-        const color = score > 0.8 ? 'text-status-block' : score > 0.2 ? 'text-status-review' : 'text-status-approve';
-        return (
-          <div className="flex items-center gap-2">
-            <div className="w-14 bg-surface-hover h-1.5 rounded-full overflow-hidden">
-              <div
-                className={`h-full transition-all duration-300 ${
-                  score > 0.8 ? 'bg-status-block' : score > 0.2 ? 'bg-status-review' : 'bg-status-approve'
-                }`}
-                style={{ width: `${Math.round(score * 100)}%` }}
-              />
-            </div>
-            <span className={`font-bold ${color}`}>{(score * 100).toFixed(1)}%</span>
-          </div>
-        );
-      },
+      header: 'Risk Probability Track',
+      cell: ({ row }) => (
+        <div className="w-44">
+          <ScoreBar probability={row.original.score} compact={true} />
+        </div>
+      ),
     },
     {
       accessorKey: 'action',
       header: 'Policy Action',
       cell: ({ row }) => (
-        <span className="text-text-muted text-[11px] uppercase">{row.original.action || 'Standard Policy'}</span>
+        <span className="text-text-muted text-[11px] font-mono">
+          {row.original.action || 'Default Policy'}
+        </span>
       ),
     },
     {
       id: 'actions',
-      header: 'Forensics',
+      header: 'Inspect',
       cell: ({ row }) => (
         <button
           onClick={(e) => {
             e.stopPropagation();
             openDrawer(row.original);
           }}
-          className="btn-interactive px-2.5 py-1 bg-surface-2 hover:bg-surface-hover border border-border-subtle hover:border-accent-sky/40 rounded text-[11px] text-accent-sky font-semibold transition-colors"
+          className="btn-interactive px-2 py-0.5 bg-surface-2 hover:bg-surface-hover border border-border-subtle rounded-[2px] text-[11px] text-text-primary font-mono"
         >
-          Inspect →
+          Details →
         </button>
       ),
     },
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Top Real-time Control Strip */}
-      <div className="flex flex-wrap items-center justify-between gap-4 bg-surface-1/90 backdrop-blur border border-border-subtle p-3.5 rounded-lg shadow-xs">
+      <div className="flex flex-wrap items-center justify-between gap-3 panel p-3">
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 px-3 py-1.5 bg-surface-2/80 rounded-md border border-border-subtle font-mono text-xs shadow-xs">
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-status-approve opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-status-approve"></span>
-            </span>
-            <span className="text-text-primary font-medium">LIVE RADAR STREAM</span>
+          <div className="flex items-center gap-2 px-2.5 py-1 bg-surface-2 rounded-[2px] border border-border-subtle font-mono text-xs">
+            <span className="w-2 h-2 rounded-full bg-status-approve" />
+            <span className="text-text-primary font-medium">LIVE DECISION STREAM</span>
             <span className="text-text-muted text-[11px]">({rollingTps} TPS)</span>
           </div>
 
           <button
             onClick={togglePause}
-            className={`btn-interactive inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono rounded border shadow-xs transition-all ${
-              isPaused
-                ? 'bg-status-review/15 text-status-review border-status-review/30 hover:bg-status-review/25'
-                : 'bg-surface-2 text-text-secondary border-border-subtle hover:text-text-primary hover:bg-surface-hover'
-            }`}
+            className="btn-interactive inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-mono rounded-[2px] border border-border-subtle bg-surface-2 text-text-secondary hover:text-text-primary hover:bg-surface-hover"
           >
-            {isPaused ? <Play className="w-3.5 h-3.5" /> : <Pause className="w-3.5 h-3.5" />}
+            {isPaused ? <Play className="w-3 h-3" /> : <Pause className="w-3 h-3" />}
             <span>{isPaused ? 'Resume Stream' : 'Pause Stream'}</span>
           </button>
         </div>
 
         {/* Traffic Simulation Controls */}
-        <div className="flex items-center gap-2.5">
-          <span className="text-xs font-mono text-text-muted">Simulate Load:</span>
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-mono text-text-muted">Simulate:</span>
           <select
             value={simSpeed}
             onChange={(e) => setSimSpeed(Number(e.target.value))}
-            className="bg-surface-2 border border-border-subtle text-text-primary text-xs font-mono px-2.5 py-1.5 rounded focus:outline-none focus:border-accent-teal shadow-xs"
+            className="bg-surface-2 border border-border-subtle text-text-primary text-xs font-mono px-2 py-1 rounded-[2px] focus:outline-none"
           >
-            <option value={1}>1x (1 tx/s)</option>
-            <option value={3}>3x (3 tx/s)</option>
-            <option value={8}>8x Burst (8 tx/s)</option>
+            <option value={1}>1 tx/s</option>
+            <option value={3}>3 tx/s</option>
+            <option value={8}>8 tx/s</option>
           </select>
 
           <button
             onClick={handleToggleSimulation}
-            className={`btn-interactive inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono rounded border shadow-xs transition-all ${
+            className={`btn-interactive inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-mono rounded-[2px] border ${
               isSimulating
-                ? 'bg-accent-teal text-white border-accent-teal shadow-[0_0_15px_rgba(20,184,166,0.3)]'
-                : 'bg-surface-2 text-accent-teal border-accent-teal/30 hover:bg-accent-teal/10'
+                ? 'bg-surface-hover text-text-primary border-border-muted font-bold'
+                : 'bg-surface-2 text-text-primary border-border-subtle hover:bg-surface-hover'
             }`}
           >
-            <Zap className={`w-3.5 h-3.5 ${isSimulating ? 'animate-bounce' : ''}`} />
-            <span>{isSimulating ? 'Injecting Traffic...' : 'Inject Traffic'}</span>
+            <Zap className="w-3 h-3 text-text-muted" />
+            <span>{isSimulating ? 'Injecting...' : 'Inject Traffic'}</span>
           </button>
 
           <button
             onClick={() => refetchSummary()}
-            className="btn-interactive p-1.5 text-text-muted hover:text-text-primary hover:bg-surface-hover rounded border border-border-subtle shadow-xs"
+            className="btn-interactive p-1 text-text-muted hover:text-text-primary hover:bg-surface-hover rounded-[2px] border border-border-subtle"
             title="Refresh metrics"
             aria-label="Refresh metrics"
           >
-            <RefreshCw className="w-4 h-4" />
+            <RefreshCw className="w-3.5 h-3.5" />
           </button>
         </div>
       </div>
 
-      {/* Row 1: KPI Cards Grid with subtle lift & soft glow */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3.5">
+      {/* Row 1: KPI Cards Grid */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
         <KpiCard
           title="Total Volume"
           value={(summary?.total_decisions || 0).toLocaleString()}
           subtitle={`$${((summary?.gmv_total || 0) / 1000).toFixed(1)}k GMV`}
           trend={{ value: `${rollingTps} TPS`, direction: 'up' }}
-          accent="cyan"
-          pulse={!isPaused}
         />
         <KpiCard
           title="Auto-Approved"
           value={`${summary?.percentages.APPROVE || 0}%`}
-          subtitle={`${(summary?.counts.APPROVE || 0).toLocaleString()} transactions`}
+          subtitle={`${(summary?.counts.APPROVE || 0).toLocaleString()} tx`}
           trend={{ value: `${counts.APPROVE} live`, direction: 'neutral' }}
-          accent="emerald"
         />
         <KpiCard
           title="Manual Review"
           value={`${summary?.percentages.MANUAL_REVIEW || 0}%`}
           subtitle={`${(summary?.counts.MANUAL_REVIEW || 0).toLocaleString()} in queue`}
           trend={{ value: `${counts.MANUAL_REVIEW} live`, direction: 'neutral' }}
-          accent="amber"
         />
         <KpiCard
           title="Declined (Fraud)"
           value={`${summary?.percentages.DECLINE || 0}%`}
-          subtitle={`$${((summary?.loss_prevented || 0) / 1000).toFixed(1)}k Saved`}
+          subtitle={`$${((summary?.loss_prevented || 0) / 1000).toFixed(1)}k Prevented`}
           trend={{ value: `${counts.DECLINE} live`, direction: 'down' }}
-          accent="crimson"
         />
         <KpiCard
           title="Inference Latency"
           value={`${summary?.latency.p95_ms || 14.2}ms`}
           subtitle={`p50: ${summary?.latency.p50_ms || 7.8}ms | p99: ${summary?.latency.p99_ms || 23.5}ms`}
-          accent="teal"
         />
         <KpiCard
           title="Chargeback BPS"
           value={`${summary?.chargeback_bps || 16.4}`}
-          subtitle="Limit: 90 BPS"
+          subtitle="Visa Limit: 90 BPS"
           trend={{ value: 'Nominal', direction: 'up' }}
-          accent="teal"
         />
       </div>
 
       {/* Row 2: Charts Split */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <div className="lg:col-span-2 bg-surface-1/90 backdrop-blur border border-border-subtle rounded-lg p-4 shadow-xs">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+        <div className="lg:col-span-2 panel p-3.5">
           <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-2">
-              <Activity className="w-4 h-4 text-accent-cyan" />
-              <h3 className="text-xs font-semibold uppercase tracking-wider text-text-primary">
-                Real-Time Transaction Velocity &amp; Anomaly Spike Stream
+            <div className="flex items-center gap-1.5">
+              <Activity className="w-3.5 h-3.5 text-text-muted" />
+              <h3 className="text-xs font-mono font-semibold uppercase tracking-wider text-text-primary">
+                Transaction Velocity &amp; Policy Decision Stream
               </h3>
             </div>
-            <span className="text-[11px] font-mono text-text-muted">30m Rolling (60s Buckets)</span>
+            <span className="text-[10px] font-mono text-text-muted">30m Rolling (60s Windows)</span>
           </div>
-          <TimeseriesChart data={timeseries || []} height="280px" />
+          <TimeseriesChart data={timeseries || []} height="260px" />
         </div>
 
-        <div className="bg-surface-1/90 backdrop-blur border border-border-subtle rounded-lg p-4 flex flex-col justify-between shadow-xs">
+        <div className="panel p-3.5 flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between mb-2">
-              <h3 className="text-xs font-semibold uppercase tracking-wider text-text-primary">
-                Live Score Distribution
+              <h3 className="text-xs font-mono font-semibold uppercase tracking-wider text-text-primary">
+                Score Distribution
               </h3>
-              <span className="text-[10px] font-mono text-text-muted">Probability Histogram</span>
+              <span className="text-[10px] font-mono text-text-muted">10-Bin Histogram</span>
             </div>
             <DistributionChart
               scores={decisions.map((d) => d.score)}
-              height="240px"
+              height="220px"
             />
           </div>
-          <div className="text-[11px] font-mono text-text-muted flex justify-between pt-2 border-t border-border-subtle">
-            <span className="text-status-approve">● Safe &lt; 0.20</span>
-            <span className="text-status-review">● Review 0.20–0.80</span>
-            <span className="text-status-block">● Decline &gt; 0.80</span>
+          <div className="text-[10px] font-mono text-text-muted flex justify-between pt-2 border-t border-border-subtle">
+            <span>Approve &lt; 0.20</span>
+            <span>Review 0.20–0.80</span>
+            <span>Decline &gt; 0.80</span>
           </div>
         </div>
       </div>
 
-      {/* Row 3: Risk Drivers + SLA Health */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <div className="lg:col-span-2 bg-surface-1/90 backdrop-blur border border-border-subtle rounded-lg p-4 shadow-xs">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <Zap className="w-4 h-4 text-accent-amber" />
-              <h3 className="text-xs font-semibold uppercase tracking-wider text-text-primary">
-                Top Active Risk Drivers
-              </h3>
-            </div>
-            <span className="text-[11px] font-mono text-text-muted">Top-3 SHAP drivers · {rules?.length ?? 0} signals</span>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-xs">
-              <thead>
-                <tr className="text-left text-[10px] uppercase tracking-wider text-text-muted border-b border-border-subtle">
-                  <th className="pb-2 pr-3 font-medium">Driver</th>
-                  <th className="pb-2 pr-3 font-medium">Times Fired</th>
-                  <th className="pb-2 pr-3 font-medium">Avg Contribution</th>
-                  <th className="pb-2 pr-3 font-medium">Blocked</th>
-                  <th className="pb-2 pr-3 font-medium">Blocked $</th>
-                  <th className="pb-2 font-medium">Severity</th>
-                </tr>
-              </thead>
-              <tbody>
-                {(rules || []).map((r) => (
-                  <tr key={r.feature} className="border-b border-border-subtle/60 last:border-0">
-                    <td className="py-2 pr-3">
-                      <div className="font-semibold text-text-primary">{r.label}</div>
-                      <div className="font-mono text-[10px] text-text-muted">{r.feature}</div>
-                    </td>
-                    <td className="py-2 pr-3 font-mono text-text-primary">{r.occurrences}</td>
-                    <td className="py-2 pr-3 font-mono">
-                      <span className={r.avg_contribution >= 0 ? 'text-status-block' : 'text-status-approve'}>
-                        {r.avg_contribution >= 0 ? '+' : ''}{r.avg_contribution.toFixed(3)}
-                      </span>
-                    </td>
-                    <td className="py-2 pr-3 font-mono text-text-primary">{r.blocked}</td>
-                    <td className="py-2 pr-3 font-mono text-accent-cyan">${r.blocked_amount.toFixed(0)}</td>
-                    <td className="py-2">
-                      <span className="inline-flex items-center gap-1.5">
-                        <span
-                          className={`inline-block w-1.5 h-1.5 rounded-full ${
-                            r.severity === 'high'
-                              ? 'bg-status-block'
-                              : r.severity === 'medium'
-                                ? 'bg-status-review'
-                                : 'bg-status-approve'
-                          }`}
-                        />
-                        <span className="text-text-muted uppercase text-[10px]">{r.severity}</span>
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-                {(!rules || rules.length === 0) && (
-                  <tr>
-                    <td colSpan={6} className="py-4 text-center text-text-muted font-mono text-[11px]">
-                      No decision signals captured yet. Run the traffic simulator to populate.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <div className="bg-surface-1/90 backdrop-blur border border-border-subtle rounded-lg p-4 flex flex-col justify-between shadow-xs">
-          <div>
-            <div className="flex items-center gap-2 mb-3">
-              <Activity className="w-4 h-4 text-accent-teal" />
-              <h3 className="text-xs font-semibold uppercase tracking-wider text-text-primary">
-                Review Queue SLA Health
-              </h3>
-            </div>
-            <div className="mb-4">
-              <div className="flex items-end justify-between mb-1.5">
-                <span className="text-[11px] font-mono text-text-muted">Resolved within 4h</span>
-                <span className="font-bold text-text-primary text-lg leading-none">
-                  {summary?.sla_compliance_pct == null ? '—' : `${summary.sla_compliance_pct.toFixed(0)}%`}
-                </span>
-              </div>
-              <div className="h-2 bg-surface-hover rounded-full overflow-hidden">
-                <div
-                  className={`h-full transition-all duration-500 rounded-full ${
-                    summary?.sla_compliance_pct == null
-                      ? 'bg-surface-hover'
-                      : summary.sla_compliance_pct >= 90
-                        ? 'bg-status-approve'
-                        : summary.sla_compliance_pct >= 80
-                          ? 'bg-status-review'
-                          : 'bg-status-block'
-                  }`}
-                  style={{ width: `${summary?.sla_compliance_pct ?? 0}%` }}
-                />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <SlaBand label="Idle < 1h" count={summary?.sla_bands.under_1h ?? 0} tone="approve" />
-              <SlaBand label="Idle 1–4h" count={summary?.sla_bands.under_4h ?? 0} tone="review" />
-              <SlaBand label="Idle > 4h" count={summary?.sla_bands.over_4h ?? 0} tone="block" />
-            </div>
-          </div>
-          <div className="text-[11px] font-mono text-text-muted pt-3 border-t border-border-subtle mt-3">
-            Target ≥ 90% within 4h per analyst review policy
-          </div>
-        </div>
-      </div>
-
-      {/* Row 4: Live Feed Table + Search & Filter */}
-      <div className="bg-surface-1/90 backdrop-blur border border-border-subtle rounded-lg p-4 space-y-4 shadow-xs">
+      {/* Row 3: Live Feed Table + Search & Filter */}
+      <div className="panel p-3.5 space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-text-primary">
+            <h3 className="text-xs font-mono font-semibold uppercase tracking-wider text-text-primary">
               Real-Time Decision Stream
             </h3>
             <p className="text-[11px] font-mono text-text-muted">
-              Auto-updating WebSocket/SSE buffer ({decisions.length} events buffered in memory)
+              In-memory ring buffer ({decisions.length} events buffered)
             </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            <div className="flex items-center gap-1.5 bg-surface-2 border border-border-subtle px-2.5 py-1 rounded text-xs font-mono shadow-xs">
-              <Filter className="w-3.5 h-3.5 text-text-muted" />
+            <div className="flex items-center gap-1.5 bg-surface-2 border border-border-subtle px-2 py-1 rounded-[2px] text-xs font-mono">
+              <Filter className="w-3 h-3 text-text-muted" />
               <select
                 value={filterDecision}
                 onChange={(e) => setFilterDecision(e.target.value as any)}
@@ -456,7 +324,7 @@ export const LiveRadar: React.FC = () => {
               placeholder="Search TxID or Action..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="bg-surface-2 border border-border-subtle text-text-primary text-xs font-mono px-3 py-1.5 rounded w-52 placeholder:text-text-muted focus:outline-none focus:border-accent-teal shadow-xs transition-colors"
+              className="bg-surface-2 border border-border-subtle text-text-primary text-xs font-mono px-2.5 py-1 rounded-[2px] w-48 placeholder:text-text-muted focus:outline-none focus:border-border-muted"
             />
           </div>
         </div>
@@ -471,27 +339,11 @@ export const LiveRadar: React.FC = () => {
       </div>
 
       {/* Key Insight */}
-      <InsightCallout title="SOC & Fraud Analyst Operations Insight" variant="tip">
-        Real-time pipeline is processing traffic at optimal latency (<b>{summary?.latency.p95_ms || 14.2}ms p95</b>).
-        Current automatic approval rate is healthy at <b>{summary?.percentages.APPROVE || 0}%</b>, preventing an estimated{' '}
-        <b>${((summary?.loss_prevented || 0) / 1000).toFixed(1)}k</b> in unauthorized chargebacks while keeping manual review queue within SLA limits.
+      <InsightCallout title="SOC Operations Note">
+        Pipeline latency is operating within target SLAs (<b>{summary?.latency.p95_ms || 14.2}ms p95</b>).
+        Auto-approval rate is <b>{summary?.percentages.APPROVE || 0}%</b>, with an estimated{' '}
+        <b>${((summary?.loss_prevented || 0) / 1000).toFixed(1)}k</b> in prevented fraud losses.
       </InsightCallout>
-    </div>
-  );
-};
-
-const SlaBand: React.FC<{ label: string; count: number; tone: 'approve' | 'review' | 'block' }> = ({ label, count, tone }) => {
-  const dotClass =
-    tone === 'approve' ? 'bg-status-approve' : tone === 'review' ? 'bg-status-review' : 'bg-status-block';
-  const textClass =
-    tone === 'approve' ? 'text-status-approve' : tone === 'review' ? 'text-status-review' : 'text-status-block';
-  return (
-    <div className="flex items-center justify-between text-[11px] font-mono">
-      <span className="inline-flex items-center gap-2 text-text-muted">
-        <span className={`inline-block w-1.5 h-1.5 rounded-full ${dotClass}`} />
-        {label}
-      </span>
-      <span className={`font-bold ${textClass}`}>{count}</span>
     </div>
   );
 };
