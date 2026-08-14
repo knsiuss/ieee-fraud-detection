@@ -64,6 +64,7 @@ export interface MetricsSummary {
     under_4h: number;
     over_4h: number;
   };
+  sla_compliance_pct: number | null;
   epoch: string;
 }
 
@@ -100,6 +101,18 @@ export interface MetricsLoss {
   fraud_prevention_roi: number;
   chargeback_bps: number;
   network_threshold_bps: number;
+}
+
+export interface MetricsRule {
+  feature: string;
+  label: string;
+  occurrences: number;
+  avg_contribution: number;
+  max_contrib: number;
+  blocked: number;
+  blocked_amount: number;
+  weighted_blocked: number;
+  severity: 'high' | 'medium' | 'low';
 }
 
 export interface ShapDriver {

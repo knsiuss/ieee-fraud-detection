@@ -43,6 +43,12 @@ export const LiveRadar: React.FC = () => {
     refetchInterval: 5000,
   });
 
+  const { data: rules } = useQuery({
+    queryKey: ['metrics-rules'],
+    queryFn: api.getMetricsRules,
+    refetchInterval: 10000,
+  });
+
   // Simulator helper: triggers rapid transactions
   const handleToggleSimulation = () => {
     if (isSimulating) {
@@ -309,7 +315,116 @@ export const LiveRadar: React.FC = () => {
         </div>
       </div>
 
-      {/* Row 3: Live Feed Table + Search & Filter */}
+      {/* Row 3: Risk Drivers + SLA Health */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <div className="lg:col-span-2 bg-surface-1/90 backdrop-blur border border-border-subtle rounded-lg p-4 shadow-xs">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <Zap className="w-4 h-4 text-accent-amber" />
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-text-primary">
+                Top Active Risk Drivers
+              </h3>
+            </div>
+            <span className="text-[11px] font-mono text-text-muted">Top-3 SHAP drivers · {rules?.length ?? 0} signals</span>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="text-left text-[10px] uppercase tracking-wider text-text-muted border-b border-border-subtle">
+                  <th className="pb-2 pr-3 font-medium">Driver</th>
+                  <th className="pb-2 pr-3 font-medium">Times Fired</th>
+                  <th className="pb-2 pr-3 font-medium">Avg Contribution</th>
+                  <th className="pb-2 pr-3 font-medium">Blocked</th>
+                  <th className="pb-2 pr-3 font-medium">Blocked $</th>
+                  <th className="pb-2 font-medium">Severity</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(rules || []).map((r) => (
+                  <tr key={r.feature} className="border-b border-border-subtle/60 last:border-0">
+                    <td className="py-2 pr-3">
+                      <div className="font-semibold text-text-primary">{r.label}</div>
+                      <div className="font-mono text-[10px] text-text-muted">{r.feature}</div>
+                    </td>
+                    <td className="py-2 pr-3 font-mono text-text-primary">{r.occurrences}</td>
+                    <td className="py-2 pr-3 font-mono">
+                      <span className={r.avg_contribution >= 0 ? 'text-status-block' : 'text-status-approve'}>
+                        {r.avg_contribution >= 0 ? '+' : ''}{r.avg_contribution.toFixed(3)}
+                      </span>
+                    </td>
+                    <td className="py-2 pr-3 font-mono text-text-primary">{r.blocked}</td>
+                    <td className="py-2 pr-3 font-mono text-accent-cyan">${r.blocked_amount.toFixed(0)}</td>
+                    <td className="py-2">
+                      <span className="inline-flex items-center gap-1.5">
+                        <span
+                          className={`inline-block w-1.5 h-1.5 rounded-full ${
+                            r.severity === 'high'
+                              ? 'bg-status-block'
+                              : r.severity === 'medium'
+                                ? 'bg-status-review'
+                                : 'bg-status-approve'
+                          }`}
+                        />
+                        <span className="text-text-muted uppercase text-[10px]">{r.severity}</span>
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+                {(!rules || rules.length === 0) && (
+                  <tr>
+                    <td colSpan={6} className="py-4 text-center text-text-muted font-mono text-[11px]">
+                      No decision signals captured yet. Run the traffic simulator to populate.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div className="bg-surface-1/90 backdrop-blur border border-border-subtle rounded-lg p-4 flex flex-col justify-between shadow-xs">
+          <div>
+            <div className="flex items-center gap-2 mb-3">
+              <Activity className="w-4 h-4 text-accent-teal" />
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-text-primary">
+                Review Queue SLA Health
+              </h3>
+            </div>
+            <div className="mb-4">
+              <div className="flex items-end justify-between mb-1.5">
+                <span className="text-[11px] font-mono text-text-muted">Resolved within 4h</span>
+                <span className="font-bold text-text-primary text-lg leading-none">
+                  {summary?.sla_compliance_pct == null ? '—' : `${summary.sla_compliance_pct.toFixed(0)}%`}
+                </span>
+              </div>
+              <div className="h-2 bg-surface-hover rounded-full overflow-hidden">
+                <div
+                  className={`h-full transition-all duration-500 rounded-full ${
+                    summary?.sla_compliance_pct == null
+                      ? 'bg-surface-hover'
+                      : summary.sla_compliance_pct >= 90
+                        ? 'bg-status-approve'
+                        : summary.sla_compliance_pct >= 80
+                          ? 'bg-status-review'
+                          : 'bg-status-block'
+                  }`}
+                  style={{ width: `${summary?.sla_compliance_pct ?? 0}%` }}
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <SlaBand label="Idle < 1h" count={summary?.sla_bands.under_1h ?? 0} tone="approve" />
+              <SlaBand label="Idle 1–4h" count={summary?.sla_bands.under_4h ?? 0} tone="review" />
+              <SlaBand label="Idle > 4h" count={summary?.sla_bands.over_4h ?? 0} tone="block" />
+            </div>
+          </div>
+          <div className="text-[11px] font-mono text-text-muted pt-3 border-t border-border-subtle mt-3">
+            Target ≥ 90% within 4h per analyst review policy
+          </div>
+        </div>
+      </div>
+
+      {/* Row 4: Live Feed Table + Search & Filter */}
       <div className="bg-surface-1/90 backdrop-blur border border-border-subtle rounded-lg p-4 space-y-4 shadow-xs">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
@@ -361,6 +476,22 @@ export const LiveRadar: React.FC = () => {
         Current automatic approval rate is healthy at <b>{summary?.percentages.APPROVE || 0}%</b>, preventing an estimated{' '}
         <b>${((summary?.loss_prevented || 0) / 1000).toFixed(1)}k</b> in unauthorized chargebacks while keeping manual review queue within SLA limits.
       </InsightCallout>
+    </div>
+  );
+};
+
+const SlaBand: React.FC<{ label: string; count: number; tone: 'approve' | 'review' | 'block' }> = ({ label, count, tone }) => {
+  const dotClass =
+    tone === 'approve' ? 'bg-status-approve' : tone === 'review' ? 'bg-status-review' : 'bg-status-block';
+  const textClass =
+    tone === 'approve' ? 'text-status-approve' : tone === 'review' ? 'text-status-review' : 'text-status-block';
+  return (
+    <div className="flex items-center justify-between text-[11px] font-mono">
+      <span className="inline-flex items-center gap-2 text-text-muted">
+        <span className={`inline-block w-1.5 h-1.5 rounded-full ${dotClass}`} />
+        {label}
+      </span>
+      <span className={`font-bold ${textClass}`}>{count}</span>
     </div>
   );
 };

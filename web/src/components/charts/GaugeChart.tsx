@@ -15,81 +15,83 @@ export const GaugeChart: React.FC<GaugeChartProps> = ({
 }) => {
   const percentage = Math.round(score * 1000) / 10;
 
+  // Determine dynamic accent colors based on risk tier
+  let activeColor = '#10B981';
+  let tierLabel = 'LOW RISK';
+  let tierSub = 'Auto-Approve Zone';
+
+  if (score > 0.8) {
+    activeColor = '#F43F5E';
+    tierLabel = 'CRITICAL FRAUD';
+    tierSub = 'Immediate Block';
+  } else if (score > 0.2) {
+    activeColor = '#F59E0B';
+    tierLabel = 'ELEVATED RISK';
+    tierSub = 'Review Required';
+  }
+
   const option: EChartsOption = {
+    animationDuration: 1000,
+    animationEasing: 'cubicOut',
     series: [
       {
         type: 'gauge',
-        startAngle: 180,
-        endAngle: 0,
-        center: ['50%', '75%'],
-        radius: '95%',
+        startAngle: 210,
+        endAngle: -30,
         min: 0,
         max: 100,
-        splitNumber: 5,
-        axisLine: {
-          lineStyle: {
-            width: 14,
-            color: [
-              [0.2, '#10B981'], // Approve (Green)
-              [0.8, '#F59E0B'], // Review (Amber)
-              [1.0, '#F43F5E'], // Decline (Crimson)
-            ],
-          },
+        splitNumber: 10,
+        radius: '88%',
+        center: ['50%', '55%'],
+        itemStyle: {
+          color: activeColor,
+          shadowColor: activeColor,
+          shadowBlur: 10,
+        },
+        progress: {
+          show: true,
+          roundCap: true,
+          width: 14,
         },
         pointer: {
-          icon: 'path://M12.8,0.7l12,40.1H0.7L12.8,0.7z',
-          length: '12%',
-          width: 14,
-          offsetCenter: [0, '-55%'],
-          itemStyle: {
-            color: 'inherit',
+          show: false,
+        },
+        axisLine: {
+          roundCap: true,
+          lineStyle: {
+            width: 14,
+            color: [[1, 'rgba(148, 163, 184, 0.1)']],
           },
         },
         axisTick: {
-          length: 6,
-          lineStyle: {
-            color: 'inherit',
-            width: 1.5,
-          },
+          show: false,
         },
         splitLine: {
-          length: 12,
-          lineStyle: {
-            color: 'inherit',
-            width: 2,
-          },
+          show: false,
         },
         axisLabel: {
-          color: '#9CA3AF',
-          fontSize: 10,
-          fontFamily: 'JetBrains Mono',
-          distance: -40,
-          formatter: (value: number) => {
-            if (value === 0) return '0%';
-            if (value === 50) return '50%';
-            if (value === 100) return '100%';
-            return '';
-          },
+          show: false,
         },
         title: {
-          offsetCenter: [0, '-15%'],
-          fontSize: 11,
+          offsetCenter: [0, '36%'],
+          fontSize: 10,
           fontFamily: 'JetBrains Mono',
-          color: '#9CA3AF',
+          color: '#94A3B8',
+          fontWeight: 600,
         },
         detail: {
-          fontSize: 24,
-          offsetCenter: [0, '15%'],
           valueAnimation: true,
-          formatter: () => `${percentage.toFixed(1)}%`,
-          color: score > 0.8 ? '#F43F5E' : score > 0.2 ? '#F59E0B' : '#10B981',
-          fontFamily: 'JetBrains Mono',
+          offsetCenter: [0, '-4%'],
+          fontSize: 32,
           fontWeight: 'bold',
+          fontFamily: 'JetBrains Mono',
+          formatter: () => `${percentage.toFixed(1)}%`,
+          color: activeColor,
         },
         data: [
           {
             value: percentage,
-            name: title,
+            name: `${tierLabel} • ${tierSub}`,
           },
         ],
       },

@@ -4,6 +4,7 @@ import type {
   TimeseriesBucket,
   MetricsDispositions,
   MetricsLoss,
+  MetricsRule,
   ExplainResponse,
   ModelInfo,
   HealthResponse,
@@ -45,6 +46,7 @@ export const api = {
     fetchJson<TimeseriesBucket[]>(`/api/metrics/timeseries?w=${windowMinutes}&bucket=${bucketSeconds}`),
   getMetricsDispositions: () => fetchJson<MetricsDispositions>('/api/metrics/dispositions'),
   getMetricsLoss: () => fetchJson<MetricsLoss>('/api/metrics/loss'),
+  getMetricsRules: () => fetchJson<MetricsRule[]>('/api/metrics/rules'),
 
   getReviewQueue: (status = 'NEW', limit = 100) =>
     fetchJson<DecisionItem[]>(`/api/review/queue?status=${status}&limit=${limit}`),

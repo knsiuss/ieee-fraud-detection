@@ -546,6 +546,26 @@ def decision_stats() -> dict:
         conn.close()
 
 
+def _sla_compliance_pct(conn: sqlite3.Connection) -> float | None:
+    """Share of reviewed manual-review items resolved within the 4h SLA."""
+    compliant = 0
+    total = 0
+    for r in conn.execute(
+        "SELECT d.timestamp AS created, f.reviewed_at AS reviewed "
+        "FROM feedback f JOIN decisions d ON f.transaction_id = d.transaction_id "
+        "WHERE d.decision = 'MANUAL_REVIEW'"
+    ):
+        try:
+            created = datetime.fromisoformat(r["created"].replace("Z", "+00:00"))
+            reviewed = datetime.fromisoformat(r["reviewed"].replace("Z", "+00:00"))
+            total += 1
+            if (reviewed - created).total_seconds() <= 4 * 3600:
+                compliant += 1
+        except Exception:
+            continue
+    return round(compliant / total * 100.0, 1) if total > 0 else None
+
+
 def metrics_summary() -> dict[str, Any]:
     """Summary metrics: volume, split, TPS, latencies, loss prevented."""
     conn = _decision_conn()
@@ -609,22 +629,7 @@ def metrics_summary() -> dict[str, Any]:
             except Exception:
                 band_1h += 1
 
-        sla_compliant = 0
-        sla_total = 0
-        for r in conn.execute(
-            "SELECT d.timestamp AS created, f.reviewed_at AS reviewed "
-            "FROM feedback f JOIN decisions d ON f.transaction_id = d.transaction_id "
-            "WHERE d.decision = 'MANUAL_REVIEW'"
-        ):
-            try:
-                created = datetime.fromisoformat(r["created"].replace("Z", "+00:00"))
-                reviewed = datetime.fromisoformat(r["reviewed"].replace("Z", "+00:00"))
-                sla_total += 1
-                if (reviewed - created).total_seconds() <= 4 * 3600:
-                    sla_compliant += 1
-            except Exception:
-                continue
-        sla_compliance_pct = round(sla_compliant / max(sla_total, 1) * 100.0, 1)
+        sla_compliance_pct = _sla_compliance_pct(conn)
 
         return {
             "total_decisions": total,
@@ -802,6 +807,78 @@ def metrics_loss() -> dict[str, Any]:
             "chargeback_bps": 16.4,
             "network_threshold_bps": 90.0,
         }
+    finally:
+        conn.close()
+
+
+def metrics_rules() -> list[dict[str, Any]]:
+    """Aggregate the top SHAP risk drivers into a rule-performance table.
+
+    Every decision persists its top contributing features in ``reason_codes``
+    (feature, label, contribution, direction). This rolls those up into the
+    industry-standard "top firing rules" view: how often a driver fired, its
+    average contribution, and the decline volume it is associated with.
+    """
+    conn = _decision_conn()
+    try:
+        rows = conn.execute(
+            "SELECT decision, score, reason_codes, input_features FROM decisions"
+        ).fetchall()
+        agg: dict[str, dict[str, Any]] = {}
+        for r in rows:
+            codes: list[dict[str, Any]] = []
+            if r["reason_codes"]:
+                with contextlib.suppress(Exception):
+                    codes = json.loads(r["reason_codes"])
+            if not codes:
+                continue
+
+            amt = 145.0
+            if r["input_features"]:
+                with contextlib.suppress(Exception):
+                    amt = float(
+                        json.loads(r["input_features"]).get("TransactionAmt", 145.0) or 145.0
+                    )
+            is_block = r["decision"] == "DECLINE"
+            score = float(r["score"] or 0.0)
+
+            for d in codes[:3]:
+                name = d.get("feature") or d.get("label") or "unknown_feature"
+                entry = agg.setdefault(
+                    name,
+                    {
+                        "feature": name,
+                        "label": d.get("label") or name,
+                        "occurrences": 0,
+                        "contrib_sum": 0.0,
+                        "max_contrib": 0.0,
+                        "blocked": 0,
+                        "blocked_amount": 0.0,
+                        "weighted_blocked": 0.0,
+                    },
+                )
+                entry["occurrences"] += 1
+                c = float(d.get("contribution") or 0.0)
+                entry["contrib_sum"] += c
+                entry["max_contrib"] = max(entry["max_contrib"], abs(c))
+                if is_block:
+                    entry["blocked"] += 1
+                    entry["blocked_amount"] += amt
+                    entry["weighted_blocked"] += amt * score
+
+        out: list[dict[str, Any]] = []
+        for e in agg.values():
+            e["avg_contribution"] = round(e["contrib_sum"] / max(e["occurrences"], 1), 4)
+            e["severity"] = "high" if e["max_contrib"] > 0.35 else (
+                "medium" if e["max_contrib"] > 0.18 else "low"
+            )
+            e["blocked_amount"] = round(e["blocked_amount"], 2)
+            e["weighted_blocked"] = round(e["weighted_blocked"], 2)
+            e.pop("contrib_sum", None)
+            out.append(e)
+
+        out.sort(key=lambda x: (x["occurrences"], x["weighted_blocked"]), reverse=True)
+        return out[:10]
     finally:
         conn.close()
 

@@ -13,20 +13,19 @@ export const DistributionChart: React.FC<DistributionChartProps> = ({
 }) => {
   // Generate 10 buckets from 0.0 to 1.0
   const buckets = [
-    { label: '0.0-0.1', count: 0, color: '#10B981' },
-    { label: '0.1-0.2', count: 0, color: '#10B981' },
-    { label: '0.2-0.3', count: 0, color: '#F59E0B' },
-    { label: '0.3-0.4', count: 0, color: '#F59E0B' },
-    { label: '0.4-0.5', count: 0, color: '#F59E0B' },
-    { label: '0.5-0.6', count: 0, color: '#F59E0B' },
-    { label: '0.6-0.7', count: 0, color: '#F59E0B' },
-    { label: '0.7-0.8', count: 0, color: '#F59E0B' },
-    { label: '0.8-0.9', count: 0, color: '#F43F5E' },
-    { label: '0.9-1.0', count: 0, color: '#F43F5E' },
+    { label: '0.0-0.1', count: 0, color: ['#10B981', '#34D399'] },
+    { label: '0.1-0.2', count: 0, color: ['#10B981', '#34D399'] },
+    { label: '0.2-0.3', count: 0, color: ['#F59E0B', '#FBBF24'] },
+    { label: '0.3-0.4', count: 0, color: ['#F59E0B', '#FBBF24'] },
+    { label: '0.4-0.5', count: 0, color: ['#F59E0B', '#FBBF24'] },
+    { label: '0.5-0.6', count: 0, color: ['#F59E0B', '#FBBF24'] },
+    { label: '0.6-0.7', count: 0, color: ['#F59E0B', '#FBBF24'] },
+    { label: '0.7-0.8', count: 0, color: ['#F59E0B', '#FBBF24'] },
+    { label: '0.8-0.9', count: 0, color: ['#F43F5E', '#FB7185'] },
+    { label: '0.9-1.0', count: 0, color: ['#F43F5E', '#FB7185'] },
   ];
 
   if (scores.length === 0) {
-    // Default baseline distribution
     buckets[0].count = 42;
     buckets[1].count = 28;
     buckets[2].count = 12;
@@ -47,14 +46,20 @@ export const DistributionChart: React.FC<DistributionChartProps> = ({
   }
 
   const option: EChartsOption = {
+    animationDuration: 800,
+    animationEasing: 'cubicOut',
     tooltip: {
       trigger: 'axis',
       axisPointer: { type: 'shadow' },
+      backgroundColor: 'rgba(18, 20, 28, 0.95)',
+      borderColor: 'rgba(148, 163, 184, 0.15)',
+      borderWidth: 1,
+      padding: [8, 12],
       formatter: (params: any) => {
         const item = params[0];
         return `<div class="font-mono text-xs">
-          <div class="font-bold text-text-primary">Score Range: ${item.name}</div>
-          <div class="text-accent-teal mt-0.5">Transactions: <b>${item.value}</b></div>
+          <div class="text-text-muted">Score Range: <b class="text-text-primary">${item.name}</b></div>
+          <div class="text-accent-teal mt-0.5 font-bold">Volume: ${item.value} transactions</div>
         </div>`;
       },
     },
@@ -69,28 +74,49 @@ export const DistributionChart: React.FC<DistributionChartProps> = ({
       type: 'category',
       data: buckets.map((b) => b.label),
       axisLabel: {
-        color: '#9CA3AF',
+        color: '#64748B',
         fontSize: 9,
         fontFamily: 'JetBrains Mono',
         interval: 1,
       },
-      axisLine: { lineStyle: { color: '#222634' } },
+      axisLine: { lineStyle: { color: 'rgba(148, 163, 184, 0.12)' } },
+      axisTick: { show: false },
     },
     yAxis: {
       type: 'value',
-      axisLabel: { color: '#9CA3AF', fontSize: 10, fontFamily: 'JetBrains Mono' },
-      splitLine: { lineStyle: { color: 'rgba(148, 163, 184, 0.08)' } },
+      axisLabel: { color: '#64748B', fontSize: 10, fontFamily: 'JetBrains Mono' },
+      splitLine: {
+        lineStyle: {
+          color: 'rgba(148, 163, 184, 0.06)',
+          type: 'dashed',
+        },
+      },
     },
     series: [
       {
         name: 'Score Frequency',
         type: 'bar',
-        barWidth: '70%',
+        barWidth: '65%',
+        showBackground: true,
+        backgroundStyle: {
+          color: 'rgba(148, 163, 184, 0.03)',
+          borderRadius: [6, 6, 0, 0],
+        },
         data: buckets.map((b) => ({
           value: b.count,
           itemStyle: {
-            color: b.color,
-            borderRadius: [3, 3, 0, 0],
+            color: {
+              type: 'linear',
+              x: 0,
+              y: 1,
+              x2: 0,
+              y2: 0,
+              colorStops: [
+                { offset: 0, color: b.color[0] },
+                { offset: 1, color: b.color[1] },
+              ],
+            },
+            borderRadius: [6, 6, 0, 0],
           },
         })),
       },

@@ -734,6 +734,12 @@ def metrics_loss() -> dict:
     return store.metrics_loss()
 
 
+@app.get("/api/metrics/rules")
+def metrics_rules() -> list[dict]:
+    """Top SHAP risk drivers rolled up into a rule-performance table."""
+    return store.metrics_rules()
+
+
 def _sse_frames(records: list[dict], seen: set[str]) -> list[str]:
     """Build SSE ``decision`` frames for the records not yet in ``seen``.
 
