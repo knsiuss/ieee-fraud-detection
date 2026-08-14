@@ -108,6 +108,12 @@ class ReviewOutcomeRequest(BaseModel):
     note: str | None = None
 
 
+class AppealRequest(BaseModel):
+    """One-click appeal payload: an overturn needs no verdict, only a note."""
+
+    note: str | None = None
+
+
 class FeedbackRequest(BaseModel):
     values: dict[str, float] = Field(default_factory=dict)
     verdict: Literal[0, 1, "fraud", "safe"] = Field(

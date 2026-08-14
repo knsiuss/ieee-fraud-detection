@@ -257,12 +257,15 @@ The trained model is exposed through a **FastAPI** service with a browser-based 
 | `POST` | `/api/predict` | Raw IEEE payload → score + **decision** (APPROVE / MANUAL_REVIEW / DECLINE), persisted, idempotent by `transaction_id` |
 | `POST` | `/api/predict/batch` | Upload a CSV → per-row score + decision, persisted |
 | `POST` | `/api/simulate` | **Demo scenario builder** — friendly inputs mapped to features (clearly labeled, reports feature usage) |
+| `GET` | `/api/sim/fields` | Schema for the demo scenario builder (friendly fields + profiles) |
 | `POST` | `/api/explain` | SHAP contributors + plain-English decision summary |
 | `GET` | `/api/review/queue` | Analyst review queue (filter by decision/status) |
 | `GET` | `/api/review/{id}` | Full audit record for one decision |
 | `POST` | `/api/review/{id}/outcome` | Record analyst verdict → feedback pool + audit status |
 | `GET` | `/api/monitor/summary` | Decision-history aggregates (score drift, counts) |
+| `POST` | `/api/feedback` | Legacy reviewer label endpoint → feedback pool |
 | `POST` | `/api/retrain` | Train a candidate; swap only if it beats the served model (admin) |
+| `GET` | `/api/decisions/stream` | Live SSE feed of decisions (no raw features) |
 
 Interactive API docs are available at `/docs`.
 

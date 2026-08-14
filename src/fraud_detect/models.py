@@ -355,6 +355,7 @@ def _cb_fit(
     X_val: pd.DataFrame,
     y_val: pd.Series,
     params: dict[str, Any] | None = None,
+    num_boost_round: int | None = None,
     early_stopping_rounds: int = config.CB_EARLY_STOPPING_ROUNDS,
     **kwargs: Any,
 ) -> tuple[Any, float, float, pd.DataFrame | None]:
@@ -362,6 +363,8 @@ def _cb_fit(
     from catboost import CatBoostClassifier, Pool
 
     params = {**config.CB_PARAMS, **(params or {})}
+    if num_boost_round is not None:
+        params = {**params, "iterations": num_boost_round}
 
     # Identify categorical features for CatBoost natively
     _cat_features = list(X_train.select_dtypes(include=["category", "object"]).columns)
@@ -401,6 +404,23 @@ _BACKEND_FIT_MAP: dict[ModelBackend, Any] = {
     ModelBackend.XGBOOST: _xgb_fit,
     ModelBackend.CATBOOST: _cb_fit,
 }
+
+
+def _oof_auc_score(model: Any, X_val: pd.DataFrame, y_val: pd.Series) -> float:
+    """AUC of ``model`` on a held-out fold (true out-of-fold scoring)."""
+    module = type(model).__module__.split(".")[0]
+    predict_kwargs: dict[str, Any] = {}
+    if module == "lightgbm" and getattr(model, "best_iteration", None) is not None:
+        predict_kwargs["num_iteration"] = model.best_iteration
+    if module == "xgboost":
+        import xgboost as xgb
+
+        proba = model.predict(xgb.DMatrix(X_val), **predict_kwargs)
+    else:
+        proba = model.predict(X_val, **predict_kwargs)
+    if proba.ndim > 1:
+        proba = proba[:, 1]
+    return float(roc_auc_score(y_val, proba))
 
 
 def train_model(
@@ -599,14 +619,16 @@ def cross_validate_model(
     fold_scores: list[tuple[int, float]] = []
 
     start = time.perf_counter()
-    for fold_idx, (train_idx, _) in enumerate(skf.split(X, y)):
+    for fold_idx, (train_idx, val_idx) in enumerate(skf.split(X, y)):
         result = train_model(
             df.iloc[train_idx].assign(**{config.TARGET_COLUMN: y.iloc[train_idx]}),
             backend=backend,
             params=params,
             **kwargs,
         )
-        fold_scores.append((fold_idx, result.val_auc))
+        fold_scores.append(
+            (fold_idx, _oof_auc_score(result.model, X.iloc[val_idx], y.iloc[val_idx]))
+        )
     elapsed = time.perf_counter() - start
 
     auc_values = [score for _, score in fold_scores]

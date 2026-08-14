@@ -18,6 +18,7 @@ list the model was trained on.
 from __future__ import annotations
 
 import json
+import math
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -113,9 +114,10 @@ def align_features(df: pd.DataFrame, features: list[str]) -> pd.DataFrame:
     """Align ``df`` to the model's feature list.
 
     Columns not present in ``df`` are added as ``FILL_VALUE``; extra columns
-    are dropped; remaining missing values are replaced with ``FILL_VALUE``.
-    The result has exactly ``len(features)`` columns in training order, so it
-    can be fed straight to ``model.predict``.
+    are dropped. Present-but-empty cells are passed through unchanged — the
+    model was trained on NaN natively, so a missing cell is scored the same
+    way at serving time. The result has exactly ``len(features)`` columns in
+    training order, so it can be fed straight to ``model.predict``.
 
     Examples
     --------
@@ -125,6 +127,9 @@ def align_features(df: pd.DataFrame, features: list[str]) -> pd.DataFrame:
     ['TransactionAmt', 'C1']
     >>> float(out.iloc[0]["C1"])
     -999.0
+    >>> import math
+    >>> math.isnan(float(out.iloc[0]["TransactionAmt"]))
+    False
     """
     frame = pd.DataFrame(FILL_VALUE, index=df.index, columns=features)
     present = [c for c in features if c in df.columns]
@@ -344,7 +349,9 @@ def decision_drivers(
         name = feature_names[i]
         value = float(row[name])
         typical = float(baseline[name].iloc[0]) if name in baseline.columns else None
-        missing = value == FILL_VALUE
+        # Present-but-empty cells arrive as NaN (LightGBM scores them natively);
+        # report them as "missing" rather than the raw 'nan' string.
+        missing = value == FILL_VALUE or not math.isfinite(value)
         drivers.append(
             {
                 "feature": name,

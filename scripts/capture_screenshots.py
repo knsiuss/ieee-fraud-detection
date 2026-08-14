@@ -37,7 +37,7 @@ def capture(base: str) -> None:
         page.on("pageerror", lambda e: print("PAGE ERROR:", e))
         page.on("console", lambda m: print("CONSOLE:", m.type, m.text))
 
-        # --- Score tab: checkout-style fraudulent case ---
+        # Score tab: checkout-style fraudulent case
         page.goto(base, wait_until="networkidle")
         page.wait_for_selector("#sim-fields input[name='amount']", timeout=20000)
         _set_sim(
@@ -64,12 +64,12 @@ def capture(base: str) -> None:
         page.wait_for_timeout(500)
         page.screenshot(path=OUT_DIR / "score-checkout.png", full_page=True)
 
-        # --- Batch tab: empty upload state ---
+        # Batch tab: empty upload state
         page.click(".tab[data-tab='batch']")
         page.wait_for_selector("#dropzone")
         page.screenshot(path=OUT_DIR / "batch-upload.png", full_page=True)
 
-        # --- Batch tab: scored results ---
+        # Batch tab: scored results
         sample = Path(__file__).resolve().parents[1] / "web" / "sample_transactions.csv"
         page.set_input_files("#batch-file", str(sample))
         page.click("#batch-btn")
@@ -77,8 +77,7 @@ def capture(base: str) -> None:
         page.wait_for_selector("#batch-chart")
         page.screenshot(path=OUT_DIR / "batch-results.png", full_page=True)
 
-        # --- Model tab ---
-        # --- Operations tab: review queue + audit detail ---
+        # Operations tab: review queue + audit detail
         page.click(".tab[data-tab='operations']")
         page.wait_for_selector("#queue-table tr.clickable", timeout=20000)
         page.wait_for_timeout(300)
@@ -88,7 +87,7 @@ def capture(base: str) -> None:
         page.wait_for_timeout(300)
         page.screenshot(path=OUT_DIR / "operations-detail.png", full_page=True)
 
-        # --- Model tab ---
+        # Model tab
         page.click(".tab[data-tab='model']")
         page.wait_for_selector("#model-cards .kpi")
         page.screenshot(path=OUT_DIR / "model-overview.png", full_page=True)

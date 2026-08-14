@@ -54,6 +54,8 @@ def client(tmp_path, monkeypatch):
     )
     monkeypatch.setattr(store, "CURRENT_DIR", current)
     monkeypatch.setattr(store, "FEEDBACK_FILE", tmp_path / "feedback.jsonl")
+    monkeypatch.setattr(store, "DECISION_DB", tmp_path / "decisions.db")
+    monkeypatch.setattr(main, "_ADMIN_KEY", "smoke-key")
     monkeypatch.setattr(store, "data_table", lambda: df)
     main._clear_cache()
     return TestClient(main.app)
@@ -87,12 +89,20 @@ def test_full_workflow_smoke(client):
     assert exp.json()["summary"]  # has prose
 
     # feedback -> pushes the retraining pool
-    fb = client.post("/api/feedback", json={"values": {"x": 1.0, "y": 1.0}, "verdict": "fraud"})
+    fb = client.post(
+        "/api/feedback",
+        json={"values": {"x": 1.0, "y": 1.0}, "verdict": "fraud"},
+        headers={"X-Admin-Key": "smoke-key"},
+    )
     assert fb.status_code == 200
     assert fb.json()["pool_size"] == 1
 
-    # gated retrain runs and is a no-op if it does not beat the served model
-    rt = client.post("/api/retrain")
+    # retrain without admin key is rejected with 403
+    rt_no_key = client.post("/api/retrain")
+    assert rt_no_key.status_code == 403
+
+    # gated retrain with valid admin key runs and is a no-op if it does not beat the served model
+    rt = client.post("/api/retrain", headers={"X-Admin-Key": "smoke-key"})
     assert rt.status_code == 200
     assert rt.json()["swapped"] in {True, False}
     assert "reason" in rt.json()

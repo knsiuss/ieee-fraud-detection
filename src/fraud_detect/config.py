@@ -96,8 +96,6 @@ LGBM_BASE_PARAMS: Final[dict[str, float | int | str]] = {
     "bagging_freq": 5,
     "verbose": -1,
 }
-LGBM_NUM_BOOST_ROUND: Final[int] = 200
-LGBM_EARLY_STOPPING_ROUNDS: Final[int] = 30
 
 # Modelling — cross-validation & training
 
@@ -202,3 +200,20 @@ CB_EARLY_STOPPING_ROUNDS: Final[int] = 50
 DROP_THRESHOLD: Final[float] = 0.95
 INDICATOR_ONLY_THRESHOLD: Final[float] = 0.75
 MODERATE_THRESHOLD: Final[float] = 0.10
+
+# LLM audit-report provider (consumed by api.llm_provider at call time, so
+# the values can be overridden at runtime, e.g. in tests, by monkeypatching
+# this module — the env vars remain the single deployment surface).
+
+#: OpenAI-compatible base URL, e.g. ``http://localhost:11434/v1`` (Ollama).
+#: Empty ⇒ LLM disabled, template reports only.
+LLM_BASE_URL: Final[str] = os.getenv("FRAUD_LLM_BASE_URL", "").rstrip("/")
+
+#: Model name to ask for narration.
+LLM_MODEL: Final[str] = os.getenv("FRAUD_LLM_MODEL", "llama3.1")
+
+#: Optional bearer key (most local servers ignore it).
+LLM_API_KEY: Final[str] = os.getenv("FRAUD_LLM_API_KEY", "")
+
+#: Seconds before the LLM call fails safe; the scoring path never waits.
+LLM_TIMEOUT: Final[float] = float(os.getenv("FRAUD_LLM_TIMEOUT", "30"))

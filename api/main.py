@@ -29,26 +29,41 @@ Endpoints
     GET  /api/monitor/summary  aggregates over decision history
     POST /api/feedback         legacy reviewer label endpoint
     POST /api/retrain          gated retraining (admin)
+    GET  /api/decisions/stream live SSE feed of decisions (no raw features)
 """
 
 from __future__ import annotations
 
+import asyncio
 import collections
 import io
+import json
 import os
+import re
 import time
 import uuid
 from functools import lru_cache
 from typing import Annotated
 
 import pandas as pd
-from fastapi import FastAPI, File, Header, HTTPException, Request, UploadFile
+from fastapi import (
+    BackgroundTasks,
+    FastAPI,
+    File,
+    Header,
+    HTTPException,
+    Query,
+    Request,
+    UploadFile,
+)
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 
+from fraud_detect import bandit_policy
 from fraud_detect import sim as simmod
 from fraud_detect._exceptions import MissingArtefactError
+from fraud_detect.bandit_policy import BANDIT_VERSION, BanditPolicy
 from fraud_detect.contract import CONTRACT_VERSION, ContractError, validate_payload
 from fraud_detect.policy import DecisionPolicy, policy_from_env
 from fraud_detect.serving import (
@@ -72,11 +87,19 @@ app = FastAPI(
     version="0.1.0",
 )
 
-# The vanilla-JS frontend may be hosted on a different origin, so allow cross-origin.
-# Acceptable for a public demo; restrict in real production.
+_CORS_ORIGINS = [
+    o.strip()
+    for o in os.getenv(
+        "FRAUD_CORS_ORIGINS",
+        "http://localhost:8000,http://127.0.0.1:8000,http://localhost:3000,http://127.0.0.1:3000,http://localhost:5173,http://127.0.0.1:5173",
+    ).split(",")
+    if o.strip()
+]
+_ALLOW_ALL_ORIGINS = os.getenv("FRAUD_ALLOW_ALL_ORIGINS", "0") == "1"
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["*"] if _ALLOW_ALL_ORIGINS else _CORS_ORIGINS,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -92,6 +115,20 @@ async def _missing_artefact(request: Request, exc: MissingArtefactError):  # noq
 
 
 _ADMIN_KEY = os.getenv("FRAUD_API_ADMIN_KEY")
+_RETRAIN_LOCK = asyncio.Lock()
+_TX_ID_REGEX = re.compile(r"^[A-Za-z0-9._:-]{1,128}$")
+
+
+def _validate_transaction_id(tx_id: str) -> None:
+    if not _TX_ID_REGEX.match(tx_id):
+        raise HTTPException(
+            status_code=422,
+            detail=(
+                "Invalid transaction_id format. Allowed: 1-128 alphanumeric "
+                "characters, '.', '_', ':', or '-'."
+            ),
+        )
+
 
 # Simple per-process, per-IP fixed-window rate limit. Documented as in-process
 # (not distributed) — enough to keep a public demo from being hammered.
@@ -125,6 +162,31 @@ _POLICY: DecisionPolicy = policy_from_env(
     decline_above=_env_float("DECISION_DECLINE_ABOVE"),
 )
 
+# Adaptive decision layer (policy v2 — contextual bandit). Opt-in via env so
+# policy v1 remains the default and both versions coexist auditably.
+_BANDIT_ENABLED = os.getenv("FRAUD_BANDIT_ENABLED", "0") == "1"
+_BANDIT_POLICY = BanditPolicy(
+    version=BANDIT_VERSION,
+    alpha=float(os.getenv("FRAUD_BANDIT_ALPHA", "1.0")),
+    epsilon=float(os.getenv("FRAUD_BANDIT_EPSILON", "0.10")),
+    auto_action_above=float(os.getenv("FRAUD_AUTO_ACTION_ABOVE", "0.95")),
+    audit_sample_rate=float(os.getenv("FRAUD_AUDIT_SAMPLE_RATE", "0.05")),
+)
+_BANDIT_STATE = store.load_bandit_state()
+_BANDIT_PROMOTE_LOCK = asyncio.Lock()
+
+#: Cold-start threshold: the bandit only takes over decisioning once the live
+#: checkpoint has collected this many rewarded outcomes. Before that it would
+#: act on an empty state, where every arm ties and the greedy tie-break
+#: (first action in ACTIONS) approves everything below the auto-action
+#: cutoff — dangerous for a fraud system. Deferring to policy v1 keeps the
+#: decline threshold active until the bandit has real signal.
+_BANDIT_MIN_REWARDS = int(os.getenv("FRAUD_BANDIT_MIN_REWARDS", "20"))
+
+#: Report generation is decoupled from the scoring path; a generous cap keeps
+#: batch uploads from flooding the (optionally local) LLM.
+MAX_REPORT_ROWS: int = 50
+
 
 @lru_cache
 def _current():
@@ -141,33 +203,74 @@ def _align_row(values: dict[str, float], art) -> pd.DataFrame:
     return align_features(pd.DataFrame([values]), art.features)
 
 
-def _decide(values: dict[str, float], transaction_id: str | None) -> tuple[dict, object, str]:
-    """Validate -> score (joblib) -> apply policy -> persist. Idempotent."""
+def _batch_transaction_id(value: object, index: int) -> str:
+    """Stable, human-friendly transaction id for one CSV row.
+
+    pandas reads numeric TransactionID columns as floats, so a raw ``str()``
+    turns 3152017 into '3152017.0'. Empty cells become NaN which ``str()``
+    renders as 'nan' — collapsing every such row onto a single record in the
+    idempotent decision store. Integers are kept exact, strings pass through
+    unchanged, and missing values get a unique ``row-<index>`` fallback.
+    """
+    try:
+        if value is None or pd.isna(value):
+            return f"row-{index}"
+    except (TypeError, ValueError):
+        pass
+    if isinstance(value, str):
+        return value
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        return str(value)
+    return str(int(number)) if number.is_integer() else str(number)
+
+
+def _decide(
+    values: dict[str, float],
+    transaction_id: str | None,
+    background: BackgroundTasks | None = None,
+) -> tuple[dict, object, str]:
+    """Validate -> check idempotency -> score (joblib) -> apply policy -> persist.
+
+    ``background`` is optional: when provided, DECLINE / MANUAL_REVIEW
+    decisions schedule the LLM audit report (decoupled from the response).
+    """
     art = _current()
     report = validate_payload(values, art.features)
-    x = _align_row(values, art)
-    prob = float(predict_proba(art.model, x)[0])
-    decision, action = _POLICY.apply(prob)
     tx = transaction_id or uuid.uuid4().hex[:12]
+    if transaction_id:
+        _validate_transaction_id(tx)
 
     existing = store.get_decision(tx)
     if existing is not None:
-        return existing, art, action
+        return existing, art, _action_for_record(existing)
 
+    x = _align_row(values, art)
+    prob = float(predict_proba(art.model, x)[0])
+
+    input_features = {c: float(x.iloc[0][c]) for c in art.features}
     drivers = decision_drivers(art.model, x, art.features, art.baseline, top_n=3)
+    decided = _decide_with_policy(prob, drivers, input_features)
+
+    if decided["bandit_event"] is not None:
+        store.record_bandit_event(transaction_id=tx, **decided["bandit_event"])
     store.record_decision(
         transaction_id=tx,
         model_version=store.version(art),
         contract_version=CONTRACT_VERSION,
         score=prob,
-        decision=decision.value,
-        policy_version=_POLICY.version,
-        thresholds=_POLICY.as_dict(),
+        decision=decided["decision"],
+        action=decided["action"],
+        policy_version=decided["policy_version"],
+        thresholds=decided["thresholds"],
         reason_codes=drivers,
         feature_report=report.as_dict(),
-        input_features={c: float(x.iloc[0][c]) for c in art.features},
+        input_features=input_features,
     )
-    return store.get_decision(tx), art, action
+    if background is not None and decided["decision"] in ("DECLINE", "MANUAL_REVIEW"):
+        _schedule_report(background, tx)
+    return store.get_decision(tx), art, decided["action"]
 
 
 def _decision_response(record: dict, tier, action: str) -> schemas.PredictResponse:
@@ -184,8 +287,91 @@ def _decision_response(record: dict, tier, action: str) -> schemas.PredictRespon
     )
 
 
-def _require_admin(admin_key: str | None) -> None:
-    if _ADMIN_KEY and admin_key != _ADMIN_KEY:
+def _action_for_record(record: dict) -> str:
+    """Return the action originally persisted with a decision.
+
+    The fallback supports rows created before the ``action`` column existed.
+    New records always persist the original action so later policy changes
+    cannot make a replayed response contradict its stored decision.
+    """
+    action = record.get("action")
+    if action:
+        return str(action)
+    return _POLICY.actions[str(record["decision"])]
+
+
+def _decide_with_policy(
+    prob: float,
+    drivers: list[dict],
+    input_features: dict[str, float],
+) -> dict:
+    """Apply policy v1 (threshold) or v2 (bandit), returning decision fields.
+
+    Policy v2 reuses exactly the signals v1 already receives — probability,
+    SHAP drivers, input features — so explanation parity is free: drivers are
+    computed once, by the caller, and used both for the SHAP reason codes and
+    as the bandit context.
+    """
+    bandit_ready = _BANDIT_ENABLED and _BANDIT_STATE.n_rewards >= _BANDIT_MIN_REWARDS
+    if not bandit_ready:
+        decision, action = _POLICY.apply(prob)
+        return {
+            "decision": decision.value,
+            "action": action,
+            "policy_version": _POLICY.version,
+            "thresholds": _POLICY.as_dict(),
+            "bandit_event": None,
+        }
+
+    context = bandit_policy.build_context(prob, drivers, input_features)
+    choice = _BANDIT_POLICY.decide(prob, context, _BANDIT_STATE)
+    bandit_event = {
+        "policy_version": _BANDIT_POLICY.version,
+        "action": choice.decision.value,
+        "score": float(prob),
+        "propensity": choice.propensity,
+        "explored": choice.explored,
+        "auto_actioned": choice.auto_actioned,
+        "audit_sampled": choice.audit_sampled,
+        "context": context,
+    }
+    return {
+        "decision": choice.decision.value,
+        "action": choice.action,
+        "policy_version": _BANDIT_POLICY.version,
+        "thresholds": {
+            **_BANDIT_POLICY.as_dict(),
+            # The bandit has no review/decline thresholds of its own, but the
+            # audit report and LLM prompt read them from the stored decision —
+            # carry the v1 policy's so reports never fall back to fabricated
+            # defaults (0.15 / 0.50) that disagree with the deployed config.
+            "review_above": _POLICY.review_above,
+            "decline_above": _POLICY.decline_above,
+            "needs_review": choice.needs_review,
+            "reason_code": choice.reason_code,
+            "action_probs": choice.action_probs,
+        },
+        "bandit_event": bandit_event,
+    }
+
+
+async def _generate_report_async(transaction_id: str) -> None:
+    """Run report generation on a worker thread (never blocks scoring)."""
+    await asyncio.to_thread(store.generate_audit_report, transaction_id)
+
+
+def _schedule_report(background: BackgroundTasks, transaction_id: str) -> None:
+    """Queue LLM report generation for DECLINE / MANUAL_REVIEW decisions."""
+    background.add_task(_generate_report_async, transaction_id)
+
+
+def _require_admin(admin_key: str | None, operation: str) -> None:
+    if not _ADMIN_KEY:
+        raise HTTPException(
+            status_code=503,
+            detail=f"{operation} is disabled: FRAUD_API_ADMIN_KEY is not configured.",
+        )
+    if admin_key != _ADMIN_KEY:
         raise HTTPException(status_code=403, detail="Invalid admin key.")
 
 
@@ -213,9 +399,12 @@ def stats() -> dict:
 
 
 @app.post("/api/predict", response_model=schemas.PredictResponse)
-def predict(req: schemas.PredictRequest) -> schemas.PredictResponse:
+def predict(
+    req: schemas.PredictRequest,
+    background: BackgroundTasks,
+) -> schemas.PredictResponse:
     try:
-        record, art, action = _decide(req.values, req.transaction_id)
+        record, art, action = _decide(req.values, req.transaction_id, background)
     except ContractError as exc:
         raise HTTPException(status_code=422, detail=exc.messages) from exc
     tier = risk_tier(float(record["score"]))
@@ -228,7 +417,10 @@ def sim_fields() -> dict:
 
 
 @app.post("/api/simulate", response_model=schemas.SimulateResponse)
-def simulate(req: schemas.SimulateRequest) -> schemas.SimulateResponse:
+def simulate(
+    req: schemas.SimulateRequest,
+    background: BackgroundTasks,
+) -> schemas.SimulateResponse:
     """Score a **demo scenario** from friendly, checkout-style inputs.
 
     Friendly fields are mapped onto the model's feature space over a scenario
@@ -237,10 +429,9 @@ def simulate(req: schemas.SimulateRequest) -> schemas.SimulateResponse:
     """
     art = _current()
     data = req.model_dump()
-    row = simmod.build_row(data, art.features, art.baseline, art.profiles)
-    prob = float(predict_proba(art.model, row)[0])
-    decision, action = _POLICY.apply(prob)
-    tier = risk_tier(prob)
+    tx = req.transaction_id or uuid.uuid4().hex[:12]
+    if req.transaction_id:
+        _validate_transaction_id(tx)
 
     mapped = simmod.map_friendly(data)
     supplied = set(mapped)
@@ -270,23 +461,37 @@ def simulate(req: schemas.SimulateRequest) -> schemas.SimulateResponse:
         ),
     }
 
-    tx = req.transaction_id or uuid.uuid4().hex[:12]
-    if store.get_decision(tx) is None:
+    existing = store.get_decision(tx)
+    if existing is not None:
+        record = existing
+        prob = float(record["score"])
+    else:
+        row = simmod.build_row(data, art.features, art.baseline, art.profiles)
+        prob = float(predict_proba(art.model, row)[0])
+        input_features = {c: float(row.iloc[0][c]) for c in art.features}
         drivers = decision_drivers(art.model, row, art.features, art.baseline, top_n=3)
+        decided = _decide_with_policy(prob, drivers, input_features)
+        if decided["bandit_event"] is not None:
+            store.record_bandit_event(transaction_id=tx, **decided["bandit_event"])
         store.record_decision(
             transaction_id=tx,
             model_version=store.version(art),
             contract_version=CONTRACT_VERSION,
             score=prob,
-            decision=decision.value,
-            policy_version=_POLICY.version,
-            thresholds=_POLICY.as_dict(),
+            decision=decided["decision"],
+            action=decided["action"],
+            policy_version=decided["policy_version"],
+            thresholds=decided["thresholds"],
             reason_codes=drivers,
             feature_report=feature_report,
-            input_features={c: float(row.iloc[0][c]) for c in art.features},
+            input_features=input_features,
         )
-    record = store.get_decision(tx)
+        if decided["decision"] in ("DECLINE", "MANUAL_REVIEW"):
+            _schedule_report(background, tx)
+        record = store.get_decision(tx)
 
+    action = _action_for_record(record)
+    tier = risk_tier(float(record["score"]))
     return schemas.SimulateResponse(
         probability=float(record["score"]),
         risk_tier=tier.label,
@@ -304,8 +509,9 @@ def simulate(req: schemas.SimulateRequest) -> schemas.SimulateResponse:
 
 
 @app.post("/api/predict/batch", response_model=schemas.BatchScoreResponse)
-async def predict_batch(
+async def predict_batch(  # noqa: PLR0915 - row loop carries the full decision pipeline
     file: Annotated[UploadFile, File()],
+    background: BackgroundTasks,
 ) -> schemas.BatchScoreResponse:
     raw = await file.read()
     if len(raw) > 50 * 1024 * 1024:
@@ -332,31 +538,70 @@ async def predict_batch(
             errors.append({"row": str(i), "errors": "; ".join(exc.messages)})
             continue
         prob = float(probs[i])
-        decision, action = _POLICY.apply(prob)
         tier = risk_tier(prob)
-        tx = str(df.iloc[i][id_col]) if id_col is not None else f"row-{i}"
-        if store.get_decision(tx) is None:
+        raw_id = df.iloc[i][id_col] if id_col is not None else None
+        try:
+            has_id = not pd.isna(raw_id)
+        except (TypeError, ValueError):
+            has_id = True
+        tx = _batch_transaction_id(raw_id, i) if id_col is not None else f"row-{i}"
+        try:
+            _validate_transaction_id(tx)
+        except HTTPException as exc:
+            errors.append({"row": str(i), "errors": str(exc.detail)})
+            continue
+        existing = store.get_decision(tx)
+        if existing is None:
             drivers = (
                 decision_drivers(art.model, x.iloc[[i]], art.features, art.baseline, top_n=3)
                 if compute_reasons
                 else None
             )
+            input_features = {c: float(x.iloc[i][c]) for c in art.features}
+            decided = (
+                _decide_with_policy(prob, drivers or [], input_features)
+                if drivers is not None
+                else None
+            )
+            if decided is None:
+                decision, action = _POLICY.apply(prob)
+                decided = {
+                    "decision": decision.value,
+                    "action": action,
+                    "policy_version": _POLICY.version,
+                    "thresholds": _POLICY.as_dict(),
+                    "bandit_event": None,
+                }
+            if decided["bandit_event"] is not None:
+                store.record_bandit_event(transaction_id=tx, **decided["bandit_event"])
             store.record_decision(
                 transaction_id=tx,
                 model_version=store.version(art),
                 contract_version=CONTRACT_VERSION,
                 score=prob,
-                decision=decision.value,
-                policy_version=_POLICY.version,
-                thresholds=_POLICY.as_dict(),
+                decision=decided["decision"],
+                action=decided["action"],
+                policy_version=decided["policy_version"],
+                thresholds=decided["thresholds"],
                 reason_codes=drivers,
                 feature_report=report.as_dict(),
-                input_features={c: float(x.iloc[i][c]) for c in art.features},
+                input_features=input_features,
             )
-        record = store.get_decision(tx)
+            if drivers is not None and decided["decision"] in (
+                "DECLINE",
+                "MANUAL_REVIEW",
+            ) and len(rows) < MAX_REPORT_ROWS:
+                _schedule_report(background, tx)
+            record = store.get_decision(tx)
+        else:
+            record = existing
+            prob = float(record["score"])
+            tier = risk_tier(prob)
+
+        action = _action_for_record(record)
         rows.append(
             schemas.BatchScoreRow(
-                id=(df.iloc[i][id_col] if id_col is not None else i),
+                id=raw_id if (id_col is not None and has_id) else tx,
                 transaction_id=tx,
                 probability=float(record["score"]),
                 risk_tier=tier.label,
@@ -415,28 +660,46 @@ def explain(req: schemas.PredictRequest) -> schemas.ExplainResponse:
 def review_queue(
     decision: str | None = None,
     status: str | None = None,
-    limit: int = 100,
+    limit: int = Query(default=100, ge=1, le=200),
 ) -> list[dict]:
-    return store.list_decisions(decision=decision, status=status, limit=limit)
+    records = store.list_decisions(decision=decision, status=status, limit=limit)
+    return [{k: v for k, v in r.items() if k != "input_features"} for r in records]
 
 
 @app.get("/api/review/{transaction_id}")
-def review_detail(transaction_id: str) -> dict:
+def review_detail(
+    transaction_id: str,
+    admin_key: str | None = Header(default=None, alias="X-Admin-Key"),
+) -> dict:
+    _validate_transaction_id(transaction_id)
     record = store.get_decision(transaction_id)
     if record is None:
         raise HTTPException(status_code=404, detail="Decision not found.")
+    if not _ADMIN_KEY or admin_key != _ADMIN_KEY:
+        record = {k: v for k, v in record.items() if k != "input_features"}
     return record
+
+
+def _verify_admin_if_configured(admin_key: str | None) -> None:
+    if _ADMIN_KEY and admin_key != _ADMIN_KEY:
+        raise HTTPException(
+            status_code=403,
+            detail="Forbidden: invalid or missing admin key.",
+        )
 
 
 @app.post("/api/review/{transaction_id}/outcome")
 def review_outcome(
     transaction_id: str,
     req: schemas.ReviewOutcomeRequest,
+    admin_key: str | None = Header(default=None, alias="X-Admin-Key"),
 ) -> dict:
+    _verify_admin_if_configured(admin_key)
+    _validate_transaction_id(transaction_id)
     updated = store.update_outcome(transaction_id, req.verdict, req.note)
     if updated is None:
         raise HTTPException(status_code=404, detail="Decision not found.")
-    return updated
+    return {k: v for k, v in updated.items() if k != "input_features"}
 
 
 @app.get("/api/monitor/summary")
@@ -444,28 +707,203 @@ def monitor_summary() -> dict:
     return store.decision_stats()
 
 
+@app.get("/api/metrics/summary")
+def metrics_summary() -> dict:
+    """Live computed summary of decision volume, splits, latency, and loss prevention."""
+    return store.metrics_summary()
+
+
+@app.get("/api/metrics/timeseries")
+def metrics_timeseries(
+    w: int = Query(default=60, description="Window in minutes", ge=1, le=1440),
+    bucket: int = Query(default=60, description="Bucket size in seconds", ge=5, le=3600),
+) -> list[dict]:
+    """Time-bucketed metrics for transaction velocity, volume, and score trends."""
+    return store.metrics_timeseries(window_minutes=w, bucket_seconds=bucket)
+
+
+@app.get("/api/metrics/dispositions")
+def metrics_dispositions() -> dict:
+    """Decision outcomes joined with human review ground truth."""
+    return store.metrics_dispositions()
+
+
+@app.get("/api/metrics/loss")
+def metrics_loss() -> dict:
+    """Financial loss prevention, review exposure, and cleared volume."""
+    return store.metrics_loss()
+
+
+def _sse_frames(records: list[dict], seen: set[str]) -> list[str]:
+    """Build SSE ``decision`` frames for the records not yet in ``seen``.
+
+    A transaction is only emitted once per connection (``seen`` is the
+    connection's own de-dupe set). Raw input features are never put on the
+    wire — only the decision metadata. Extracted from the stream endpoint so
+    the framing contract is unit-testable (tests/test_api.py).
+    """
+    frames = []
+    for record in records:
+        tx_id = record["transaction_id"]
+        if tx_id in seen:
+            continue
+        seen.add(tx_id)
+        frame = {k: v for k, v in record.items() if k != "input_features"}
+        frames.append(f"id: {tx_id}\nevent: decision\ndata: {json.dumps(frame)}\n\n")
+    return frames
+
+
+@app.get("/api/decisions/stream")
+async def decisions_stream():
+    """Server-Sent-Events stream of decisions as they are recorded.
+
+    Emits an initial burst of the current queue, then new decisions as
+    transactions stream in (ingested via /api/predict, batch, or simulate).
+    Frames omit the raw input features (no sensitive-feature exposure by
+    default). Consume with `new EventSource("/api/decisions/stream")`.
+
+    Note: every new connection starts with a fresh ``seen`` set, so an
+    EventSource reconnect (which happens automatically after any drop)
+    replays the current queue. The client is therefore responsible for
+    de-duplicating by ``transaction_id`` — handled in the React frontend by
+    ``web/src/stores/useLiveStore.ts`` (``addDecisions`` ring buffer). Each
+    frame also carries an SSE ``id:`` field so a client could resume via
+    Last-Event-ID instead.
+    """
+
+    async def gen():
+        seen: set[str] = set()
+        while True:
+            for frame in _sse_frames(store.list_decisions(limit=200), seen):
+                yield frame
+            await asyncio.sleep(1.0)
+
+    return StreamingResponse(
+        gen(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",
+            "Connection": "keep-alive",
+        },
+    )
+
+
 @app.post("/api/feedback", response_model=schemas.FeedbackResponse)
-def feedback(req: schemas.FeedbackRequest) -> schemas.FeedbackResponse:
+def feedback(
+    req: schemas.FeedbackRequest,
+) -> schemas.FeedbackResponse:
     verdict = 1 if (req.verdict in ("fraud", 1)) else 0
     pool_size = store.record_feedback(req.values, verdict)
     return schemas.FeedbackResponse(accepted=True, pool_size=pool_size)
 
 
 @app.post("/api/retrain", response_model=schemas.RetrainResponse)
-def retrain(
+async def retrain(
     admin_key: str | None = Header(default=None, alias="X-Admin-Key"),
 ) -> schemas.RetrainResponse:
-    _require_admin(admin_key)
-    try:
-        result = store.retrain_and_swap()
-    except RuntimeError as exc:
-        raise HTTPException(status_code=503, detail=str(exc)) from exc
-    _clear_cache()
-    return schemas.RetrainResponse(**result)
+    _require_admin(admin_key, "Retraining endpoint")
+    if _RETRAIN_LOCK.locked():
+        raise HTTPException(
+            status_code=429,
+            detail="Retraining is already in progress. Please wait for completion.",
+        )
+    async with _RETRAIN_LOCK:
+        try:
+            result = await asyncio.to_thread(store.retrain_and_swap)
+        except RuntimeError as exc:
+            raise HTTPException(status_code=503, detail=str(exc)) from exc
+        _clear_cache()
+        return schemas.RetrainResponse(**result)
 
 
-# Serve the vanilla-JS frontend from the same process when the web/ dir exists,
-# so a single `uvicorn api.main:app` runs the whole app locally.
-_WEB_DIR = os.path.join(os.path.dirname(__file__), "..", "web")
-if os.path.isdir(_WEB_DIR):
-    app.mount("/", StaticFiles(directory=_WEB_DIR, html=True), name="web")
+@app.get("/api/bandit/status")
+def bandit_status() -> dict:
+    """Status of the adaptive decision layer (policy v2), enabled or not."""
+    return {
+        "enabled": _BANDIT_ENABLED,
+        "policy": _BANDIT_POLICY.as_dict() if _BANDIT_ENABLED else None,
+        "checkpoint_version": _BANDIT_STATE.version if _BANDIT_ENABLED else None,
+        "summary": store.bandit_summary(),
+    }
+
+
+@app.post("/api/bandit/promote")
+async def bandit_promote(
+    admin_key: str | None = Header(default=None, alias="X-Admin-Key"),
+) -> dict:
+    """Off-policy promotion gate for the bandit policy (mirrors the retrain gate).
+
+    Fits a candidate state on the rewarded event log and promotes it only if
+    its IPS-estimated expected reward ≥ the live policy's. A losing candidate
+    is archived under ``data/models/bandit/bandit_archive_<ts>.json``.
+    """
+    _require_admin(admin_key, "Bandit promotion endpoint")
+    if not _BANDIT_ENABLED:
+        raise HTTPException(
+            status_code=503,
+            detail="Adaptive decision layer disabled; set FRAUD_BANDIT_ENABLED=1.",
+        )
+    if _BANDIT_PROMOTE_LOCK.locked():
+        raise HTTPException(
+            status_code=429,
+            detail="Bandit promotion is already in progress.",
+        )
+    global _BANDIT_STATE  # noqa: PLW0603 - single writer: the promote gate
+    async with _BANDIT_PROMOTE_LOCK:
+        result = await asyncio.to_thread(store.promote_bandit_state)
+        if result.get("promoted"):
+            _BANDIT_STATE = store.load_bandit_state()
+        return result
+
+
+@app.get("/api/review/{transaction_id}/report")
+def audit_report(
+    transaction_id: str,
+) -> dict:
+    """Fetch the stored LLM/template audit report for one decision."""
+    _validate_transaction_id(transaction_id)
+    report = store.get_audit_report(transaction_id)
+    if report is None:
+        raise HTTPException(
+            status_code=404,
+            detail="No audit report for this decision (only DECLINE / MANUAL_REVIEW "
+            "get reports, and generation runs asynchronously).",
+        )
+    return report
+
+
+@app.post("/api/review/{transaction_id}/appeal")
+def audit_appeal(
+    transaction_id: str,
+    req: schemas.AppealRequest | None = None,
+    admin_key: str | None = Header(default=None, alias="X-Admin-Key"),
+) -> dict:
+    """Lightweight reversal path: overturn a decision to 'safe' with one click.
+
+    Guards the mass-false-positive failure mode: a fast, human-reviewable
+    explanation (the audit report) plus a fast reversal path. The overturn is
+    recorded as a normal reviewer outcome, so it audits and feeds the retrain
+    pool like any other verdict.
+    """
+    _verify_admin_if_configured(admin_key)
+    _validate_transaction_id(transaction_id)
+    record = store.get_decision(transaction_id)
+    if record is None:
+        raise HTTPException(status_code=404, detail="Decision not found.")
+    if record.get("reviewer_outcome") == "fraud":
+        raise HTTPException(
+            status_code=422,
+            detail="Cannot appeal a decision already confirmed as fraud.",
+        )
+    note = req.note if req is not None else None
+    updated = store.update_outcome(transaction_id, "safe", note or "Appealed (overturned).")
+    return {k: v for k, v in updated.items() if k != "input_features"}
+
+
+# Serve the React SPA from the production build (web/dist/). Run `npm run build`
+# in web/ before starting the server; during development use `npm run dev`
+# (Vite proxies /api to the backend on :5173).
+_DIST_DIR = os.path.join(os.path.dirname(__file__), "..", "web", "dist")
+if os.path.isdir(_DIST_DIR):
+    app.mount("/", StaticFiles(directory=_DIST_DIR, html=True), name="web")

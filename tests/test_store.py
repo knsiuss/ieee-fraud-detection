@@ -49,16 +49,36 @@ def _isolated(tmp_path, monkeypatch):
     monkeypatch.setattr(store, "CURRENT_DIR", current)
     monkeypatch.setattr(store, "CANDIDATES_DIR", tmp_path / "models" / "candidates")
     monkeypatch.setattr(store, "FEEDBACK_FILE", tmp_path / "feedback.jsonl")
+    monkeypatch.setattr(store, "DECISION_DB", tmp_path / "decisions.db")
     monkeypatch.setattr(config, "LGBM_NUM_BOOST_ROUND", 20)
     monkeypatch.setattr(config, "LGBM_EARLY_STOPPING_ROUNDS", 5)
     return tmp_path
+
+
+class TestJsonSafe:
+    """Non-finite floats (NaN/inf) must never survive into JSON output."""
+
+    def test_scalar_non_finite_becomes_none(self):
+        assert store.json_safe(float("nan")) is None
+        assert store.json_safe(float("inf")) is None
+        assert store.json_safe(float("-inf")) is None
+
+    def test_recursive_dict_and_list(self):
+        assert store.json_safe({"a": float("nan"), "b": [1.5, float("nan")]}) == {
+            "a": None,
+            "b": [1.5, None],
+        }
+
+    def test_finite_values_pass_through(self):
+        assert store.json_safe({"ok": 1.5, "s": "x", "n": 3}) == {"ok": 1.5, "s": "x", "n": 3}
+        assert store.json_safe("plain") == "plain"
 
 
 class TestFeedbackPool:
     def test_record_and_read(self, _isolated):
         art = store.current_artefact()
         values = {f: 0.5 for f in art.features[:3]}
-        size = store.record_feedback(values, 1)
+        size = store.record_feedback(values, 1, transaction_id="tx-fb-1")
         assert size == 1
         assert store.feedback_pool_size() == 1
 
@@ -66,6 +86,20 @@ class TestFeedbackPool:
         assert "isFraud" in pool.columns
         assert len(pool) == 1
         assert int(pool.iloc[0]["isFraud"]) == 1
+
+    def test_feedback_deduplication(self, _isolated):
+        art = store.current_artefact()
+        values = {f: 0.5 for f in art.features[:3]}
+        # First verdict: fraud
+        store.record_feedback(values, 1, transaction_id="tx-dup-1")
+        assert store.feedback_pool_size() == 1
+        # Second verdict on same transaction: safe
+        store.record_feedback(values, 0, transaction_id="tx-dup-1")
+        # Pool size must remain 1 and updated to safe
+        assert store.feedback_pool_size() == 1
+        pool = store.feedback_pool_df()
+        assert len(pool) == 1
+        assert int(pool.iloc[0]["isFraud"]) == 0
 
     def test_empty_pool(self, _isolated):
         assert store.feedback_pool_df().empty

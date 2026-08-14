@@ -99,5 +99,11 @@ docs/build/
 .mypy_cache/
 .dmypy.json
 
+# Node / Frontend SPA
+node_modules/
+web/node_modules/
+web/dist/
+
 # SHAP temp dir
 .freebuff/
+

@@ -10,6 +10,7 @@ reported so the caller knows exactly what the model saw.
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -66,9 +67,11 @@ class ContractReport:
 
 
 def _is_numeric(value: Any) -> bool:
+    if value is None or isinstance(value, bool):
+        return False
     try:
-        float(value)
-        return True
+        number = float(value)
+        return math.isfinite(number)
     except (TypeError, ValueError):
         return False
 
@@ -79,7 +82,8 @@ def validate_payload(payload: dict[str, Any], features: list[str]) -> ContractRe
     Raises
     ------
     ContractError
-        If a payload contains unknown features or is missing a required field.
+        If a payload contains unknown features, invalid numeric types, or is
+        missing a required field.
     """
     known = set(features)
     report: dict[str, FieldStatus] = {}
@@ -90,8 +94,16 @@ def validate_payload(payload: dict[str, Any], features: list[str]) -> ContractRe
             report[name] = FieldStatus(name, "rejected", reason="unknown feature")
             errors.append(f"Unknown feature '{name}' is not part of the model contract.")
         elif not _is_numeric(value):
-            report[name] = FieldStatus(name, "rejected", reason="non-numeric value")
-            errors.append(f"Feature '{name}' must be numeric, got {type(value).__name__}.")
+            if name in REQUIRED_FIELDS:
+                report[name] = FieldStatus(name, "rejected", reason="non-numeric value")
+                errors.append(
+                    f"Required feature '{name}' must be a finite numeric value, got {value!r}."
+                )
+            elif value is None or (isinstance(value, float) and not math.isfinite(value)):
+                report[name] = FieldStatus(name, "defaulted", reason="non-finite value defaulted")
+            else:
+                report[name] = FieldStatus(name, "rejected", reason="non-numeric value")
+                errors.append(f"Feature '{name}' must be numeric, got {type(value).__name__}.")
 
     for name in features:
         if name in payload:

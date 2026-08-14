@@ -120,7 +120,8 @@ def add_email_features(
     free = set(config.FREE_EMAIL_DOMAINS)
 
     both_present = out[purchaser_col].notna() & out[recipient_col].notna()
-    out["email_match"] = ((out[purchaser_col] == out[recipient_col]) & both_present).astype(np.int8)
+    match = (out[purchaser_col] == out[recipient_col]) & both_present
+    out["email_match"] = match.astype(np.int8)
     out["p_email_is_free"] = (out[purchaser_col].fillna("").isin(free)).astype(np.int8)
     out["r_email_is_free"] = (out[recipient_col].fillna("").isin(free)).astype(np.int8)
     return out

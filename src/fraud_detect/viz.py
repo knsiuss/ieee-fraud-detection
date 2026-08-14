@@ -90,7 +90,10 @@ def plot_target_correlation(
     if target not in numeric.columns:
         raise ValueError(f"Target column {target!r} is not numeric.")
     corrs = numeric.corr()[target].drop(target).abs().sort_values(ascending=False).head(top_n)
-    fig, ax = plt.subplots(figsize=(8, max(4, len(corrs) * 0.3))) if ax is None else (ax.figure, ax)
+    if ax is None:
+        fig, ax = plt.subplots(figsize=(8, max(4, len(corrs) * 0.3)))
+    else:
+        fig = ax.figure
     ax.barh(corrs.index.astype(str), corrs.values, color="#55a868")
     ax.set_xlabel("|Pearson correlation|")
     ax.set_title(f"Top {top_n} features by |corr| with {target}")
