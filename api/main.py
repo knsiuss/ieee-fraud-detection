@@ -57,7 +57,7 @@ from fastapi import (
     UploadFile,
 )
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, StreamingResponse
+from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 
 from fraud_detect import bandit_policy
@@ -911,5 +911,16 @@ def audit_appeal(
 # in web/ before starting the server; during development use `npm run dev`
 # (Vite proxies /api to the backend on :5173).
 _DIST_DIR = os.path.join(os.path.dirname(__file__), "..", "web", "dist")
-if os.path.isdir(_DIST_DIR):
-    app.mount("/", StaticFiles(directory=_DIST_DIR, html=True), name="web")
+_INDEX_FILE = os.path.join(_DIST_DIR, "index.html")
+
+if os.path.isdir(_DIST_DIR) and os.path.isfile(_INDEX_FILE):
+    _ASSETS_DIR = os.path.join(_DIST_DIR, "assets")
+    if os.path.isdir(_ASSETS_DIR):
+        app.mount("/assets", StaticFiles(directory=_ASSETS_DIR), name="assets")
+
+    @app.get("/{full_path:path}", include_in_schema=False)
+    async def _spa_catchall(full_path: str):
+        file_path = os.path.join(_DIST_DIR, full_path)
+        if full_path and os.path.isfile(file_path):
+            return FileResponse(file_path)
+        return FileResponse(_INDEX_FILE)
