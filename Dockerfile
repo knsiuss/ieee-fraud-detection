@@ -33,4 +33,4 @@ COPY --from=frontend-build /web/dist ./web/dist
 RUN python scripts/train_model.py || echo "bootstrap model not built (using baked artefact)"
 
 EXPOSE 7860
-CMD ["uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "7860"]
+CMD ["sh", "-c", "uvicorn api.main:app --host 0.0.0.0 --port ${PORT:-7860}"]
