@@ -15,6 +15,16 @@ SRC_DIR = ROOT_DIR / "src"
 if str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))
 
+# Handle Hugging Face ZeroGPU if space requested ZeroGPU hardware
+try:
+    import spaces
+    @spaces.GPU
+    def _zero_gpu_init():
+        return True
+    _zero_gpu_init()
+except Exception:
+    pass
+
 # Bootstrap model from sample if not present
 MODEL_DIR = ROOT_DIR / "data" / "models" / "current"
 MODEL_FILE = MODEL_DIR / "model.joblib"
