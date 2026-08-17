@@ -84,7 +84,7 @@ def main() -> None:
     tuned = tuning.load_best_params(backend, fallback_to_defaults=True)
     params = {**config.LGBM_PARAMS, **tuned} if backend is ModelBackend.LIGHTGBM else tuned
 
-    print(f"Training {backend.value} on {len(df):,} rows …")
+    print(f"Training {backend.value} on {len(df):,} rows ...")
     result = train_model(df, backend=backend, params=params)
 
     features = select_feature_columns(df)
