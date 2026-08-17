@@ -1,7 +1,7 @@
 """Hugging Face Spaces entry point for IEEE-CIS Fraud Decisioning Platform.
 
-Runs natively with Gradio 5 SDK on Hugging Face Spaces (Free Tier).
-Embeds the React SPA and mounts the FastAPI backend endpoints under /api.
+Runs the ML API backend on Hugging Face Spaces (Free Tier).
+Provides inference, simulation, SHAP forensic analysis, and audit streaming endpoints.
 """
 
 import os
@@ -34,44 +34,66 @@ if not MODEL_FILE.exists():
     subprocess.run([sys.executable, str(train_script)], check=False)
 
 import gradio as gr
-from fastapi.responses import FileResponse
-from fastapi.staticfiles import StaticFiles
+from fastapi.middleware.cors import CORSMiddleware
 from api.main import app as fastapi_app
 
-DIST_DIR = ROOT_DIR / "web" / "dist"
-INDEX_FILE = DIST_DIR / "index.html"
-ASSETS_DIR = DIST_DIR / "assets"
+# Enable CORS for external frontends (Vercel, Netlify, Cloudflare Pages, localhost)
+fastapi_app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 with gr.Blocks(
-    title="LEDGER // Fraud Decision Console",
+    title="SENTINEL // ML Engine & API",
+    theme=gr.themes.Monochrome(),
     fill_height=True,
 ) as demo:
     gr.HTML(
         """
-        <style>
-            html, body { margin: 0; padding: 0; height: 100%; width: 100%; overflow: hidden; background-color: #090a0f; }
-            footer { display: none !important; }
-            .gradio-container { max-width: 100% !important; padding: 0 !important; margin: 0 !important; width: 100vw !important; height: 100vh !important; }
-            .contain { padding: 0 !important; }
-            .gap { gap: 0 !important; }
-            #app-frame { width: 100vw; height: 100vh; border: none; display: block; }
-        </style>
-        <iframe id="app-frame" src="/app-view" style="width: 100vw; height: 100vh; border: none; display: block;"></iframe>
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 24px; max-width: 900px; margin: 0 auto; color: #f4f4f5;">
+            <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 24px; border-bottom: 1px solid #27272a; padding-bottom: 16px;">
+                <div style="background: #10b981; width: 14px; height: 14px; border-radius: 50%; box-shadow: 0 0 12px #10b981;"></div>
+                <h1 style="margin: 0; font-size: 24px; font-weight: 700; letter-spacing: -0.5px;">SENTINEL // Fraud ML Decisioning Backend</h1>
+                <span style="background: #18181b; border: 1px solid #27272a; padding: 4px 10px; border-radius: 9999px; font-size: 12px; color: #10b981; font-weight: 600;">● SERVICE ONLINE</span>
+            </div>
+            
+            <p style="color: #a1a1aa; line-height: 1.6; font-size: 15px;">
+                This Hugging Face Space hosts the high-performance <strong>LightGBM 4.0 + SHAP TreeExplainer + FastAPI</strong> backend engine for the IEEE-CIS Fraud Detection System.
+            </p>
+            
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; margin: 24px 0;">
+                <div style="background: #18181b; border: 1px solid #27272a; padding: 16px; border-radius: 8px;">
+                    <div style="color: #a1a1aa; font-size: 12px; text-transform: uppercase; font-weight: 600;">API Base URL</div>
+                    <div style="font-size: 14px; font-weight: 600; margin-top: 6px; word-break: break-all; color: #38bdf8;">https://p-quincy-fraud-detection-dashboard-simulation.hf.space</div>
+                </div>
+                <div style="background: #18181b; border: 1px solid #27272a; padding: 16px; border-radius: 8px;">
+                    <div style="color: #a1a1aa; font-size: 12px; text-transform: uppercase; font-weight: 600;">Model Performance</div>
+                    <div style="font-size: 14px; font-weight: 600; margin-top: 6px; color: #34d399;">ROC-AUC: 0.9223 (400 Features)</div>
+                </div>
+                <div style="background: #18181b; border: 1px solid #27272a; padding: 16px; border-radius: 8px;">
+                    <div style="color: #a1a1aa; font-size: 12px; text-transform: uppercase; font-weight: 600;">CORS Policy</div>
+                    <div style="font-size: 14px; font-weight: 600; margin-top: 6px; color: #fbbf24;">Enabled (Public Access)</div>
+                </div>
+            </div>
+
+            <div style="margin-top: 24px;">
+                <h3 style="font-size: 16px; font-weight: 600; margin-bottom: 12px;">Quick Interactive Links:</h3>
+                <ul style="list-style: none; padding: 0; display: flex; flex-direction: column; gap: 8px;">
+                    <li><a href="/docs" target="_blank" style="color: #60a5fa; text-decoration: none;">📘 <strong>Interactive Swagger API Docs (/docs)</strong></a> — Test endpoints live</li>
+                    <li><a href="/api/health" target="_blank" style="color: #60a5fa; text-decoration: none;">🩺 <strong>System Health Status (/api/health)</strong></a> — Check service health</li>
+                    <li><a href="/api/model" target="_blank" style="color: #60a5fa; text-decoration: none;">🧠 <strong>Active Model Metadata (/api/model)</strong></a> — View serving model details</li>
+                    <li><a href="/openapi.json" target="_blank" style="color: #60a5fa; text-decoration: none;">📄 <strong>OpenAPI Schema (/openapi.json)</strong></a> — Download specification</li>
+                </ul>
+            </div>
+        </div>
         """
     )
 
-# Mount endpoints on Gradio's internal FastAPI app
-if ASSETS_DIR.exists():
-    demo.app.mount("/assets", StaticFiles(directory=str(ASSETS_DIR)), name="assets")
-
-@demo.app.get("/app-view", include_in_schema=False)
-async def serve_app_view():
-    if INDEX_FILE.exists():
-        return FileResponse(str(INDEX_FILE))
-    return {"error": "Frontend bundle not found. Run npm run build in web/."}
-
-# Mount FastAPI backend under /api
-demo.app.mount("/api", fastapi_app)
+# Include all FastAPI routes into Gradio demo.app so /api/* and /docs are served natively
+demo.app.include_router(fastapi_app.router)
 
 if __name__ == "__main__":
     demo.launch()

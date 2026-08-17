@@ -13,7 +13,7 @@ import type {
   BatchScoreResponse,
 } from './types';
 
-const BASE_URL = '';
+export const BASE_URL = import.meta.env.VITE_API_URL || '';
 
 async function fetchJson<T>(url: string, options?: RequestInit): Promise<T> {
   const res = await fetch(`${BASE_URL}${url}`, {
