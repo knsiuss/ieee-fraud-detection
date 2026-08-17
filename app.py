@@ -34,6 +34,7 @@ if not MODEL_FILE.exists():
     subprocess.run([sys.executable, str(train_script)], check=False)
 
 import gradio as gr
+import uvicorn
 from api.main import app as fastapi_app
 
 # Gradio interface for HF Spaces discovery
@@ -43,7 +44,7 @@ with demo:
 
 # Mount Gradio sub-app at /gradio so HF detects the Gradio SDK while FastAPI serves root / and /api
 app = gr.mount_gradio_app(fastapi_app, demo, path="/gradio")
-demo.app = app
 
 if __name__ == "__main__":
-    demo.launch(server_name="0.0.0.0", server_port=7860)
+    port = int(os.environ.get("PORT", 7860))
+    uvicorn.run(app, host="0.0.0.0", port=port)

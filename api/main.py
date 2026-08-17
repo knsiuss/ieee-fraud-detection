@@ -923,8 +923,25 @@ if os.path.isdir(_DIST_DIR) and os.path.isfile(_INDEX_FILE):
     if os.path.isdir(_ASSETS_DIR):
         app.mount("/assets", StaticFiles(directory=_ASSETS_DIR), name="assets")
 
+    _EXCLUDED_SPA_PREFIXES = (
+        "api",
+        "gradio",
+        "docs",
+        "redoc",
+        "openapi.json",
+        "config",
+        "info",
+        "theme.css",
+        "custom.css",
+        "heartbeat",
+        "queue",
+    )
+
     @app.get("/{full_path:path}", include_in_schema=False)
     async def _spa_catchall(full_path: str):
+        path_clean = full_path.strip("/")
+        if any(path_clean == prefix or path_clean.startswith(f"{prefix}/") for prefix in _EXCLUDED_SPA_PREFIXES):
+            raise HTTPException(status_code=404, detail="Not Found")
         file_path = os.path.join(_DIST_DIR, full_path)
         if full_path and os.path.isfile(file_path):
             return FileResponse(file_path)
