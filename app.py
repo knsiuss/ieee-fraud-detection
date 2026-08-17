@@ -24,19 +24,15 @@ if not MODEL_FILE.exists():
     subprocess.run([sys.executable, str(train_script)], check=False)
 
 import gradio as gr
-from api.main import app
+from api.main import app as fastapi_app
 
 # Gradio interface for HF Spaces SDK discovery
 demo = gr.Blocks(title="LEDGER // Fraud Decision Console")
 with demo:
-    gr.Markdown("# 🛡️ LEDGER // Internal Fraud & Risk Decision Console")
-    gr.Markdown(
-        "The React dashboard is active at root `/`. "
-        "Interactive API documentation is available at `/docs`."
-    )
+    gr.HTML('<iframe src="/" style="width: 100%; height: 95vh; border: none; border-radius: 8px;"></iframe>')
 
 # Mount Gradio sub-app at /gradio so HF detects the Gradio SDK while FastAPI serves the root / and /api
-app = gr.mount_gradio_app(app, demo, path="/gradio")
+app = gr.mount_gradio_app(fastapi_app, demo, path="/gradio")
 
 if __name__ == "__main__":
     import uvicorn
