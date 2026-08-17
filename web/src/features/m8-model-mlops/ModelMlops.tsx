@@ -122,20 +122,19 @@ export const ModelMlops: React.FC = () => {
       {/* Retrain Result Banner */}
       {retrainResult && (
         <div
-          className={`p-4 rounded-2xl border font-sans text-xs shadow-sm ${
-            retrainResult.swapped
+          className={`p-4 rounded-2xl border font-sans text-xs shadow-sm ${retrainResult.swapped
               ? 'bg-status-approve/12 border-status-approve/30 text-status-approve'
               : retrainResult.error
-              ? 'bg-status-block/12 border-status-block/30 text-status-block'
-              : 'bg-surface-2 border-border-subtle text-text-primary'
-          }`}
+                ? 'bg-status-block/12 border-status-block/30 text-status-block'
+                : 'bg-surface-2 border-border-subtle text-text-primary'
+            }`}
         >
           <div className="font-bold mb-1">
             {retrainResult.swapped
               ? '✓ Candidate Model Promoted to Production'
               : retrainResult.error
-              ? '✕ Retrain Operation Notice'
-              : 'ℹ Candidate Evaluated'}
+                ? '✕ Retrain Operation Notice'
+                : 'ℹ Candidate Evaluated'}
           </div>
           <div>{retrainResult.reason || retrainResult.error}</div>
           {retrainResult.new_auc && (
@@ -195,11 +194,10 @@ export const ModelMlops: React.FC = () => {
                 <div className="flex items-center justify-between">
                   <span className="font-bold text-text-primary font-mono">{log.timestamp}</span>
                   <span
-                    className={`px-2 py-0.5 rounded-full text-[10px] font-bold border shadow-xs ${
-                      log.promoted
+                    className={`px-2 py-0.5 rounded-full text-[10px] font-bold border shadow-xs ${log.promoted
                         ? 'bg-status-approve/12 text-status-approve border-status-approve/30'
                         : 'bg-status-block/12 text-status-block border-status-block/30'
-                    }`}
+                      }`}
                   >
                     {log.promoted ? 'PROMOTED' : 'REJECTED'}
                   </span>
@@ -235,11 +233,10 @@ export const ModelMlops: React.FC = () => {
                 <div className="flex items-center justify-between">
                   <span className="font-bold text-text-primary font-mono">{log.timestamp}</span>
                   <span
-                    className={`px-2 py-0.5 rounded-full text-[10px] font-bold border shadow-xs ${
-                      log.swapped
+                    className={`px-2 py-0.5 rounded-full text-[10px] font-bold border shadow-xs ${log.swapped
                         ? 'bg-status-approve/12 text-status-approve border-status-approve/30'
                         : 'bg-status-block/12 text-status-block border-status-block/30'
-                    }`}
+                      }`}
                   >
                     {log.swapped ? 'SWAPPED' : 'BLOCKED'}
                   </span>

@@ -11,9 +11,38 @@ free-tier story is simple.
 
 | Component | Host | Why |
 |---|---|---|
-| FastAPI + web UI (single service) | **Render** (free web service) or **Hugging Face Spaces** | One process, HTTPS, public URL, free |
+| FastAPI + React Web UI (Single Image) | **Hugging Face Spaces** (Docker SDK) | Free 2 vCPU + 16GB RAM, one process, HTTPS, multi-stage build |
+| FastAPI + React Web UI (Alternative) | **Render** (Free Web Service) | One process, HTTPS, blueprint (`render.yaml`) included |
 
-### Render (recommended — simplest, blueprint included)
+### Hugging Face Spaces (Recommended — 16GB RAM Free Tier)
+
+Hugging Face Spaces provides a free **CPU Basic (2 vCPU, 16 GB RAM)** container environment that runs the root multi-stage Docker image directly:
+
+1. Create a new Space at [huggingface.co/new-space](https://huggingface.co/new-space).
+2. Configuration:
+   - **Space SDK**: `Docker` (Blank template).
+   - **Hardware**: `CPU Basic • 2 vCPU • 16 GB • FREE`.
+   - **Visibility**: `Public`.
+3. Add the Hugging Face git remote and push:
+   ```bash
+   git remote add space https://huggingface.co/spaces/<YOUR_USERNAME>/<SPACE_NAME>
+   git push space main
+   ```
+4. Set `FRAUD_API_ADMIN_KEY` under Space **Settings → Variables and secrets** for administrative endpoint protection.
+5. The container builds the Vite React frontend in Stage 1, bootstraps the model, and serves both the SPA and API on port `7860`.
+
+### Running Locally with Docker
+
+You can also run the self-contained container locally:
+
+```bash
+docker build -t fraud-detection .
+docker run -p 7860:7860 -e FRAUD_API_ADMIN_KEY="demo-secret" fraud-detection
+```
+
+Then visit `http://localhost:7860` for the analyst console or `http://localhost:7860/docs` for Swagger API documentation.
+
+### Render (Alternative — Blueprint Included)
 
 A [Render Blueprint](render.yaml) is committed: `render.yaml` defines the
 service, build, start command, health check, and env vars.
@@ -27,26 +56,18 @@ service, build, start command, health check, and env vars.
 
 Alternatively, manual setup via **New → Web Service**:
 1. Connect the repo.
-3. Settings:
+2. Settings:
    - **Root directory**: `ieee-fraud-detection` (if the repo is nested) or the repo root.
    - **Build command**: `pip install -r requirements.txt`
    - **Start command**: `uvicorn api.main:app --host 0.0.0.0 --port 10000`
    - **Environment**: `PYTHONPATH=src` (and `FRAUD_DETECT_DATA_ROOT` if data is elsewhere).
-4. Free tier note: the service **sleeps after ~15 minutes idle**; the first request after a sleep can take a while (cold start). Expected for a portfolio demo.
+3. Free tier note: the service **sleeps after ~15 minutes idle**; the first request after a sleep can take a while (cold start). Expected for a portfolio demo.
 
 > The committed `web/sample_transactions.csv` lets the batch tab work, and the
 > demo "checkout" simulator works without the full Kaggle data. To serve a
 > *real* trained model, either build it during the Render build
 > (`python scripts/train_model.py` after `pip install -r requirements.txt`)
 > or mount a volume with `data/models/`.
-
-### Hugging Face Spaces (alternative)
-
-- Create a **Docker** Space pointing at this repo.
-- The included `Dockerfile` builds a self-contained image: it installs deps,
-  copies the app, and bootstraps a serving model from the committed sample.
-- Space settings → CPU Basic (free) → deploy. Cold start is usually faster
-  than Render's free tier.
 
 ## Splitting the frontend (optional)
 

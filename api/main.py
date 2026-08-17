@@ -80,7 +80,7 @@ from . import schemas, store
 app = FastAPI(
     title="IEEE-CIS Fraud Decisioning API (demo)",
     description=(
-        "Portfolio demo: raw IEEE-CIS payloads are scored by a joblib LightGBM "
+        "demo: raw IEEE-CIS payloads are scored by a joblib LightGBM "
         "artefact, a versioned policy decides APPROVE / MANUAL_REVIEW / DECLINE, "
         "and every decision is audited. Public data only; not a real fraud system."
     ),

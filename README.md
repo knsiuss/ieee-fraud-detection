@@ -507,26 +507,30 @@ python scripts/retrain.py            # once, manually
 
 ## Deployment
 
-The API and frontend are served from a single process, so free-tier hosting is straightforward.
+The API and React frontend SPA are built and served from a single self-contained Docker image, so free-tier hosting is straightforward.
 
-### Docker
+### Docker (Multi-stage Build)
 
 ```bash
+# Build the self-contained image (compiles React frontend + sets up Python service)
 docker build -t fraud-detection .
-docker run -p 8000:8000 fraud-detection
+
+# Run on port 7860 (Hugging Face Spaces default)
+docker run -p 7860:7860 -e FRAUD_API_ADMIN_KEY="your-secret" fraud-detection
 ```
 
-The image bootstraps a model from the bundled training data so it responds cold. Mount `data/models` and `data/feedback` as a volume to keep retrained artefacts across restarts.
+Open `http://localhost:7860` for the review console or `http://localhost:7860/docs` for the interactive API docs. The image bootstraps a model from the bundled sample so it responds immediately. Mount `data/models` and `data/feedback` as volumes to keep retrained artefacts across restarts.
 
-### Free hosting options
+### Free Hosting Options
 
-| Component | Host |
-|---|---|
-| FastAPI + frontend (single service) | **Render** free tier or **Hugging Face Spaces** |
-| Frontend hosted separately | **Netlify** / **GitHub Pages** (set `window.API_BASE`) |
-| Scheduled retraining | GitHub Actions `schedule`, or cron on the host |
+| Component | Host | Speeds / Limits |
+|---|---|---|
+| FastAPI + React Console (Single Docker Image) | **Hugging Face Spaces** (Docker SDK) | 2 vCPU, 16GB RAM Free Tier, HTTPS, No sleep during active sessions |
+| FastAPI + React Console (Alternative) | **Render** Free Tier | 512MB RAM, sleeps after 15m idle (`render.yaml` included) |
+| Frontend Hosted Separately (Optional) | **Vercel** / **Netlify** / **GitHub Pages** | Set `window.API_BASE` to FastAPI URL |
+| Scheduled Retraining | **GitHub Actions** `schedule`, or cron on the host | Runs `python scripts/retrain.py` |
 
-Free hosting services sleep after idle, so the first request can be slow (cold start) — expected for a demo, and fine once the service is warm.
+See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for full step-by-step deployment guides.
 
 ---
 

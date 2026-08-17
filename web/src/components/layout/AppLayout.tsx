@@ -70,9 +70,8 @@ export const AppLayout: React.FC = () => {
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-status-approve opacity-75" />
               )}
               <span
-                className={`relative inline-flex rounded-full h-2 w-2 ${
-                  isConnected ? 'bg-status-approve' : 'bg-status-review'
-                }`}
+                className={`relative inline-flex rounded-full h-2 w-2 ${isConnected ? 'bg-status-approve' : 'bg-status-review'
+                  }`}
               />
             </span>
             <span className="text-text-secondary text-[11px] font-medium tracking-tight font-sans">
@@ -110,11 +109,10 @@ export const AppLayout: React.FC = () => {
               <NavLink
                 key={item.path}
                 to={item.path}
-                className={`flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-medium transition-all duration-200 ${
-                  isActive
+                className={`flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-medium transition-all duration-200 ${isActive
                     ? 'bg-surface-hover text-text-primary font-semibold shadow-sm border border-border-highlight scale-[1.02]'
                     : 'text-text-secondary hover:text-text-primary hover:bg-surface-2/60 hover:scale-[1.01]'
-                }`}
+                  }`}
               >
                 <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-apple-blue' : 'text-text-muted'}`} />
                 <span>{item.label}</span>

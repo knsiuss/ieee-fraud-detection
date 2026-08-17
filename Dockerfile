@@ -1,9 +1,14 @@
-# IEEE-CIS Fraud Detection — FastAPI service image.
+# IEEE-CIS Fraud Detection — FastAPI service + React SPA image for Hugging Face Spaces.
 #
-# Builds a self-contained image: installs deps, copies the app, and bootstraps
-# a serving model from the committed sample (dashboard/data/sample.parquet) so
-# the container responds immediately. Bake a real model by placing the trained
-# artefact in data/models/current before building, or retrain at runtime.
+# Stage 1: Build the React frontend SPA
+FROM node:20-slim AS frontend-build
+WORKDIR /web
+COPY web/package.json web/package-lock.json* ./
+RUN npm ci || npm install
+COPY web/ ./
+RUN npm run build
+
+# Stage 2: Python FastAPI backend service
 FROM python:3.12-slim
 
 WORKDIR /app
@@ -16,13 +21,16 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY src ./src
 COPY api ./api
-COPY web ./web
 COPY scripts ./scripts
 COPY dashboard/data ./dashboard/data
 COPY data/metadata ./data/metadata
+COPY web/sample_transactions.csv ./web/sample_transactions.csv
+
+# Copy compiled React frontend assets from Stage 1
+COPY --from=frontend-build /web/dist ./web/dist
 
 # Bootstrap model from the committed sample (skips cleanly if a model is baked).
 RUN python scripts/train_model.py || echo "bootstrap model not built (using baked artefact)"
 
-EXPOSE 8000
-CMD ["uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "8000"]
+EXPOSE 7860
+CMD ["uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "7860"]

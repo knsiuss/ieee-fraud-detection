@@ -18,3 +18,5 @@ notebook/
 tests/
 docs/
 retrain.log
+web/node_modules/
+web/dist/
