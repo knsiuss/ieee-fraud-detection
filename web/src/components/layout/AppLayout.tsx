@@ -43,16 +43,16 @@ export const AppLayout: React.FC = () => {
       <header className="sticky top-0 z-40 bg-surface-1/80 backdrop-blur-2xl border-b border-border-subtle px-4 lg:px-8 py-3 flex items-center justify-between transition-all">
         {/* Brand & System Status */}
         <div className="flex items-center gap-3.5">
-          <div className="w-8 h-8 rounded-2xl bg-gradient-to-tr from-surface-2 to-surface-hover flex items-center justify-center text-text-primary border border-border-subtle shadow-sm transition-transform hover:scale-105">
-            <Shield className="w-4 h-4 text-apple-blue" />
+          <div className="relative w-9 h-9 rounded-xl overflow-hidden border border-cyan-500/30 shadow-[0_0_12px_rgba(6,182,212,0.25)] transition-transform hover:scale-105 bg-surface-2 flex items-center justify-center">
+            <img src="/logo.jpg" alt="Sentinel Unicorn" className="w-full h-full object-cover" />
           </div>
           <div>
             <div className="flex items-center gap-2.5">
-              <span className="font-semibold text-sm tracking-tight text-text-primary font-sans">
-                Sentinel
+              <span className="font-bold text-sm tracking-tight text-text-primary font-sans bg-gradient-to-r from-white via-cyan-200 to-indigo-300 bg-clip-text text-transparent">
+                SENTINEL
               </span>
-              <span className="text-[10px] font-mono font-medium px-2.5 py-0.5 rounded-full bg-surface-2/80 text-text-secondary border border-border-subtle">
-                v4.5 HIG
+              <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded-full bg-cyan-950/60 text-cyan-400 border border-cyan-800/50 shadow-xs">
+                UNICORN v4.5
               </span>
             </div>
             <span className="text-[11px] text-text-muted hidden sm:block font-normal">
