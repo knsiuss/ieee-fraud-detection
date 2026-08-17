@@ -1,3 +1,4 @@
+*.parquet filter=lfs diff=lfs merge=lfs -text
 dashboard/data/sample.parquet filter=lfs diff=lfs merge=lfs -text
 docs/screenshots/*.png filter=lfs diff=lfs merge=lfs -text
 *.png filter=lfs diff=lfs merge=lfs -text
