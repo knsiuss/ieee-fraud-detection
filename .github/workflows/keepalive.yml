@@ -1,0 +1,16 @@
+name: Hugging Face Space Keepalive
+
+on:
+  schedule:
+    # Runs every 15 minutes to keep HF Space active and prevent sleep
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+
+jobs:
+  ping-space:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Sentinel ML Backend
+        run: |
+          echo "Pinging Hugging Face Space ML Backend..."
+          curl -f -s -o /dev/null -w "Health check response: HTTP %{http_code} (took %{time_total}s)\n" https://p-quincy-fraud-detection-dashboard-simulation.hf.space/api/health || true
