@@ -1,0 +1,2 @@
+/api/*  https://p-quincy-fraud-detection-dashboard-simulation.hf.space/api/:splat  200!
+/*      /index.html                                                                 200
