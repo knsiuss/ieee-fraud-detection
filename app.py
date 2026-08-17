@@ -42,16 +42,21 @@ DIST_DIR = ROOT_DIR / "web" / "dist"
 INDEX_FILE = DIST_DIR / "index.html"
 ASSETS_DIR = DIST_DIR / "assets"
 
-with gr.Blocks(title="LEDGER // Fraud Decision Console", fill_height=True) as demo:
+with gr.Blocks(
+    title="LEDGER // Fraud Decision Console",
+    fill_height=True,
+) as demo:
     gr.HTML(
         """
         <style>
-            footer {visibility: hidden !important;}
-            .gradio-container {max-width: 100% !important; padding: 0 !important; margin: 0 !important;}
+            html, body { margin: 0; padding: 0; height: 100%; width: 100%; overflow: hidden; background-color: #090a0f; }
+            footer { display: none !important; }
+            .gradio-container { max-width: 100% !important; padding: 0 !important; margin: 0 !important; width: 100vw !important; height: 100vh !important; }
+            .contain { padding: 0 !important; }
+            .gap { gap: 0 !important; }
+            #app-frame { width: 100vw; height: 100vh; border: none; display: block; }
         </style>
-        <div style="width: 100%; height: 96vh; margin: 0; padding: 0; overflow: hidden; border-radius: 8px;">
-            <iframe src="/app-view" style="width: 100%; height: 100%; border: none; display: block;"></iframe>
-        </div>
+        <iframe id="app-frame" src="/app-view" style="width: 100vw; height: 100vh; border: none; display: block;"></iframe>
         """
     )
 

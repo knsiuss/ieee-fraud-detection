@@ -1,5 +1,5 @@
 import React, { Suspense, lazy } from 'react';
-import { createBrowserRouter } from 'react-router-dom';
+import { createHashRouter } from 'react-router-dom';
 import { AppLayout } from './components/layout/AppLayout';
 import { Skeleton } from './components/ui/States';
 
@@ -41,7 +41,7 @@ const LoadingFallback = () => (
   </div>
 );
 
-export const router = createBrowserRouter([
+export const router = createHashRouter([
   {
     path: '/',
     element: <AppLayout />,
@@ -107,6 +107,14 @@ export const router = createBrowserRouter([
         element: (
           <Suspense fallback={<LoadingFallback />}>
             <ModelMlops />
+          </Suspense>
+        ),
+      },
+      {
+        path: '*',
+        element: (
+          <Suspense fallback={<LoadingFallback />}>
+            <LiveRadar />
           </Suspense>
         ),
       },
