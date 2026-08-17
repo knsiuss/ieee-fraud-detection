@@ -95,14 +95,51 @@ _CORS_ORIGINS = [
     ).split(",")
     if o.strip()
 ]
-_ALLOW_ALL_ORIGINS = os.getenv("FRAUD_ALLOW_ALL_ORIGINS", "0") == "1"
-
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"] if _ALLOW_ALL_ORIGINS else _CORS_ORIGINS,
+    allow_origins=["*"],
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.on_event("startup")
+def _seed_initial_decisions():
+    try:
+        if len(store.list_decisions(limit=5)) == 0:
+            art = _current()
+            profiles = ["typical", "nonfraud", "fraud", "typical", "nonfraud"]
+            for i in range(25):
+                profile = profiles[i % len(profiles)]
+                amount = 920.0 + (i * 35.0) if profile == "fraud" else 24.5 + (i * 12.0)
+                card_brand = "discover" if profile == "fraud" else "visa"
+                data = simmod.scenario_payload(
+                    profile,
+                    amount=amount,
+                    card_brand=card_brand,
+                    billing_distance=450.0 if profile == "fraud" else 15.0,
+                )
+                row = simmod.build_row(data, art.features, art.baseline, art.profiles)
+                prob = float(predict_proba(art.model, row)[0])
+                input_features = {c: float(row.iloc[0][c]) for c in art.features}
+                drivers = decision_drivers(art.model, row, art.features, art.baseline, top_n=3)
+                decided = _decide_with_policy(prob, drivers, input_features)
+                store.record_decision(
+                    transaction_id=f"tx-seed-{i:03d}",
+                    model_version=store.version(art),
+                    contract_version=CONTRACT_VERSION,
+                    score=prob,
+                    decision=decided["decision"],
+                    action=decided["action"],
+                    policy_version=decided["policy_version"],
+                    thresholds=decided["thresholds"],
+                    reason_codes=drivers,
+                    feature_report={},
+                    input_features=input_features,
+                )
+    except Exception as e:
+        print("Startup seed skipped:", e)
 
 
 @app.exception_handler(MissingArtefactError)

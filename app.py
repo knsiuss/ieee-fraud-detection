@@ -15,16 +15,6 @@ SRC_DIR = ROOT_DIR / "src"
 if str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))
 
-# Handle Hugging Face ZeroGPU if space requested ZeroGPU hardware
-try:
-    import spaces
-    @spaces.GPU
-    def _zero_gpu_init():
-        return True
-    _zero_gpu_init()
-except Exception:
-    pass
-
 # Bootstrap model from sample if not present
 MODEL_DIR = ROOT_DIR / "data" / "models" / "current"
 MODEL_FILE = MODEL_DIR / "model.joblib"
@@ -37,7 +27,7 @@ import gradio as gr
 from fastapi.middleware.cors import CORSMiddleware
 from api.main import app as fastapi_app
 
-# Enable CORS for external frontends (Vercel, Netlify, Cloudflare Pages, localhost)
+# Enable CORS for external frontends (Netlify, Vercel, localhost)
 fastapi_app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -46,11 +36,7 @@ fastapi_app.add_middleware(
     allow_headers=["*"],
 )
 
-with gr.Blocks(
-    title="SENTINEL // ML Engine & API",
-    theme=gr.themes.Monochrome(),
-    fill_height=True,
-) as demo:
+with gr.Blocks(title="SENTINEL // ML Engine & API") as demo:
     gr.HTML(
         """
         <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 24px; max-width: 900px; margin: 0 auto; color: #f4f4f5;">
@@ -92,8 +78,10 @@ with gr.Blocks(
         """
     )
 
-# Include all FastAPI routes into Gradio demo.app so /api/* and /docs are served natively
-demo.app.include_router(fastapi_app.router)
+# Mount Gradio onto FastAPI root so FastAPI routes /api/* and /docs are served natively
+app = gr.mount_gradio_app(fastapi_app, demo, path="/gradio")
 
 if __name__ == "__main__":
-    demo.launch()
+    import uvicorn
+    port = int(os.environ.get("PORT", 7860))
+    uvicorn.run(app, host="0.0.0.0", port=port)
