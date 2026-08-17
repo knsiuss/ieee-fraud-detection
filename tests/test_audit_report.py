@@ -67,8 +67,7 @@ class TestContext:
     def test_context_truncates_drivers_to_five(self):
         record = dict(RECORD)
         record["reason_codes"] = [
-            {"feature": f"F{i}", "label": f"F{i}", "contribution": float(i)}
-            for i in range(10)
+            {"feature": f"F{i}", "label": f"F{i}", "contribution": float(i)} for i in range(10)
         ]
         ctx = build_report_context(record)
         assert len(ctx["drivers"]) == 5
@@ -126,8 +125,7 @@ class TestParse:
 
     def test_missing_key_returns_none(self):
         text = (
-            '{"executive_summary": "s", "risk_score": {}, "drivers": [],'
-            ' "historical_context": "h"}'
+            '{"executive_summary": "s", "risk_score": {}, "drivers": [], "historical_context": "h"}'
         )
         assert parse_llm_response(text) is None  # no recommended_action
 
@@ -157,12 +155,14 @@ class TestTemplate:
         assert "34.9x" in report["historical_context"]
 
     def test_template_defaults_for_missing_amount(self):
-        ctx = build_report_context({
-            "score": 0.1,
-            "decision": "APPROVE",
-            "risk_tier": "low",
-            "thresholds": {"review_above": 0.15, "decline_above": 0.5},
-        })
+        ctx = build_report_context(
+            {
+                "score": 0.1,
+                "decision": "APPROVE",
+                "risk_tier": "low",
+                "thresholds": {"review_above": 0.15, "decline_above": 0.5},
+            }
+        )
         report = build_template_report(ctx)
         assert "not among the top drivers" in report["historical_context"]
 

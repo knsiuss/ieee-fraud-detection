@@ -75,28 +75,39 @@ def main() -> None:
         default=str(Path(__file__).resolve().parents[1] / "web" / "sample_transactions.csv"),
         help="CSV source (ignored when --synthetic is set)",
     )
-    parser.add_argument("--synthetic", type=int, default=0,
-                        help="generate N synthetic transactions instead of reading a CSV")
+    parser.add_argument(
+        "--synthetic",
+        type=int,
+        default=0,
+        help="generate N synthetic transactions instead of reading a CSV",
+    )
     parser.add_argument("--seed", type=int, default=None, help="RNG seed for --synthetic")
-    parser.add_argument("--fraud-oversample", action="store_true",
-                        help="weight fraud rows x5 when sampling synthetic rows")
-    parser.add_argument("--labels-out",
-                        default=str(
-                            Path(__file__).resolve().parents[1]
-                            / "data" / "feedback" / "synthetic_labels.jsonl"
-                        ),
-                        help="JSONL file receiving {transaction_id, is_fraud_synthetic, score, decision}")
+    parser.add_argument(
+        "--fraud-oversample",
+        action="store_true",
+        help="weight fraud rows x5 when sampling synthetic rows",
+    )
+    parser.add_argument(
+        "--labels-out",
+        default=str(
+            Path(__file__).resolve().parents[1] / "data" / "feedback" / "synthetic_labels.jsonl"
+        ),
+        help=("JSONL file receiving {transaction_id, is_fraud_synthetic, score, decision}"),
+    )
     parser.add_argument("--base", default="http://localhost:8000")
     parser.add_argument("--rate", type=float, default=1.0, help="transactions per second")
     args = parser.parse_args()
 
     if args.synthetic > 0:
         generator = SyntheticGenerator()
-        generated = generator.generate(args.synthetic, seed=args.seed,
-                                        fraud_oversample=args.fraud_oversample)
-        rows = [{"tx": tx, "values": values, "label": row["_synthetic_label"]}
-                for row in generated
-                for tx, values in [_payload_from_synthetic(row)]]
+        generated = generator.generate(
+            args.synthetic, seed=args.seed, fraud_oversample=args.fraud_oversample
+        )
+        rows = [
+            {"tx": tx, "values": values, "label": row["_synthetic_label"]}
+            for row in generated
+            for tx, values in [_payload_from_synthetic(row)]
+        ]
     else:
         df = pd.read_csv(args.csv)
         feats = [c for c in df.columns if c != "TransactionID"]

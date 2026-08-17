@@ -189,12 +189,12 @@ new risk assessments, do NOT mention features that are not listed. If the
 drivers list is empty, say the model could not be explained.
 
 Facts given (narration only):
-- Fraud probability: {context['score']:.4f}
-- Decision: {context['decision']} (risk tier {context['risk_tier']})
-- Policy thresholds: review at {context['review_above']}, decline at {context['decline_above']}
-- Existing one-sentence summary: {context['summary'] or '(none)'}
+- Fraud probability: {context["score"]:.4f}
+- Decision: {context["decision"]} (risk tier {context["risk_tier"]})
+- Policy thresholds: review at {context["review_above"]}, decline at {context["decline_above"]}
+- Existing one-sentence summary: {context["summary"] or "(none)"}
 - Top SHAP drivers:
-{driver_lines or '- (none)'}
+{driver_lines or "- (none)"}
 - Historical context: {amount_note}
 
 Respond with ONLY a JSON object matching exactly this schema:
@@ -309,9 +309,7 @@ def build_template_report(context: dict[str, Any]) -> dict[str, Any]:
             for d in drivers
         ],
         "historical_context": historical,
-        "recommended_action": decisions.get(
-            context["decision"], "Route to manual review."
-        ),
+        "recommended_action": decisions.get(context["decision"], "Route to manual review."),
     }
 
 

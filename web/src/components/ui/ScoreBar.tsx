@@ -49,7 +49,7 @@ export const ScoreBar: React.FC<ScoreBarProps> = ({
   return (
     <div className={`flex flex-col gap-1 font-mono ${className}`}>
       {/* Track & Ticks */}
-      <div className="relative w-full bg-surface-2 h-2 rounded-[2px] overflow-hidden border border-border-subtle/60">
+      <div className="relative w-full bg-surface-2 h-1.5 rounded-full overflow-hidden">
         {/* Threshold Markers */}
         <div
           className="absolute top-0 bottom-0 w-[1px] bg-border-muted z-10"

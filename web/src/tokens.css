@@ -29,10 +29,15 @@
     --surface-hover: #2E2D34;
     --border-subtle: rgba(230, 227, 218, 0.10);
     --border-muted: rgba(230, 227, 218, 0.05);
+    --bg-glow: rgba(235, 232, 224, 0.055);
 
     --text-primary: #F6F4EF;
     --text-secondary: #A8A49A;
     --text-muted: #6E6A62;
+
+    /* soft elevation — depth via light, no glow */
+    --shadow-soft: 0 1px 1px rgba(11, 10, 14, 0.30), 0 8px 24px -12px rgba(11, 10, 14, 0.45);
+    --shadow-lift: 0 2px 3px rgba(11, 10, 14, 0.35), 0 14px 38px -14px rgba(11, 10, 14, 0.60);
 
     /* signal colors — reserved ONLY for decision states, never ambient */
     --status-approve: #4F7A5C;
@@ -50,10 +55,14 @@
     --surface-hover: #E6E3D9;
     --border-subtle: #DCD8CE;
     --border-muted: rgba(110, 106, 98, 0.08);
+    --bg-glow: rgba(110, 106, 98, 0.05);
 
     --text-primary: #17161A;
     --text-secondary: #6E6A62;
     --text-muted: #948F84;
+
+    --shadow-soft: 0 1px 2px rgba(58, 52, 41, 0.06), 0 10px 28px -14px rgba(58, 52, 41, 0.16);
+    --shadow-lift: 0 2px 4px rgba(58, 52, 41, 0.08), 0 18px 40px -18px rgba(58, 52, 41, 0.24);
 
     --status-approve: #3B5A44;
     --status-approve-soft: rgba(59, 90, 68, 0.10);
@@ -65,8 +74,10 @@
 
   body {
     background-color: var(--bg-main);
+    background-image: radial-gradient(900px 420px at 50% -120px, var(--bg-glow), transparent 70%);
     color: var(--text-primary);
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased;
   }
 
   .font-mono {
@@ -75,19 +86,27 @@
   }
 }
 
-/* Functional, calm panels — no blur, no glowing shadow */
+/* Functional, calm panels — soft radius, depth via light, no glow */
 .panel {
   background-color: var(--surface-1);
   border: 1px solid var(--border-subtle);
-  border-radius: 4px;
+  border-radius: 14px;
+  box-shadow: var(--shadow-soft);
+  animation: rise 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 .panel-hover {
-  transition: background-color 0.15s ease, border-color 0.15s ease;
+  transition:
+    transform 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+    background-color 0.2s ease,
+    border-color 0.2s ease;
 }
 .panel-hover:hover {
+  transform: translateY(-1px);
   background-color: var(--surface-hover);
   border-color: var(--border-muted);
+  box-shadow: var(--shadow-lift);
 }
 
 @keyframes fadeIn {
@@ -96,6 +115,15 @@
   }
   to {
     opacity: 1;
+  }
+}
+
+@keyframes rise {
+  from {
+    transform: translateY(8px);
+  }
+  to {
+    transform: translateY(0);
   }
 }
 
@@ -117,24 +145,27 @@
 }
 
 .btn-interactive {
-  transition: background-color 0.15s ease, border-color 0.15s ease;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    transform 0.15s cubic-bezier(0.22, 1, 0.36, 1);
   cursor: pointer;
 }
 .btn-interactive:active {
-  opacity: 0.9;
+  transform: scale(0.97);
 }
 
-/* Compact scrollbars */
+/* Compact, soft scrollbars */
 ::-webkit-scrollbar {
-  width: 5px;
-  height: 5px;
+  width: 8px;
+  height: 8px;
 }
 ::-webkit-scrollbar-track {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
   background: var(--border-subtle);
-  border-radius: 2px;
+  border-radius: 8px;
 }
 ::-webkit-scrollbar-thumb:hover {
   background: var(--text-muted);

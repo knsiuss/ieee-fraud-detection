@@ -329,8 +329,7 @@ class BanditPolicy:
             return BanditChoice(
                 decision=Decision.DECLINE,
                 action=(
-                    "Auto-decline: probability above the high-confidence cutoff "
-                    "(no manual review)."
+                    "Auto-decline: probability above the high-confidence cutoff (no manual review)."
                 ),
                 needs_review=sampled,
                 auto_actioned=True,
@@ -348,9 +347,7 @@ class BanditPolicy:
         if explored:
             chosen = self.rng.choice(ACTIONS)
         else:
-            scores = {
-                a: state.arm(a).ucb_score(context, self.alpha) for a in ACTIONS
-            }
+            scores = {a: state.arm(a).ucb_score(context, self.alpha) for a in ACTIONS}
             chosen = max(scores, key=scores.get)
 
         probs = self._exploration_probs(chosen, explored)
@@ -470,9 +467,7 @@ def evaluate_off_policy(events: list[dict[str, Any]], state: BanditState) -> dic
             continue
         if reward is None:
             continue
-        scores = {
-            a: state.arm(a).ucb_score(list(context), DEFAULT_ALPHA) for a in ACTIONS
-        }
+        scores = {a: state.arm(a).ucb_score(list(context), DEFAULT_ALPHA) for a in ACTIONS}
         if max(scores, key=scores.get) != action:
             continue
         weight = 1.0 / max(float(propensity), 1e-6)

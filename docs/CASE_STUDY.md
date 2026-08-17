@@ -21,7 +21,7 @@ hundreds of anonymised and partially-missing features and a temporal axis.
 
 ## Architecture
 
-Web console (vanilla JS) → FastAPI service → `fraud_detect` package
+React/TypeScript web console → FastAPI service → `fraud_detect` package
 (`serving` + `sim`) → model artefact → gated retraining. Reviewers' verdicts
 feed a feedback pool; a scheduled retrain promotes a candidate only when it
 beats the served model on a held-out split. Evaluation and drift are

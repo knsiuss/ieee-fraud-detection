@@ -31,9 +31,9 @@ export function SegmentedTabs<T extends string = string>({
           <button
             key={tab.id}
             onClick={() => onChange(tab.id)}
-            className={`btn-interactive relative flex items-center gap-1.5 rounded-[2px] font-mono transition-colors ${paddingClass} ${
+            className={`btn-interactive relative flex items-center gap-1.5 rounded-full font-mono transition-colors ${paddingClass} ${
               isActive
-                ? 'bg-surface-2 text-text-primary border border-border-subtle font-bold'
+                ? 'bg-surface-2 text-text-primary shadow-sm font-bold'
                 : 'text-text-secondary hover:text-text-primary hover:bg-surface-hover'
             }`}
           >
@@ -42,7 +42,7 @@ export function SegmentedTabs<T extends string = string>({
 
             {tab.count !== undefined && (
               <span
-                className={`font-mono text-[10px] px-1.5 py-0.2 rounded-[2px] ${
+                className={`font-mono text-[10px] px-2 py-0.5 rounded-full ${
                   isActive
                     ? 'bg-surface-1 text-text-primary font-bold'
                     : 'bg-surface-2 text-text-muted'
@@ -53,7 +53,7 @@ export function SegmentedTabs<T extends string = string>({
             )}
 
             {tab.badge && (
-              <span className="bg-status-review-soft text-status-review text-[10px] font-mono px-1 py-0.2 rounded-[2px] font-bold">
+              <span className="bg-status-review-soft text-status-review text-[10px] font-mono px-2 py-0.5 rounded-full font-bold">
                 {tab.badge}
               </span>
             )}

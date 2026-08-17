@@ -75,9 +75,9 @@ export const PolicyGraph: React.FC = () => {
               </div>
 
               {/* Threshold Visualizer Band */}
-              <div className="p-2.5 bg-surface-2 rounded-[2px] border border-border-subtle space-y-1.5">
+              <div className="p-2.5 bg-surface-2 rounded-[6px] border border-border-subtle space-y-1.5">
                 <div className="text-[10px] text-text-secondary">Decision Spectrum:</div>
-                <div className="h-3.5 w-full rounded-[2px] overflow-hidden flex text-[9px] font-bold text-white text-center leading-[14px]">
+                <div className="h-3.5 w-full rounded-[6px] overflow-hidden flex text-[9px] font-bold text-white text-center leading-[14px]">
                   <div
                     style={{ width: `${lowerThreshold * 100}%` }}
                     className="bg-status-approve"
@@ -150,7 +150,7 @@ export const PolicyGraph: React.FC = () => {
             />
 
             {selectedNode && (
-              <div className="p-2.5 bg-surface-2 rounded-[2px] border border-border-subtle font-mono text-xs flex items-center justify-between">
+              <div className="p-2.5 bg-surface-2 rounded-[6px] border border-border-subtle font-mono text-xs flex items-center justify-between">
                 <span>
                   Selected Entity: <b>{selectedNode.id}</b> ({selectedNode.type})
                 </span>

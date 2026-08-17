@@ -43,7 +43,7 @@ export const ReviewQueue: React.FC = () => {
       header: 'Queue State',
       cell: ({ row }) => (
         <div className="flex items-center gap-1.5">
-          <span className="px-1.5 py-0.5 rounded-[2px] bg-surface-2 border border-border-subtle text-[11px] font-mono font-medium">
+          <span className="px-1.5 py-0.5 rounded-[6px] bg-surface-2 border border-border-subtle text-[11px] font-mono font-medium">
             {row.original.status || 'NEW'}
           </span>
           {row.original.audit_sampled && <AuditSampledBadge />}
@@ -87,7 +87,7 @@ export const ReviewQueue: React.FC = () => {
           <button
             onClick={() => handleAction(row.original.transaction_id, 'safe')}
             disabled={outcomeMutation.isPending}
-            className="btn-interactive px-2 py-0.5 bg-status-approve-soft text-status-approve border border-status-approve/30 rounded-[2px] text-[11px] font-mono font-semibold flex items-center gap-1"
+            className="btn-interactive px-2 py-0.5 bg-status-approve-soft text-status-approve border border-status-approve/30 rounded-[6px] text-[11px] font-mono font-semibold flex items-center gap-1"
           >
             <Check className="w-3 h-3" />
             <span>Approve (Safe)</span>
@@ -95,14 +95,14 @@ export const ReviewQueue: React.FC = () => {
           <button
             onClick={() => handleAction(row.original.transaction_id, 'fraud')}
             disabled={outcomeMutation.isPending}
-            className="btn-interactive px-2 py-0.5 bg-status-block-soft text-status-block border border-status-block/30 rounded-[2px] text-[11px] font-mono font-semibold flex items-center gap-1"
+            className="btn-interactive px-2 py-0.5 bg-status-block-soft text-status-block border border-status-block/30 rounded-[6px] text-[11px] font-mono font-semibold flex items-center gap-1"
           >
             <X className="w-3 h-3" />
             <span>Confirm Fraud</span>
           </button>
           <button
             onClick={() => openDrawer(row.original)}
-            className="btn-interactive px-2 py-0.5 bg-surface-2 hover:bg-surface-hover border border-border-subtle text-text-secondary hover:text-text-primary rounded-[2px] text-[11px] font-mono"
+            className="btn-interactive px-2 py-0.5 bg-surface-2 hover:bg-surface-hover border border-border-subtle text-text-secondary hover:text-text-primary rounded-[6px] text-[11px] font-mono"
           >
             Details
           </button>
@@ -125,13 +125,13 @@ export const ReviewQueue: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2 font-mono text-xs">
-          <div className="flex items-center gap-1.5 px-2.5 py-1 bg-surface-2 rounded-[2px] border border-border-subtle text-text-secondary">
+          <div className="flex items-center gap-1.5 px-2.5 py-1 bg-surface-2 rounded-[6px] border border-border-subtle text-text-secondary">
             <Clock className="w-3 h-3 text-text-muted" />
             <span>SLA: &lt; 2 Hours</span>
           </div>
           <button
             onClick={() => refetch()}
-            className="btn-interactive p-1 bg-surface-2 hover:bg-surface-hover rounded-[2px] border border-border-subtle text-text-secondary hover:text-text-primary"
+            className="btn-interactive p-1 bg-surface-2 hover:bg-surface-hover rounded-[6px] border border-border-subtle text-text-secondary hover:text-text-primary"
             title="Refresh review queue"
             aria-label="Refresh review queue"
           >
@@ -148,7 +148,7 @@ export const ReviewQueue: React.FC = () => {
             <button
               key={s}
               onClick={() => setSelectedStatus(s)}
-              className={`btn-interactive px-2.5 py-1 rounded-[2px] text-xs font-mono border ${
+              className={`btn-interactive px-2.5 py-1 rounded-[6px] text-xs font-mono border ${
                 selectedStatus === s
                   ? 'bg-surface-hover text-text-primary border-border-muted font-bold'
                   : 'bg-surface-2 text-text-secondary border-border-subtle hover:bg-surface-hover'
@@ -165,7 +165,7 @@ export const ReviewQueue: React.FC = () => {
             placeholder="Disposition note (optional)..."
             value={feedbackNote}
             onChange={(e) => setFeedbackNote(e.target.value)}
-            className="bg-surface-2 border border-border-subtle text-text-primary text-xs font-mono px-2.5 py-1 rounded-[2px] w-64 placeholder:text-text-muted focus:outline-none"
+            className="bg-surface-2 border border-border-subtle text-text-primary text-xs font-mono px-2.5 py-1 rounded-[6px] w-64 placeholder:text-text-muted focus:outline-none"
           />
         </div>
       </div>

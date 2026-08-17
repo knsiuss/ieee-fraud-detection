@@ -153,7 +153,7 @@ export const LiveRadar: React.FC = () => {
             e.stopPropagation();
             openDrawer(row.original);
           }}
-          className="btn-interactive px-2 py-0.5 bg-surface-2 hover:bg-surface-hover border border-border-subtle rounded-[2px] text-[11px] text-text-primary font-mono"
+          className="btn-interactive px-2 py-0.5 bg-surface-2 hover:bg-surface-hover border border-border-subtle rounded-[6px] text-[11px] text-text-primary font-mono"
         >
           Details →
         </button>
@@ -166,7 +166,7 @@ export const LiveRadar: React.FC = () => {
       {/* Top Real-time Control Strip */}
       <div className="flex flex-wrap items-center justify-between gap-3 panel p-3">
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 px-2.5 py-1 bg-surface-2 rounded-[2px] border border-border-subtle font-mono text-xs">
+          <div className="flex items-center gap-2 px-3 py-1.5 bg-surface-2 rounded-full border border-border-subtle font-mono text-xs">
             <span className="w-2 h-2 rounded-full bg-status-approve" />
             <span className="text-text-primary font-medium">LIVE DECISION STREAM</span>
             <span className="text-text-muted text-[11px]">({rollingTps} TPS)</span>
@@ -174,7 +174,7 @@ export const LiveRadar: React.FC = () => {
 
           <button
             onClick={togglePause}
-            className="btn-interactive inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-mono rounded-[2px] border border-border-subtle bg-surface-2 text-text-secondary hover:text-text-primary hover:bg-surface-hover"
+            className="btn-interactive inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-mono rounded-[6px] border border-border-subtle bg-surface-2 text-text-secondary hover:text-text-primary hover:bg-surface-hover"
           >
             {isPaused ? <Play className="w-3 h-3" /> : <Pause className="w-3 h-3" />}
             <span>{isPaused ? 'Resume Stream' : 'Pause Stream'}</span>
@@ -187,7 +187,7 @@ export const LiveRadar: React.FC = () => {
           <select
             value={simSpeed}
             onChange={(e) => setSimSpeed(Number(e.target.value))}
-            className="bg-surface-2 border border-border-subtle text-text-primary text-xs font-mono px-2 py-1 rounded-[2px] focus:outline-none"
+            className="bg-surface-2 border border-border-subtle text-text-primary text-xs font-mono px-2 py-1 rounded-[6px] focus:outline-none"
           >
             <option value={1}>1 tx/s</option>
             <option value={3}>3 tx/s</option>
@@ -196,7 +196,7 @@ export const LiveRadar: React.FC = () => {
 
           <button
             onClick={handleToggleSimulation}
-            className={`btn-interactive inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-mono rounded-[2px] border ${
+            className={`btn-interactive inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-mono rounded-[6px] border ${
               isSimulating
                 ? 'bg-surface-hover text-text-primary border-border-muted font-bold'
                 : 'bg-surface-2 text-text-primary border-border-subtle hover:bg-surface-hover'
@@ -208,7 +208,7 @@ export const LiveRadar: React.FC = () => {
 
           <button
             onClick={() => refetchSummary()}
-            className="btn-interactive p-1 text-text-muted hover:text-text-primary hover:bg-surface-hover rounded-[2px] border border-border-subtle"
+            className="btn-interactive p-1 text-text-muted hover:text-text-primary hover:bg-surface-hover rounded-[6px] border border-border-subtle"
             title="Refresh metrics"
             aria-label="Refresh metrics"
           >
@@ -305,7 +305,7 @@ export const LiveRadar: React.FC = () => {
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            <div className="flex items-center gap-1.5 bg-surface-2 border border-border-subtle px-2 py-1 rounded-[2px] text-xs font-mono">
+            <div className="flex items-center gap-1.5 bg-surface-2 border border-border-subtle px-2 py-1 rounded-[6px] text-xs font-mono">
               <Filter className="w-3 h-3 text-text-muted" />
               <select
                 value={filterDecision}
@@ -324,7 +324,7 @@ export const LiveRadar: React.FC = () => {
               placeholder="Search TxID or Action..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="bg-surface-2 border border-border-subtle text-text-primary text-xs font-mono px-2.5 py-1 rounded-[2px] w-48 placeholder:text-text-muted focus:outline-none focus:border-border-muted"
+              className="bg-surface-2 border border-border-subtle text-text-primary text-xs font-mono px-2.5 py-1 rounded-[6px] w-48 placeholder:text-text-muted focus:outline-none focus:border-border-muted"
             />
           </div>
         </div>

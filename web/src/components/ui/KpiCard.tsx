@@ -23,22 +23,26 @@ export const KpiCard: React.FC<KpiCardProps> = ({
   icon,
 }) => {
   return (
-    <div className="panel panel-hover p-3.5 flex flex-col justify-between">
+    <div className="panel panel-hover p-4 flex flex-col justify-between">
       <div className="flex items-center justify-between gap-2">
         <span className="text-[11px] font-mono font-medium uppercase tracking-wider text-text-secondary">
           {title}
         </span>
-        {icon && <span className="text-text-muted">{icon}</span>}
+        {icon && (
+          <span className="w-7 h-7 rounded-full bg-surface-2 flex items-center justify-center text-text-secondary shrink-0">
+            {icon}
+          </span>
+        )}
       </div>
 
-      <div className="mt-2 flex items-baseline justify-between gap-2">
-        <span className="text-2xl font-bold font-mono tracking-tight text-text-primary tabular-nums">
+      <div className="mt-2.5 flex items-baseline justify-between gap-2">
+        <span className="text-[26px] font-bold font-mono tracking-tight text-text-primary tabular-nums leading-none">
           {value}
         </span>
 
         {trend && (
           <div
-            className={`inline-flex items-center gap-1 text-[11px] font-mono font-semibold px-1.5 py-0.5 rounded-[2px] ${
+            className={`inline-flex items-center gap-1 text-[11px] font-mono font-semibold px-2 py-1 rounded-full ${
               trend.direction === 'up'
                 ? 'text-status-approve bg-status-approve-soft'
                 : trend.direction === 'down'
@@ -55,7 +59,7 @@ export const KpiCard: React.FC<KpiCardProps> = ({
       </div>
 
       {(subtitle || trend?.label) && (
-        <div className="mt-1 text-[11px] font-mono text-text-muted truncate">
+        <div className="mt-1.5 text-[11px] font-mono text-text-muted truncate">
           {subtitle || trend?.label}
         </div>
       )}

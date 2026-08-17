@@ -55,8 +55,7 @@ class TestGenerator:
         base_fraud = float(source["isFraud"].mean())
         gen = SyntheticGenerator(source=source)
         oversample = [
-            p["_synthetic_label"]
-            for p in gen.generate(n=200, seed=5, fraud_oversample=True)
+            p["_synthetic_label"] for p in gen.generate(n=200, seed=5, fraud_oversample=True)
         ]
         assert sum(oversample) / len(oversample) > base_fraud
 

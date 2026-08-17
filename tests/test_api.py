@@ -535,14 +535,18 @@ class TestSseStream:
         monkeypatch.setattr(main, "_ADMIN_KEY", "secret-key")
         values = {"TransactionAmt": 120.0, "card1": 5000, "C1": 5, "D1": 10, "x": 3.0}
         dclient.post("/api/predict", json={"transaction_id": "tx-outcome-1", "values": values})
-        assert dclient.post(
-            "/api/review/tx-outcome-1/outcome", json={"verdict": "fraud"}
-        ).status_code == 403
-        assert dclient.post(
-            "/api/review/tx-outcome-1/outcome",
-            json={"verdict": "fraud"},
-            headers={"X-Admin-Key": "secret-key"},
-        ).status_code == 200
+        assert (
+            dclient.post("/api/review/tx-outcome-1/outcome", json={"verdict": "fraud"}).status_code
+            == 403
+        )
+        assert (
+            dclient.post(
+                "/api/review/tx-outcome-1/outcome",
+                json={"verdict": "fraud"},
+                headers={"X-Admin-Key": "secret-key"},
+            ).status_code
+            == 200
+        )
 
     def test_review_privacy_and_admin_key(self, dclient, monkeypatch):
         monkeypatch.setattr(main, "_ADMIN_KEY", "secret-key")

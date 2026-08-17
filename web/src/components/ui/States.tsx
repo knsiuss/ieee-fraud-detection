@@ -1,7 +1,7 @@
 import React from 'react';
 
 export const Skeleton: React.FC<{ className?: string }> = ({ className = 'h-4 w-full' }) => (
-  <div className={`animate-pulse bg-surface-2 rounded-[2px] ${className}`} />
+  <div className={`animate-pulse bg-surface-2 rounded-[6px] ${className}`} />
 );
 
 export const EmptyState: React.FC<{
@@ -22,13 +22,13 @@ export const ErrorState: React.FC<{
   message: string;
   onRetry?: () => void;
 }> = ({ message, onRetry }) => (
-  <div className="p-4 border border-status-block/30 rounded-[2px] bg-status-block-soft text-center flex flex-col items-center justify-center gap-2">
+  <div className="p-4 border border-status-block/30 rounded-[6px] bg-status-block-soft text-center flex flex-col items-center justify-center gap-2">
     <div className="text-status-block font-mono font-semibold text-xs">Failed to load data</div>
     <p className="text-[11px] text-text-secondary font-mono max-w-md">{message}</p>
     {onRetry && (
       <button
         onClick={onRetry}
-        className="btn-interactive px-2.5 py-1 bg-surface-2 hover:bg-surface-hover text-text-primary text-xs font-mono rounded-[2px] border border-border-subtle"
+        className="btn-interactive px-2.5 py-1 bg-surface-2 hover:bg-surface-hover text-text-primary text-xs font-mono rounded-[6px] border border-border-subtle"
       >
         Retry Request
       </button>

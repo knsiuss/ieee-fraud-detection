@@ -10,7 +10,7 @@
 
 > End-to-end machine learning solution for detecting fraudulent e-commerce transactions, built on the [IEEE-CIS / Vesta Corporation](https://www.kaggle.com/c/ieee-fraud-detection) dataset.
 
-This repository contains a complete, production-shaped data science pipeline — from raw data ingestion through exploratory analysis, feature engineering, model training, hyperparameter optimisation, ensembling, and evaluation — packaged as a reusable Python module (`fraud_detect`), a reproducible notebook series, a FastAPI service, and a browser-based review console (vanilla JS + Chart.js) with gated auto-retraining.
+This repository contains a complete, production-shaped data science pipeline — from raw data ingestion through exploratory analysis, feature engineering, model training, hyperparameter optimisation, ensembling, and evaluation — packaged as a reusable Python module (`fraud_detect`), a reproducible notebook series, a FastAPI service, and a React/TypeScript review console with gated auto-retraining.
 
 > **Demo / portfolio.** Built on public Kaggle competition data for learning
 > and review. **Not a production fraud system** — do not use it for real
@@ -39,7 +39,7 @@ open **Batch → Download sample CSV → Score file** for the batch workflow.
 
 A production-inspired **fraud-risk decisioning platform** for the IEEE-CIS
 Kaggle competition: a tuned LightGBM served behind a FastAPI API with a
-vanilla-JS/Chart.js review console — checkout-style scoring, batch CSV
+React/TypeScript review console — scenario scoring, batch CSV
 scoring, SHAP explanations, reviewer feedback, and gated auto-retraining.
 Honest ML practice throughout: **time-ordered evaluation (ROC-AUC 0.909)**
 instead of an inflated random split, a [model card](docs/MODEL_CARD.md),
@@ -101,7 +101,7 @@ The objective is to predict the probability that an online payment transaction i
 
 ```mermaid
 flowchart LR
-    UI["Web console<br/>(vanilla JS + Chart.js)"] -->|HTTP + JSON| REST["FastAPI service<br/>(api/)"]
+    UI["Web console<br/>(React + TypeScript + ECharts)"] -->|HTTP + JSON| REST["FastAPI service<br/>(api/)"]
     REST --> ALGO["fraud_detect.serving / sim<br/>align · predict · SHAP · decision summary"]
     REST --> STORE["store.py<br/>versioning + gated retraining"]
     ALGO --> STORE
@@ -153,10 +153,12 @@ ieee-fraud-detection/
 │   ├── store.py                 #   Versioned model store + gated retrain
 │   └── schemas.py               #   Pydantic request/response models
 │
-├── web/                         # Vanilla-JS frontend (served by FastAPI at /)
-│   ├── index.html               #   Scorer / batch / model UI
-│   ├── style.css
-│   └── app.js
+├── web/                         # React + TypeScript SPA (Vite)
+│   ├── src/features/            #   8 lazy-loaded analyst modules
+│   ├── src/lib/                 #   REST client, SSE hook, shared types
+│   ├── src/stores/              #   Zustand live/selection/theme state
+│   ├── package.json
+│   └── dist/                    #   Production build served by FastAPI
 │
 ├── dashboard/data/              # Committed analysis CSVs + demo sample (train fallback)
 │
@@ -245,7 +247,7 @@ All I/O, feature engineering, modelling, and serving logic lives in the `fraud_d
 
 ## Service & Web App
 
-The trained model is exposed through a **FastAPI** service with a browser-based review console in **vanilla JavaScript + Chart.js** (English UI), served by FastAPI at `/`. It is built for a fraud-analyst / reviewer workflow.
+The trained model is exposed through a **FastAPI** service with a browser-based review console built in **React + TypeScript + ECharts**. The Vite production build is served by FastAPI at `/`; during development, Vite runs separately and proxies `/api`. It is built for a fraud-analyst / reviewer workflow.
 
 ### API endpoints
 
@@ -280,18 +282,16 @@ contract / policy versions, the thresholds used, score, decision, and reason
 codes. Malformed raw payloads are rejected by the strict feature contract
 (`fraud_detect.contract`); the fields the model saw are always reported.
 
-### Frontend tabs
+### Frontend modules
 
-- **Score** — two truthful modes: **Demo scenario builder** (friendly inputs
-  mapped to features; reports exactly which fields came from the form vs the
-  profile median) and **Raw features** (paste an IEEE-compatible JSON payload,
-  validated by the contract).
-- **Batch** — upload a CSV, inspect decisions and per-row contract errors, and
-  download the scored CSV.
-- **Operations** — the analyst review queue: filter by decision/status, open an
-  audit record (score, versions, reason codes, feature report), and mark it
-  safe / fraud to feed the retraining pool.
-- **Model** — served model metadata, dataset overview, and top predictive features.
+- **Live Radar** — SSE-backed stream of decisions with search and filters.
+- **Executive Impact** — decision-volume and impact-oriented demo metrics.
+- **Simulator** — friendly scenario inputs mapped onto the 400-feature model row.
+- **Review Queue** — inspect queued decisions and submit safe/fraud outcomes.
+- **Batch Scanner** — upload a CSV and inspect per-row results or errors.
+- **Policy Graph** — visualise the score-to-decision workflow.
+- **Forensic Audit** — inspect decision history, reports, and appeals.
+- **Model & MLOps** — model metadata and retraining controls.
 
 ### Feedback & auto-retraining
 
@@ -423,7 +423,7 @@ The dataset is provided by **Vesta Corporation** through the [IEEE-CIS Fraud Det
 | **Hyperparameter tuning** | Optuna |
 | **Service** | FastAPI, Uvicorn, python-multipart |
 | **Explanability** | SHAP |
-| **Frontend** | Vanilla JS, Chart.js |
+| **Frontend** | React 19, TypeScript, Vite, ECharts, Zustand, TanStack Query |
 | **Testing** | Pytest, Hypothesis |
 | **QA** | Ruff, Pre-commit |
 | **Documentation** | Sphinx |

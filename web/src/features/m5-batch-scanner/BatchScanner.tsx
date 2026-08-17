@@ -145,7 +145,7 @@ export const BatchScanner: React.FC = () => {
       <div className="panel p-4 space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <label className="btn-interactive inline-flex items-center gap-1.5 px-3 py-1.5 bg-surface-2 hover:bg-surface-hover border border-border-subtle rounded-[2px] text-xs font-mono text-text-primary cursor-pointer">
+            <label className="btn-interactive inline-flex items-center gap-1.5 px-3 py-1.5 bg-surface-2 hover:bg-surface-hover border border-border-subtle rounded-[6px] text-xs font-mono text-text-primary cursor-pointer">
               <Upload className="w-3.5 h-3.5 text-text-muted" />
               <span>{file ? file.name : 'Select CSV File...'}</span>
               <input type="file" accept=".csv" onChange={handleFileChange} className="hidden" />
@@ -154,7 +154,7 @@ export const BatchScanner: React.FC = () => {
             <button
               onClick={handleUpload}
               disabled={!file || isLoading}
-              className="btn-interactive px-3 py-1.5 bg-surface-hover text-text-primary border border-border-muted rounded-[2px] text-xs font-mono font-semibold disabled:opacity-50"
+              className="btn-interactive px-3 py-1.5 bg-surface-hover text-text-primary border border-border-muted rounded-[6px] text-xs font-mono font-semibold disabled:opacity-50"
             >
               {isLoading ? 'Processing Batch...' : 'Execute Batch Score'}
             </button>
@@ -164,7 +164,7 @@ export const BatchScanner: React.FC = () => {
             <button
               onClick={handleLoadSample}
               disabled={isLoading}
-              className="btn-interactive inline-flex items-center gap-1 px-2.5 py-1 bg-surface-2 hover:bg-surface-hover border border-border-subtle rounded-[2px] text-xs font-mono text-text-secondary hover:text-text-primary"
+              className="btn-interactive inline-flex items-center gap-1 px-2.5 py-1 bg-surface-2 hover:bg-surface-hover border border-border-subtle rounded-[6px] text-xs font-mono text-text-secondary hover:text-text-primary"
             >
               <FileText className="w-3 h-3 text-text-muted" />
               <span>Load 6-Row Sample CSV</span>
@@ -173,7 +173,7 @@ export const BatchScanner: React.FC = () => {
             {response && (
               <button
                 onClick={handleExportCsv}
-                className="btn-interactive inline-flex items-center gap-1 px-2.5 py-1 bg-surface-2 hover:bg-surface-hover border border-border-subtle rounded-[2px] text-xs font-mono text-text-primary"
+                className="btn-interactive inline-flex items-center gap-1 px-2.5 py-1 bg-surface-2 hover:bg-surface-hover border border-border-subtle rounded-[6px] text-xs font-mono text-text-primary"
               >
                 <Download className="w-3 h-3 text-text-muted" />
                 <span>Export Scored CSV</span>

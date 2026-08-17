@@ -40,10 +40,10 @@ export const AppLayout: React.FC = () => {
   return (
     <div className="min-h-screen flex flex-col bg-bg-main text-text-primary">
       {/* Top Global Command Bar */}
-      <header className="sticky top-0 z-40 bg-surface-1 border-b border-border-subtle px-4 lg:px-6 py-2 flex items-center justify-between">
+      <header className="sticky top-0 z-40 bg-surface-1/75 backdrop-blur-lg border-b border-border-subtle px-4 lg:px-6 py-2.5 flex items-center justify-between">
         {/* Brand */}
         <div className="flex items-center gap-3">
-          <div className="w-7 h-7 rounded-[2px] bg-surface-2 border border-border-subtle flex items-center justify-center text-text-primary">
+          <div className="w-7 h-7 rounded-full bg-gradient-to-b from-surface-2 to-surface-hover flex items-center justify-center text-text-primary shadow-sm">
             <Shield className="w-3.5 h-3.5 text-text-secondary" />
           </div>
           <div>
@@ -51,7 +51,7 @@ export const AppLayout: React.FC = () => {
               <span className="font-bold text-xs tracking-wider font-mono text-text-primary">
                 LEDGER
               </span>
-              <span className="text-[10px] font-mono font-medium px-1.5 py-0.2 rounded-[2px] bg-surface-2 border border-border-subtle text-text-secondary">
+              <span className="text-[10px] font-mono font-medium px-2 py-0.5 rounded-full bg-surface-2 text-text-secondary">
                 v4.2 PROD
               </span>
             </div>
@@ -64,7 +64,7 @@ export const AppLayout: React.FC = () => {
         {/* Status Indicators & Controls */}
         <div className="flex items-center gap-2.5 font-mono text-xs">
           {/* Live Engine Stream Indicator */}
-          <div className="flex items-center gap-2 px-2.5 py-1 bg-surface-2 rounded-[2px] border border-border-subtle text-xs">
+          <div className="flex items-center gap-2 px-3 py-1.5 bg-surface-2/70 rounded-full text-xs">
             <span
               className={`w-2 h-2 rounded-full ${
                 isConnected ? 'bg-status-approve' : 'bg-status-review'
@@ -81,7 +81,7 @@ export const AppLayout: React.FC = () => {
           {/* Theme Toggle */}
           <button
             onClick={toggleTheme}
-            className="p-1 rounded-[2px] bg-surface-2 hover:bg-surface-hover text-text-secondary hover:text-text-primary border border-border-subtle"
+            className="p-1.5 rounded-full bg-surface-2/70 hover:bg-surface-hover text-text-secondary hover:text-text-primary transition-colors"
             title="Toggle theme"
             aria-label="Toggle theme"
           >
@@ -95,7 +95,7 @@ export const AppLayout: React.FC = () => {
       </header>
 
       {/* Navigation Sub-Bar */}
-      <nav className="sticky top-[45px] z-30 bg-surface-1 border-b border-border-subtle px-4 lg:px-6 py-1 overflow-x-auto">
+      <nav className="sticky top-[49px] z-30 bg-surface-1/75 backdrop-blur-lg border-b border-border-subtle px-4 lg:px-6 py-1.5 overflow-x-auto">
         <div className="flex items-center gap-1 min-w-max">
           {navItems.map((item) => {
             const Icon = item.icon;
@@ -105,16 +105,16 @@ export const AppLayout: React.FC = () => {
               <NavLink
                 key={item.path}
                 to={item.path}
-                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-[2px] text-xs font-mono transition-colors ${
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-mono transition-colors ${
                   isActive
-                    ? 'bg-surface-2 text-text-primary font-bold border border-border-subtle'
-                    : 'text-text-secondary hover:text-text-primary hover:bg-surface-hover'
+                    ? 'bg-surface-2 text-text-primary font-bold shadow-sm'
+                    : 'text-text-secondary hover:text-text-primary hover:bg-surface-hover/70'
                 }`}
               >
                 <Icon className="w-3 h-3 text-text-muted" />
                 <span>{item.label}</span>
                 {item.badge && (
-                  <span className="text-[9px] font-bold px-1 py-0.2 rounded-[2px] bg-surface-2 text-status-approve border border-status-approve/30">
+                  <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-surface-2 text-status-approve border border-status-approve/30">
                     {item.badge}
                   </span>
                 )}
@@ -139,7 +139,7 @@ export const AppLayout: React.FC = () => {
         {selectedTx && (
           <div className="space-y-4 text-xs font-mono">
             {/* Decision Bar */}
-            <div className="p-3.5 bg-surface-2 rounded-[4px] border border-border-subtle flex items-center justify-between">
+            <div className="p-3.5 bg-surface-2 rounded-xl border border-border-subtle flex items-center justify-between">
               <div>
                 <span className="text-[10px] text-text-muted block mb-1 uppercase tracking-wider">
                   Outcome Decision:

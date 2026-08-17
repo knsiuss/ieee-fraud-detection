@@ -11,8 +11,8 @@ platform (portfolio demo)**
 
 ## Summary
 
-A tuned LightGBM model served behind a FastAPI API with a vanilla-JS review
-console: checkout-style single scoring, batch CSV scoring, SHAP
+A tuned LightGBM model served behind a FastAPI API with a React/TypeScript
+review console: scenario scoring, batch CSV scoring, SHAP
 explanations, reviewer feedback, and gated auto-retraining. Built and
 documented with honest ML practice: leakage-aware evaluation, a model card,
 drift monitoring, and reproducible scripts.
@@ -32,7 +32,7 @@ Reproduce with `scripts/evaluate_model.py` → `data/metadata/evaluation.json`.
 
 - FastAPI service (`/api/predict`, `/api/predict/batch`, `/api/explain`,
   `/api/feedback`, `/api/retrain`, `/api/health`, `/api/model`, `/api/stats`).
-- Web review console (vanilla JS + Chart.js) with demo-data disclaimer.
+- React/TypeScript review console with ECharts and a demo-data disclaimer.
 - Checkout-style input mapping + SHAP decision summaries.
 - Gated auto-retraining (a candidate is only promoted if it beats the served
   model on a held-out split).

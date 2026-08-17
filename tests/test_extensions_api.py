@@ -140,9 +140,7 @@ class TestBanditPromote:
     def test_promote_without_rewards_reports_reason(self, bandit_client):
         monkeypatch = pytest.MonkeyPatch()
         monkeypatch.setattr(main, "_ADMIN_KEY", "sekret")
-        resp = bandit_client.post(
-            "/api/bandit/promote", headers={"X-Admin-Key": "sekret"}
-        )
+        resp = bandit_client.post("/api/bandit/promote", headers={"X-Admin-Key": "sekret"})
         assert resp.status_code == 200
         body = resp.json()
         assert body["promoted"] is False
@@ -165,9 +163,7 @@ class TestBanditPromote:
                 context=[1.0, 0, 0, 0, 0, 0, 1.0],
                 reward=1.0,
             )
-        resp = bandit_client.post(
-            "/api/bandit/promote", headers={"X-Admin-Key": "sekret"}
-        )
+        resp = bandit_client.post("/api/bandit/promote", headers={"X-Admin-Key": "sekret"})
         assert resp.status_code == 200
         body = resp.json()
         assert body["n_logged"] == 5
@@ -220,9 +216,7 @@ class TestAuditReportEndpoint:
 class TestAppealEndpoint:
     def test_appeal_overturns_decline(self, bandit_client):
         _record_decline("app-1")
-        resp = bandit_client.post(
-            "/api/review/app-1/appeal", json={"note": "customer called in"}
-        )
+        resp = bandit_client.post("/api/review/app-1/appeal", json={"note": "customer called in"})
         assert resp.status_code == 200
         body = resp.json()
         assert body["reviewer_outcome"] == "safe"
@@ -287,8 +281,6 @@ class TestBanditDecisionThresholds:
         assert record["thresholds"]["decline_above"] == 0.7
         from fraud_detect.audit_report import build_report_context
 
-        context = build_report_context(
-            {**record, "risk_tier": "high", "summary": "s"}
-        )
+        context = build_report_context({**record, "risk_tier": "high", "summary": "s"})
         assert context["review_above"] == 0.2
         assert context["decline_above"] == 0.7

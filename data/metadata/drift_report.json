@@ -1,53 +1,58 @@
 {
-  "generated_at": "2026-08-06T08:51:33.907095+00:00",
+  "generated_at": "2026-08-17T11:33:50.774272+00:00",
   "reference": "C:\\fraud\\ieee-fraud-detection\\data\\interim\\train_merged.parquet",
   "recent": "C:\\fraud\\ieee-fraud-detection\\web\\sample_transactions.csv",
   "n_features": 400,
-  "drifted_features": 21,
+  "drifted_features": 24,
   "top_drift": [
     {
       "feature": "card1",
-      "psi": 6.293645077635262,
-      "status": "drifted"
-    },
-    {
-      "feature": "C13",
-      "psi": 4.260773215006585,
-      "status": "drifted"
-    },
-    {
-      "feature": "V307",
-      "psi": 3.6095595033833976,
+      "psi": 6.2010309318711,
       "status": "drifted"
     },
     {
       "feature": "C5",
-      "psi": 3.413806918637878,
+      "psi": 4.6608456059128365,
       "status": "drifted"
     },
     {
       "feature": "TransactionAmt",
-      "psi": 3.402264394605243,
+      "psi": 3.892212568615961,
+      "status": "drifted"
+    },
+    {
+      "feature": "C14",
+      "psi": 2.7463478041904508,
+      "status": "drifted"
+    },
+    {
+      "feature": "C13",
+      "psi": 2.0795334178017857,
       "status": "drifted"
     },
     {
       "feature": "C9",
-      "psi": 2.6813598892189137,
-      "status": "drifted"
-    },
-    {
-      "feature": "V285",
-      "psi": 1.7303219808814412,
+      "psi": 2.0262253267314363,
       "status": "drifted"
     },
     {
       "feature": "V310",
-      "psi": 1.1683970143760682,
+      "psi": 1.3867315440702503,
       "status": "drifted"
     },
     {
-      "feature": "V308",
-      "psi": 1.1623176276804503,
+      "feature": "V307",
+      "psi": 1.2867155271375224,
+      "status": "drifted"
+    },
+    {
+      "feature": "C11",
+      "psi": 1.1775762993495098,
+      "status": "drifted"
+    },
+    {
+      "feature": "V291",
+      "psi": 1.0268568082448535,
       "status": "drifted"
     },
     {
@@ -74,11 +79,6 @@
       "feature": "V303",
       "psi": 0.9245165439612868,
       "status": "drifted"
-    },
-    {
-      "feature": "C8",
-      "psi": 0.907931740792038,
-      "status": "drifted"
     }
   ],
   "data_quality": {
@@ -93,40 +93,40 @@
         0.9
       ],
       [
-        "id_07",
-        0.9
+        "dist2",
+        0.8
       ],
       [
-        "id_08",
-        0.9
+        "D11",
+        0.8
       ],
       [
-        "id_18",
-        0.9
+        "D14",
+        0.8
       ],
       [
-        "id_21",
-        0.9
+        "V1",
+        0.8
       ],
       [
-        "id_22",
-        0.9
+        "V2",
+        0.8
       ],
       [
-        "id_24",
-        0.9
+        "V3",
+        0.8
       ],
       [
-        "id_25",
-        0.9
+        "V4",
+        0.8
       ],
       [
-        "id_26",
-        0.9
+        "V5",
+        0.8
       ],
       [
-        "D2",
-        0.7
+        "V6",
+        0.8
       ]
     ],
     "unknown_columns": [

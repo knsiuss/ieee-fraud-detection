@@ -1,10 +1,29 @@
-# Dataset & Data Files
+# ==============================================================================
+# IEEE-CIS Fraud Detection / Sentinel MLOps Platform — Git Ignore Rules
+# ==============================================================================
+
+# --- AI Assistants & Agent Artefacts ---
+.claude/
+.claude*
+.cursor/
+.cursorrules
+.windsurf/
+.copilot/
+.aider*
+.gemini/
+.agents/
+.cody/
+.continue/
+.antigravity/
+.freebuff/
+
+# --- Dataset & Heavy Data Files ---
 data/raw/
 data/interim/
 data/processed/
-data/models/
-data/feedback/
-data/decisions/
+data/models/*
+data/feedback/*
+data/decisions/*
 dataset/
 raw_data/
 *.csv
@@ -17,22 +36,30 @@ raw_data/
 *.pkl
 *.pickle
 *.feather
+*.sqlite
+*.sqlite3
+*.db
+
+# Whitelist committed sample & metadata files
 !data/.gitkeep
+!data/models/.gitkeep
+!data/feedback/.gitkeep
+!data/decisions/.gitkeep
 !data/metadata/
 !data/metadata/*.csv
 !data/metadata/*.json
+!dashboard/data/
 !dashboard/data/*.csv
 !dashboard/data/*.parquet
+!web/sample_transactions.csv
 
-# Jupyter Notebook
+# --- Jupyter Notebooks ---
 .ipynb_checkpoints/
 */.ipynb_checkpoints/*
 *.ipynb_checkpoints
-
-# VS Code auto-generated
 .virtual_documents/
 
-# Python
+# --- Python & Build Artefacts ---
 __pycache__/
 *.py[cod]
 *$py.class
@@ -43,9 +70,11 @@ dist/
 build/
 *.whl
 
-# Virtual Environments
+# --- Virtual Environments & Secrets ---
 .env
-.venv
+.env.*
+!.env.example
+.venv/
 env/
 venv/
 ENV/
@@ -53,43 +82,49 @@ env.bak/
 venv.bak/
 *.env
 
-# Models & Outputs
+# --- ML Models & Outputs ---
 models/
 *.keras
 *.model
 *.pth
 *.pt
 *.onnx
+*.joblib
 checkpoints/
-logs/
 tensorboard/
 mlruns/
 
-# Testing
+# Whitelist baked demo models if explicitly placed under metadata
+!data/metadata/demo_model.joblib
+
+# --- Testing & Quality Assurance ---
 .pytest_cache/
 .coverage
+.coverage.*
 htmlcov/
 .tox/
 *.cover
 .benchmarks/
 .hypothesis/
 
-# OS
+# --- Operating System & Editor ---
 .DS_Store
 Thumbs.db
 desktop.ini
-
-# IDE
 .idea/
 .vs/
+.history/
+.fleet/
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
 
-# Docs build output
+# --- Documentation Build ---
 docs/build/
 
-# Dashboard (future)
-# dashboard/
-
-# Misc
+# --- Miscellaneous & Logs ---
 *.log
 *.bak
 *.tmp
@@ -99,11 +134,15 @@ docs/build/
 .mypy_cache/
 .dmypy.json
 
-# Node / Frontend SPA
+# --- Node / Frontend SPA (Vite / React) ---
 node_modules/
 web/node_modules/
 web/dist/
-
-# SHAP temp dir
-.freebuff/
-
+web/.vite/
+.vite/
+dist-ssr/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.eslintcache

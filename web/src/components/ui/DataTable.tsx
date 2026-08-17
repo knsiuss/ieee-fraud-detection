@@ -41,7 +41,7 @@ export function DataTable<TData>({
     <div className="w-full overflow-hidden panel">
       <div className="overflow-x-auto max-h-[560px]">
         <table className="w-full text-left text-xs border-collapse">
-          <thead className="bg-surface-2 sticky top-0 z-10 border-b border-border-subtle text-text-secondary uppercase tracking-wider font-mono text-[11px]">
+          <thead className="bg-transparent sticky top-0 z-10 border-b border-border-subtle text-text-secondary uppercase tracking-wider font-mono text-[11px]">
             {table.getHeaderGroups().map((headerGroup) => (
               <tr key={headerGroup.id}>
                 {headerGroup.headers.map((header) => {
@@ -95,12 +95,12 @@ export function DataTable<TData>({
                   <tr
                     key={row.id}
                     onClick={() => onRowClick && onRowClick(row.original)}
-                    className={`transition-colors duration-100 ${
+                    className={`transition-colors duration-150 ${
                       onRowClick ? 'cursor-pointer' : ''
                     } ${
                       isSelected
-                        ? 'bg-surface-hover text-text-primary font-semibold'
-                        : 'hover:bg-surface-hover/70 text-text-secondary hover:text-text-primary'
+                        ? 'bg-surface-hover/80 text-text-primary font-semibold'
+                        : 'hover:bg-surface-hover/40 text-text-secondary hover:text-text-primary'
                     }`}
                   >
                     {row.getVisibleCells().map((cell) => (

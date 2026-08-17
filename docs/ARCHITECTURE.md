@@ -38,7 +38,7 @@ flowchart LR
     end
 
     subgraph Sys["Platform"]
-        WEB["web/ — vanilla JS + Chart.js<br/>review console"]
+        WEB["web/ — React + TypeScript + ECharts<br/>review console"]
         API["api/ — FastAPI service<br/>predict · batch · simulate · explain · review · retrain · SSE"]
         CORE["src/fraud_detect/<br/>serving · policy · contract · sim · monitoring"]
         STORE["api/store.py<br/>SQLite audit store + gated retrain"]
@@ -334,7 +334,7 @@ sequenceDiagram
 | **Tuning** | Optuna (TPE, seeded; 100 trials; study persisted to `optuna_study.db`) |
 | **Service** | FastAPI ≥0.110, uvicorn ≥0.29, python-multipart |
 | **Explainability** | shap ≥0.44 (optional at runtime) |
-| **Frontend** | vanilla JS + Chart.js (no build step) |
+| **Frontend** | React 19 + TypeScript + Vite · ECharts · Zustand · TanStack Query |
 | **Storage** | Parquet (Snappy) for data · SQLite for decisions/feedback · JSON metadata |
 | **Testing / QA** | pytest + pytest-cov + Hypothesis · ruff (E,F,I,N,W,UP,B,SIM,ARG,PL) + pre-commit |
 | **Docs** | Sphinx + furo + myst-parser |

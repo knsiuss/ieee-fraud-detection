@@ -97,7 +97,7 @@ export const ForensicAudit: React.FC = () => {
         if (!out) return <span className="text-text-muted font-mono text-xs">—</span>;
         return (
           <span
-            className={`font-mono text-xs font-semibold px-1.5 py-0.5 rounded-[2px] ${
+            className={`font-mono text-xs font-semibold px-1.5 py-0.5 rounded-[6px] ${
               out === 'fraud'
                 ? 'bg-status-block-soft text-status-block'
                 : 'bg-status-approve-soft text-status-approve'
@@ -115,7 +115,7 @@ export const ForensicAudit: React.FC = () => {
         <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
           <button
             onClick={() => handleFetchReport(row.original.transaction_id)}
-            className="btn-interactive px-2 py-0.5 bg-surface-2 hover:bg-surface-hover border border-border-subtle text-text-primary rounded-[2px] text-[11px] font-mono flex items-center gap-1"
+            className="btn-interactive px-2 py-0.5 bg-surface-2 hover:bg-surface-hover border border-border-subtle text-text-primary rounded-[6px] text-[11px] font-mono flex items-center gap-1"
           >
             <Bot className="w-3 h-3 text-text-muted" />
             <span>Audit Narrative</span>
@@ -130,7 +130,7 @@ export const ForensicAudit: React.FC = () => {
                 })
               }
               disabled={appealMutation.isPending}
-              className="btn-interactive px-2 py-0.5 bg-status-approve-soft text-status-approve border border-status-approve/30 rounded-[2px] text-[11px] font-mono flex items-center gap-1"
+              className="btn-interactive px-2 py-0.5 bg-status-approve-soft text-status-approve border border-status-approve/30 rounded-[6px] text-[11px] font-mono flex items-center gap-1"
             >
               <Undo2 className="w-3 h-3" />
               <span>Overturn</span>
@@ -139,7 +139,7 @@ export const ForensicAudit: React.FC = () => {
 
           <button
             onClick={() => openDrawer(row.original)}
-            className="btn-interactive px-2 py-0.5 bg-surface-2 hover:bg-surface-hover border border-border-subtle text-text-secondary hover:text-text-primary rounded-[2px] text-[11px] font-mono"
+            className="btn-interactive px-2 py-0.5 bg-surface-2 hover:bg-surface-hover border border-border-subtle text-text-secondary hover:text-text-primary rounded-[6px] text-[11px] font-mono"
           >
             Payload
           </button>
@@ -169,7 +169,7 @@ export const ForensicAudit: React.FC = () => {
               placeholder="Filter by TxID, decision..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="bg-surface-2 border border-border-subtle text-text-primary text-xs font-mono pl-8 pr-3 py-1 rounded-[2px] w-56 placeholder:text-text-muted focus:outline-none"
+              className="bg-surface-2 border border-border-subtle text-text-primary text-xs font-mono pl-8 pr-3 py-1 rounded-[6px] w-56 placeholder:text-text-muted focus:outline-none"
             />
           </div>
         </div>

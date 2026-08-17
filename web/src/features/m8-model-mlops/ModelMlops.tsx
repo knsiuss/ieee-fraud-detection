@@ -112,7 +112,7 @@ export const ModelMlops: React.FC = () => {
         <button
           onClick={() => retrainMutation.mutate()}
           disabled={retrainMutation.isPending}
-          className="btn-interactive px-3 py-1.5 bg-surface-2 hover:bg-surface-hover text-text-primary font-mono text-xs font-semibold rounded-[2px] border border-border-subtle flex items-center gap-2"
+          className="btn-interactive px-3 py-1.5 bg-surface-2 hover:bg-surface-hover text-text-primary font-mono text-xs font-semibold rounded-[6px] border border-border-subtle flex items-center gap-2"
         >
           <RefreshCw className={`w-3.5 h-3.5 ${retrainMutation.isPending ? 'animate-spin' : ''}`} />
           <span>{retrainMutation.isPending ? 'Benchmarking Candidate...' : 'Trigger Gated Retrain'}</span>
@@ -122,7 +122,7 @@ export const ModelMlops: React.FC = () => {
       {/* Retrain Result Banner */}
       {retrainResult && (
         <div
-          className={`p-3 rounded-[2px] border font-mono text-xs ${
+          className={`p-3 rounded-[6px] border font-mono text-xs ${
             retrainResult.swapped
               ? 'bg-status-approve-soft border-status-approve/30 text-status-approve'
               : retrainResult.error
@@ -191,11 +191,11 @@ export const ModelMlops: React.FC = () => {
 
           <div className="space-y-2">
             {banditPromotionLogs.map((log, idx) => (
-              <div key={idx} className="p-2.5 bg-surface-2 rounded-[2px] border border-border-subtle space-y-1">
+              <div key={idx} className="p-2.5 bg-surface-2 rounded-[6px] border border-border-subtle space-y-1">
                 <div className="flex items-center justify-between">
                   <span className="font-bold text-text-primary">{log.timestamp}</span>
                   <span
-                    className={`px-1.5 py-0.2 rounded-[2px] text-[10px] font-bold ${
+                    className={`px-1.5 py-0.2 rounded-[6px] text-[10px] font-bold ${
                       log.promoted
                         ? 'bg-status-approve-soft text-status-approve'
                         : 'bg-status-block-soft text-status-block'
@@ -231,11 +231,11 @@ export const ModelMlops: React.FC = () => {
 
           <div className="space-y-2">
             {retrainGateLogs.map((log, idx) => (
-              <div key={idx} className="p-2.5 bg-surface-2 rounded-[2px] border border-border-subtle space-y-1">
+              <div key={idx} className="p-2.5 bg-surface-2 rounded-[6px] border border-border-subtle space-y-1">
                 <div className="flex items-center justify-between">
                   <span className="font-bold text-text-primary">{log.timestamp}</span>
                   <span
-                    className={`px-1.5 py-0.2 rounded-[2px] text-[10px] font-bold ${
+                    className={`px-1.5 py-0.2 rounded-[6px] text-[10px] font-bold ${
                       log.swapped
                         ? 'bg-status-approve-soft text-status-approve'
                         : 'bg-status-block-soft text-status-block'
@@ -280,7 +280,7 @@ export const ModelMlops: React.FC = () => {
                   </span>
                   <span className="tabular-nums">{(f.importance * 100).toFixed(1)}%</span>
                 </div>
-                <div className="w-full bg-surface-2 h-1.5 rounded-[2px] overflow-hidden border border-border-subtle/50">
+                <div className="w-full bg-surface-2 h-1.5 rounded-[6px] overflow-hidden border border-border-subtle/50">
                   <div
                     className="bg-text-secondary h-full"
                     style={{ width: `${Math.min(f.importance * 500, 100)}%` }}
@@ -309,14 +309,14 @@ export const ModelMlops: React.FC = () => {
                     PSI: <b>{d.psi.toFixed(3)}</b>
                   </span>
                 </div>
-                <span className={`px-1.5 py-0.5 rounded-[2px] text-[10px] font-bold bg-surface-2 ${d.color}`}>
+                <span className={`px-1.5 py-0.5 rounded-[6px] text-[10px] font-bold bg-surface-2 ${d.color}`}>
                   {d.status}
                 </span>
               </div>
             ))}
           </div>
 
-          <div className="p-2.5 bg-surface-2 rounded-[2px] border border-border-subtle text-[10px] text-text-muted">
+          <div className="p-2.5 bg-surface-2 rounded-[6px] border border-border-subtle text-[10px] text-text-muted">
             PSI &lt; 0.10: Stable · 0.10–0.25: Moderate Shift · &gt; 0.25: Critical Drift (Retrain recommended)
           </div>
         </div>

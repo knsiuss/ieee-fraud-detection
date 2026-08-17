@@ -87,9 +87,7 @@ class TestRewardLoop:
     def test_update_outcome_fans_reward(self, isolated, monkeypatch):
         # update_outcome -> record_feedback aligns against the served artefact;
         # a fake with an empty feature list keeps the loop self-contained.
-        monkeypatch.setattr(
-            store, "current_artefact", lambda: SimpleNamespace(features=[])
-        )
+        monkeypatch.setattr(store, "current_artefact", lambda: SimpleNamespace(features=[]))
         data = {
             "transaction_id": "tx-1",
             "policy_version": "v2-linucb",
@@ -111,9 +109,7 @@ class TestRewardLoop:
         assert state.arms["DECLINE"].n == 1
 
     def test_repeat_review_does_not_double_reward(self, isolated, monkeypatch):
-        monkeypatch.setattr(
-            store, "current_artefact", lambda: SimpleNamespace(features=[])
-        )
+        monkeypatch.setattr(store, "current_artefact", lambda: SimpleNamespace(features=[]))
         data = {
             "transaction_id": "tx-2",
             "policy_version": "v2-linucb",
@@ -135,9 +131,7 @@ class TestRewardLoop:
         assert state.arms["DECLINE"].b == pytest.approx([-2.25, -0.25, 0, 0, 0, 0, -2.5])
 
     def test_changed_verdict_applies_delta(self, isolated, monkeypatch):
-        monkeypatch.setattr(
-            store, "current_artefact", lambda: SimpleNamespace(features=[])
-        )
+        monkeypatch.setattr(store, "current_artefact", lambda: SimpleNamespace(features=[]))
         data = {
             "transaction_id": "tx-3",
             "policy_version": "v2-linucb",

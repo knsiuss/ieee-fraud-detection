@@ -587,10 +587,15 @@ async def predict_batch(  # noqa: PLR0915 - row loop carries the full decision p
                 feature_report=report.as_dict(),
                 input_features=input_features,
             )
-            if drivers is not None and decided["decision"] in (
-                "DECLINE",
-                "MANUAL_REVIEW",
-            ) and len(rows) < MAX_REPORT_ROWS:
+            if (
+                drivers is not None
+                and decided["decision"]
+                in (
+                    "DECLINE",
+                    "MANUAL_REVIEW",
+                )
+                and len(rows) < MAX_REPORT_ROWS
+            ):
                 _schedule_report(background, tx)
             record = store.get_decision(tx)
         else:

@@ -183,9 +183,7 @@ class TestOffPolicy:
 
     def test_promote_rejects_unproven_candidate(self):
         context = [1.0, 0, 0, 0, 0, 0, 1.0]
-        events = [
-            {"context": context, "action": "DECLINE", "propensity": 1.0, "reward": 1.0}
-        ]
+        events = [{"context": context, "action": "DECLINE", "propensity": 1.0, "reward": 1.0}]
         losing = BanditState()  # no learned signal => cannot prove itself
         result = maybe_promote_bandit(losing, losing, events, min_improvement=0.0)
         assert result["promoted"] is False

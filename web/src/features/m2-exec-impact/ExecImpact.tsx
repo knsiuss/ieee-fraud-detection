@@ -45,7 +45,7 @@ export const ExecImpact: React.FC = () => {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <span className="px-2 py-0.5 rounded-[2px] bg-surface-2 border border-status-approve/30 text-status-approve font-mono text-xs font-semibold">
+          <span className="px-2 py-0.5 rounded-[6px] bg-surface-2 border border-status-approve/30 text-status-approve font-mono text-xs font-semibold">
             PROGRAM STATUS: COMPLIANT
           </span>
         </div>
@@ -106,7 +106,7 @@ export const ExecImpact: React.FC = () => {
               Basis points vs Visa &amp; Mastercard 0.9% (90 BPS) threshold
             </p>
 
-            <div className="p-3 bg-surface-2 rounded-[2px] border border-border-subtle space-y-2">
+            <div className="p-3 bg-surface-2 rounded-[6px] border border-border-subtle space-y-2">
               <div className="flex justify-between items-center font-mono">
                 <span className="text-xs text-text-secondary">Current Rate:</span>
                 <span className="text-base font-bold text-status-approve tabular-nums">
@@ -115,7 +115,7 @@ export const ExecImpact: React.FC = () => {
               </div>
 
               {/* Progress track */}
-              <div className="w-full bg-surface-1 h-2 rounded-[2px] overflow-hidden relative border border-border-subtle">
+              <div className="w-full bg-surface-1 h-2 rounded-[6px] overflow-hidden relative border border-border-subtle">
                 <div
                   className="bg-status-approve h-full"
                   style={{ width: `${Math.min(((loss?.chargeback_bps || 16.4) / 90) * 100, 100)}%` }}
@@ -131,7 +131,7 @@ export const ExecImpact: React.FC = () => {
           </div>
 
           {/* Friction breakdown */}
-          <div className="p-2.5 bg-surface-2 border border-border-subtle rounded-[2px] space-y-1 text-xs font-mono">
+          <div className="p-2.5 bg-surface-2 border border-border-subtle rounded-[6px] space-y-1 text-xs font-mono">
             <div className="text-text-secondary font-semibold text-[10px] uppercase">
               Analyst Dispositions Summary
             </div>

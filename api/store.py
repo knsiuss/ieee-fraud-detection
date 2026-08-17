@@ -682,16 +682,18 @@ def metrics_timeseries(window_minutes: int = 60, bucket_seconds: int = 60) -> li
         buckets: list[dict[str, Any]] = []
         for i in range(buckets_count):
             b_start = start_time + (i * bucket_seconds)
-            buckets.append({
-                "timestamp": datetime.fromtimestamp(b_start, tz=timezone.utc).isoformat(),
-                "total": 0,
-                "approved": 0,
-                "reviewed": 0,
-                "declined": 0,
-                "amount_sum": 0.0,
-                "avg_score": 0.0,
-                "_score_sum": 0.0,
-            })
+            buckets.append(
+                {
+                    "timestamp": datetime.fromtimestamp(b_start, tz=timezone.utc).isoformat(),
+                    "total": 0,
+                    "approved": 0,
+                    "reviewed": 0,
+                    "declined": 0,
+                    "amount_sum": 0.0,
+                    "avg_score": 0.0,
+                    "_score_sum": 0.0,
+                }
+            )
 
         for r in rows:
             try:
@@ -869,8 +871,10 @@ def metrics_rules() -> list[dict[str, Any]]:
         out: list[dict[str, Any]] = []
         for e in agg.values():
             e["avg_contribution"] = round(e["contrib_sum"] / max(e["occurrences"], 1), 4)
-            e["severity"] = "high" if e["max_contrib"] > 0.35 else (
-                "medium" if e["max_contrib"] > 0.18 else "low"
+            e["severity"] = (
+                "high"
+                if e["max_contrib"] > 0.35
+                else ("medium" if e["max_contrib"] > 0.18 else "low")
             )
             e["blocked_amount"] = round(e["blocked_amount"], 2)
             e["weighted_blocked"] = round(e["weighted_blocked"], 2)
@@ -987,9 +991,7 @@ def bandit_summary() -> dict:
         ).fetchone()
         by_action = {
             r["action"]: r["n"]
-            for r in conn.execute(
-                "SELECT action, COUNT(*) AS n FROM bandit_events GROUP BY action"
-            )
+            for r in conn.execute("SELECT action, COUNT(*) AS n FROM bandit_events GROUP BY action")
         }
         auto = conn.execute(
             "SELECT COUNT(*) AS n FROM bandit_events WHERE auto_actioned = 1"
@@ -1039,8 +1041,7 @@ def apply_bandit_reward(transaction_id: str, action: str, verdict: str) -> float
     conn = _decision_conn()
     try:
         conn.execute(
-            "UPDATE bandit_events SET reward = ?, updated_at = ?"
-            " WHERE transaction_id = ?",
+            "UPDATE bandit_events SET reward = ?, updated_at = ? WHERE transaction_id = ?",
             (reward, datetime.now(timezone.utc).isoformat(), transaction_id),
         )
         conn.commit()
@@ -1167,9 +1168,7 @@ def generate_audit_report(transaction_id: str) -> dict | None:
     tier = risk_tier(float(record["score"]))
     drivers = record.get("reason_codes") or []
     record["risk_tier"] = tier.label
-    record["summary"] = decision_summary(
-        float(record["score"]), tier.label, drivers, tier.action
-    )
+    record["summary"] = decision_summary(float(record["score"]), tier.label, drivers, tier.action)
     context = audit_report.build_report_context(record)
     llm_text = llm_provider.generate_llm(context)
     report, source = audit_report.build_report(context, llm_text, transaction_id)

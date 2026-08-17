@@ -137,7 +137,7 @@ export const FraudRingGraph: React.FC<FraudRingGraphProps> = ({
 
   return (
     <div className="relative w-full panel overflow-hidden">
-      <div className="absolute top-2.5 left-2.5 z-10 flex items-center gap-1.5 bg-surface-2 px-2.5 py-1 rounded-[2px] border border-border-subtle text-[10px] font-mono text-text-secondary">
+      <div className="absolute top-2.5 left-2.5 z-10 flex items-center gap-1.5 bg-surface-2 px-2.5 py-1 rounded-[6px] border border-border-subtle text-[10px] font-mono text-text-secondary">
         <span className="w-1.5 h-1.5 rounded-full bg-status-block"></span>
         <span>Syndicate Cluster Entity Graph</span>
       </div>

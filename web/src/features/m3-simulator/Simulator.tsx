@@ -131,7 +131,7 @@ export const Simulator: React.FC = () => {
             <button
               key={p.name}
               onClick={() => handleApplyPreset(p)}
-              className="btn-interactive inline-flex items-center gap-1.5 px-2.5 py-1 bg-surface-1 hover:bg-surface-hover border border-border-subtle rounded-[2px] text-xs font-mono text-text-secondary hover:text-text-primary transition-colors"
+              className="btn-interactive inline-flex items-center gap-1.5 px-2.5 py-1 bg-surface-1 hover:bg-surface-hover border border-border-subtle rounded-[6px] text-xs font-mono text-text-secondary hover:text-text-primary transition-colors"
             >
               <Icon className="w-3 h-3 text-text-muted" />
               <span>{p.name}</span>
@@ -156,7 +156,7 @@ export const Simulator: React.FC = () => {
               <select
                 value={profile}
                 onChange={(e) => setProfile(e.target.value as any)}
-                className="w-full bg-surface-2 border border-border-subtle text-text-primary px-2.5 py-1 rounded-[2px] focus:outline-none"
+                className="w-full bg-surface-2 border border-border-subtle text-text-primary px-2.5 py-1 rounded-[6px] focus:outline-none"
               >
                 <option value="typical">Typical Baseline (Median distribution)</option>
                 <option value="nonfraud">Known Non-Fraud Benchmark</option>
@@ -171,7 +171,7 @@ export const Simulator: React.FC = () => {
                   type="number"
                   value={amount}
                   onChange={(e) => setAmount(Number(e.target.value))}
-                  className="w-full bg-surface-2 border border-border-subtle text-text-primary px-2.5 py-1 rounded-[2px] focus:outline-none"
+                  className="w-full bg-surface-2 border border-border-subtle text-text-primary px-2.5 py-1 rounded-[6px] focus:outline-none"
                 />
               </div>
 
@@ -180,7 +180,7 @@ export const Simulator: React.FC = () => {
                 <select
                   value={cardBrand}
                   onChange={(e) => setCardBrand(e.target.value)}
-                  className="w-full bg-surface-2 border border-border-subtle text-text-primary px-2.5 py-1 rounded-[2px] focus:outline-none"
+                  className="w-full bg-surface-2 border border-border-subtle text-text-primary px-2.5 py-1 rounded-[6px] focus:outline-none"
                 >
                   <option value="visa">Visa (6200)</option>
                   <option value="mastercard">Mastercard (10200)</option>
@@ -197,7 +197,7 @@ export const Simulator: React.FC = () => {
                   type="number"
                   value={billingDistance}
                   onChange={(e) => setBillingDistance(Number(e.target.value))}
-                  className="w-full bg-surface-2 border border-border-subtle text-text-primary px-2.5 py-1 rounded-[2px] focus:outline-none"
+                  className="w-full bg-surface-2 border border-border-subtle text-text-primary px-2.5 py-1 rounded-[6px] focus:outline-none"
                 />
               </div>
 
@@ -207,7 +207,7 @@ export const Simulator: React.FC = () => {
                   type="number"
                   value={cardMatchCount}
                   onChange={(e) => setCardMatchCount(Number(e.target.value))}
-                  className="w-full bg-surface-2 border border-border-subtle text-text-primary px-2.5 py-1 rounded-[2px] focus:outline-none"
+                  className="w-full bg-surface-2 border border-border-subtle text-text-primary px-2.5 py-1 rounded-[6px] focus:outline-none"
                 />
               </div>
             </div>
@@ -219,7 +219,7 @@ export const Simulator: React.FC = () => {
                   type="number"
                   value={purchaseFrequency}
                   onChange={(e) => setPurchaseFrequency(Number(e.target.value))}
-                  className="w-full bg-surface-2 border border-border-subtle text-text-primary px-2.5 py-1 rounded-[2px] focus:outline-none"
+                  className="w-full bg-surface-2 border border-border-subtle text-text-primary px-2.5 py-1 rounded-[6px] focus:outline-none"
                 />
               </div>
 
@@ -229,7 +229,7 @@ export const Simulator: React.FC = () => {
                   type="number"
                   value={daysSinceActivity}
                   onChange={(e) => setDaysSinceActivity(Number(e.target.value))}
-                  className="w-full bg-surface-2 border border-border-subtle text-text-primary px-2.5 py-1 rounded-[2px] focus:outline-none"
+                  className="w-full bg-surface-2 border border-border-subtle text-text-primary px-2.5 py-1 rounded-[6px] focus:outline-none"
                 />
               </div>
             </div>
@@ -237,7 +237,7 @@ export const Simulator: React.FC = () => {
             <button
               onClick={handleRunSimulation}
               disabled={isLoading}
-              className="btn-interactive w-full mt-2 py-2 bg-surface-2 hover:bg-surface-hover border border-border-subtle text-text-primary font-mono font-semibold rounded-[2px] flex items-center justify-center gap-2 cursor-pointer"
+              className="btn-interactive w-full mt-2 py-2 bg-surface-2 hover:bg-surface-hover border border-border-subtle text-text-primary font-mono font-semibold rounded-[6px] flex items-center justify-center gap-2 cursor-pointer"
             >
               {isLoading ? (
                 <span>Executing Model Inference...</span>
@@ -272,7 +272,7 @@ export const Simulator: React.FC = () => {
               </div>
 
               {/* ScoreBar Instrument Track */}
-              <div className="p-3 bg-surface-2 rounded-[2px] border border-border-subtle space-y-2">
+              <div className="p-3 bg-surface-2 rounded-[6px] border border-border-subtle space-y-2">
                 <div className="flex justify-between text-[11px] font-mono text-text-secondary">
                   <span>Calculated Probability Track:</span>
                   <span className="text-text-muted">Latency: {String(result.feature_report?.latency_ms || 12.4)}ms</span>

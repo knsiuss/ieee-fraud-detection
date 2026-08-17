@@ -91,13 +91,9 @@ class SyntheticGenerator:
         df = self.source if self.source is not None else _source_df()
         if config.TARGET_COLUMN not in df.columns:
             raise ValueError("Synthetic source table must contain 'isFraud'.")
-        # The model is numeric-only; categoricals are dropped at training
-        # time and are never part of the serving contract.
-        numeric = df.select_dtypes("number").columns.tolist()
-        # The label is metadata (carried as _synthetic_label, never as a
-        # payload feature) and the row id is not a feature either — both
-        # must not leak into the generated feature values.
-        numeric = [c for c in numeric if c != config.TARGET_COLUMN and c.lower() != "transactionid"]
+        from .models import select_feature_columns
+
+        numeric = select_feature_columns(df)
         self._label = df[config.TARGET_COLUMN].astype(int).to_numpy()
         self._data = df[numeric].to_numpy(dtype="float64")
         self._columns = numeric
