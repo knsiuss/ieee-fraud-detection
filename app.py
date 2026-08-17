@@ -26,13 +26,14 @@ if not MODEL_FILE.exists():
 import gradio as gr
 from api.main import app as fastapi_app
 
-# Gradio interface for HF Spaces SDK discovery
+# Gradio interface for HF Spaces discovery
 demo = gr.Blocks(title="LEDGER // Fraud Decision Console")
 with demo:
     gr.HTML('<iframe src="/" style="width: 100%; height: 95vh; border: none; border-radius: 8px;"></iframe>')
 
 # Mount Gradio sub-app at /gradio so HF detects the Gradio SDK while FastAPI serves root / and /api
 app = gr.mount_gradio_app(fastapi_app, demo, path="/gradio")
+demo.app = app
 
 if __name__ == "__main__":
     demo.launch(server_name="0.0.0.0", server_port=7860)
