@@ -1,3 +1,16 @@
+---
+title: Sentinel Fraud Detection Platform
+emoji: 🛡️
+colorFrom: blue
+colorTo: indigo
+sdk: gradio
+sdk_version: 4.44.0
+app_file: app.py
+pinned: false
+license: mit
+short_description: Real-time IEEE-CIS fraud decisioning engine & SHAP forensic console.
+---
+
 <p align="center">
   <img src="https://img.shields.io/badge/Status-COMPLETED-brightgreen?style=for-the-badge" alt="Status: Completed"/>
   <img src="https://img.shields.io/badge/Python-3.10%2B-3776AB?style=for-the-badge&logo=python&logoColor=white" alt="Python 3.10+"/>
