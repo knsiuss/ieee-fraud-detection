@@ -8,7 +8,7 @@ sdk_version: 4.44.0
 app_file: app.py
 pinned: false
 license: mit
-short_description: Real-time IEEE-CIS fraud decisioning engine & SHAP forensic console.
+short_description: Real-time fraud detection API & SHAP analyst console.
 ---
 
 <p align="center">
