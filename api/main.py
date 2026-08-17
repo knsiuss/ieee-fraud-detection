@@ -412,7 +412,7 @@ def _require_admin(admin_key: str | None, operation: str) -> None:
         raise HTTPException(status_code=403, detail="Invalid admin key.")
 
 
-@app.get("/api/health", response_model=schemas.HealthResponse)
+@app.api_route("/api/health", methods=["GET", "HEAD"], response_model=schemas.HealthResponse)
 def health() -> schemas.HealthResponse:
     try:
         art = _current()
