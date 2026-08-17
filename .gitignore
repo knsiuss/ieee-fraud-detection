@@ -137,7 +137,6 @@ docs/build/
 # --- Node / Frontend SPA (Vite / React) ---
 node_modules/
 web/node_modules/
-web/dist/
 web/.vite/
 .vite/
 dist-ssr/

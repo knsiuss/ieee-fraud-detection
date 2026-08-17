@@ -1,0 +1,44 @@
+"""Hugging Face Spaces entry point for IEEE-CIS Fraud Decisioning Platform.
+
+Compatible with Hugging Face Spaces (Gradio SDK - Free Tier, no credit card required).
+Mounts the FastAPI application which serves both the React SPA at / and API endpoints at /api.
+"""
+
+import os
+import subprocess
+import sys
+from pathlib import Path
+
+# Ensure 'src' is on sys.path
+ROOT_DIR = Path(__file__).resolve().parent
+SRC_DIR = ROOT_DIR / "src"
+if str(SRC_DIR) not in sys.path:
+    sys.path.insert(0, str(SRC_DIR))
+
+# Bootstrap model from sample if not present
+MODEL_DIR = ROOT_DIR / "data" / "models" / "current"
+MODEL_FILE = MODEL_DIR / "model.joblib"
+if not MODEL_FILE.exists():
+    print("Bootstrapping serving model from sample dataset...")
+    train_script = ROOT_DIR / "scripts" / "train_model.py"
+    subprocess.run([sys.executable, str(train_script)], check=False)
+
+import gradio as gr
+from api.main import app
+
+# Gradio interface for HF Spaces SDK discovery
+demo = gr.Blocks(title="LEDGER // Fraud Decision Console")
+with demo:
+    gr.Markdown("# 🛡️ LEDGER // Internal Fraud & Risk Decision Console")
+    gr.Markdown(
+        "The React dashboard is active at root `/`. "
+        "Interactive API documentation is available at `/docs`."
+    )
+
+# Mount Gradio sub-app at /gradio so HF detects the Gradio SDK while FastAPI serves the root / and /api
+app = gr.mount_gradio_app(app, demo, path="/gradio")
+
+if __name__ == "__main__":
+    import uvicorn
+    port = int(os.environ.get("PORT", 7860))
+    uvicorn.run(app, host="0.0.0.0", port=port)
