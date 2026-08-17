@@ -35,13 +35,18 @@ if not MODEL_FILE.exists():
 
 import gradio as gr
 from fastapi.middleware.cors import CORSMiddleware
-from api.main import app as fastapi_app, _seed_initial_decisions
+from api.main import app as fastapi_app
 
-with gr.Blocks(
-    title="SENTINEL // ML Engine & API",
-    theme=gr.themes.Monochrome(),
-    fill_height=True,
-) as demo:
+# Enable open CORS for Netlify, Vercel, and localhost
+fastapi_app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+with gr.Blocks(title="SENTINEL // ML Engine & API") as demo:
     gr.HTML(
         """
         <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 24px; max-width: 900px; margin: 0 auto; color: #f4f4f5;">
@@ -83,16 +88,9 @@ with gr.Blocks(
         """
     )
 
-# Add CORS and include all FastAPI routes on demo.app
-demo.app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-demo.app.include_router(fastapi_app.router)
-demo.app.on_event("startup")(_seed_initial_decisions)
+# Mount Gradio sub-app at /gradio so FastAPI handles root / and all /api/* routes natively
+app = gr.mount_gradio_app(fastapi_app, demo, path="/gradio")
 
 if __name__ == "__main__":
-    demo.launch()
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=7860)

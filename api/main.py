@@ -957,8 +957,11 @@ _INDEX_FILE = os.path.join(_DIST_DIR, "index.html")
 
 if os.path.isdir(_DIST_DIR) and os.path.isfile(_INDEX_FILE):
     _ASSETS_DIR = os.path.join(_DIST_DIR, "assets")
-    if os.path.isdir(_ASSETS_DIR):
-        app.mount("/assets", StaticFiles(directory=_ASSETS_DIR), name="assets")
+    @app.get("/config", include_in_schema=False)
+    @app.get("/info", include_in_schema=False)
+    @app.get("/heartbeat", include_in_schema=False)
+    def _hf_space_probe():
+        return {"status": "running", "version": "5.20.0"}
 
     _EXCLUDED_SPA_PREFIXES = (
         "api",
