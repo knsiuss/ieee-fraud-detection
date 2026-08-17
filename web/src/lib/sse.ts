@@ -2,7 +2,12 @@ import { useEffect, useRef, useState } from 'react';
 import type { DecisionItem } from './types';
 import { useLiveStore } from '../stores/useLiveStore';
 
-const SSE_URL = `${import.meta.env.VITE_API_URL || ''}/api/decisions/stream`;
+const BASE_URL =
+  import.meta.env.VITE_API_URL ||
+  (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+    ? ''
+    : 'https://p-quincy-fraud-detection-dashboard-simulation.hf.space');
+const SSE_URL = `${BASE_URL}/api/decisions/stream`;
 const FLUSH_INTERVAL_MS = 250;
 const MAX_BUFFER = 1200;
 

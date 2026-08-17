@@ -13,7 +13,11 @@ import type {
   BatchScoreResponse,
 } from './types';
 
-export const BASE_URL = import.meta.env.VITE_API_URL || '';
+export const BASE_URL =
+  import.meta.env.VITE_API_URL ||
+  (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+    ? ''
+    : 'https://p-quincy-fraud-detection-dashboard-simulation.hf.space');
 
 async function fetchJson<T>(url: string, options?: RequestInit): Promise<T> {
   const res = await fetch(`${BASE_URL}${url}`, {
