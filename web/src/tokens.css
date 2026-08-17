@@ -18,97 +18,150 @@
   --color-status-review-soft: var(--status-review-soft);
   --color-status-block: var(--status-block);
   --color-status-block-soft: var(--status-block-soft);
+
+  --color-apple-blue: var(--apple-blue);
+  --color-apple-indigo: var(--apple-indigo);
 }
 
 @layer base {
   :root {
-    /* dark mode: for the live console */
-    --bg-main: #17161A;          /* warm near-black, not #090B10 blue-black */
-    --surface-1: #1E1D22;
-    --surface-2: #26252B;
-    --surface-hover: #2E2D34;
-    --border-subtle: rgba(230, 227, 218, 0.10);
-    --border-muted: rgba(230, 227, 218, 0.05);
-    --bg-glow: rgba(235, 232, 224, 0.055);
+    /* macOS / iOS Dark Graphite Theme */
+    --bg-main: #0D0D11;
+    --surface-1: rgba(24, 24, 30, 0.75);
+    --surface-2: rgba(36, 36, 45, 0.65);
+    --surface-hover: rgba(48, 48, 60, 0.75);
+    
+    --border-subtle: rgba(255, 255, 255, 0.08);
+    --border-muted: rgba(255, 255, 255, 0.04);
+    --border-highlight: rgba(255, 255, 255, 0.16);
+    --specular-highlight: rgba(255, 255, 255, 0.12);
 
-    --text-primary: #F6F4EF;
-    --text-secondary: #A8A49A;
-    --text-muted: #6E6A62;
+    --bg-glow-1: rgba(10, 132, 255, 0.06);
+    --bg-glow-2: rgba(94, 92, 230, 0.04);
 
-    /* soft elevation — depth via light, no glow */
-    --shadow-soft: 0 1px 1px rgba(11, 10, 14, 0.30), 0 8px 24px -12px rgba(11, 10, 14, 0.45);
-    --shadow-lift: 0 2px 3px rgba(11, 10, 14, 0.35), 0 14px 38px -14px rgba(11, 10, 14, 0.60);
+    --text-primary: #F5F5F7;
+    --text-secondary: #9898A0;
+    --text-muted: #63636E;
 
-    /* signal colors — reserved ONLY for decision states, never ambient */
-    --status-approve: #4F7A5C;
-    --status-approve-soft: rgba(79, 122, 92, 0.14);
-    --status-review: #B8863A;
-    --status-review-soft: rgba(184, 134, 58, 0.14);
-    --status-block: #B23B2E;
-    --status-block-soft: rgba(178, 58, 46, 0.14);
+    /* Apple layered ambient diffusion shadows */
+    --shadow-soft: 0 4px 20px -2px rgba(0, 0, 0, 0.4), 0 2px 6px -1px rgba(0, 0, 0, 0.3);
+    --shadow-lift: 0 12px 36px -4px rgba(0, 0, 0, 0.55), 0 4px 12px -2px rgba(0, 0, 0, 0.4);
+    --shadow-float: 0 20px 50px -10px rgba(0, 0, 0, 0.65), 0 6px 16px -2px rgba(0, 0, 0, 0.4);
+
+    /* Apple Cupertino System Signal Colors */
+    --status-approve: #30D158;
+    --status-approve-soft: rgba(48, 209, 88, 0.14);
+    --status-review: #FF9F0A;
+    --status-review-soft: rgba(255, 159, 10, 0.14);
+    --status-block: #FF453A;
+    --status-block-soft: rgba(255, 69, 58, 0.14);
+
+    --apple-blue: #0A84FF;
+    --apple-indigo: #5E5CE6;
   }
 
   .light {
-    --bg-main: #F6F4EF;          /* warm paper, not pure white */
-    --surface-1: #FFFFFF;
-    --surface-2: #EFEDE5;
-    --surface-hover: #E6E3D9;
-    --border-subtle: #DCD8CE;
-    --border-muted: rgba(110, 106, 98, 0.08);
-    --bg-glow: rgba(110, 106, 98, 0.05);
+    /* macOS / iOS Light Clean Theme */
+    --bg-main: #F5F5F7;
+    --surface-1: rgba(255, 255, 255, 0.82);
+    --surface-2: rgba(238, 238, 242, 0.80);
+    --surface-hover: rgba(228, 228, 234, 0.90);
+    
+    --border-subtle: rgba(0, 0, 0, 0.07);
+    --border-muted: rgba(0, 0, 0, 0.04);
+    --border-highlight: rgba(0, 0, 0, 0.12);
+    --specular-highlight: rgba(255, 255, 255, 0.95);
 
-    --text-primary: #17161A;
-    --text-secondary: #6E6A62;
-    --text-muted: #948F84;
+    --bg-glow-1: rgba(0, 122, 255, 0.05);
+    --bg-glow-2: rgba(88, 86, 214, 0.03);
 
-    --shadow-soft: 0 1px 2px rgba(58, 52, 41, 0.06), 0 10px 28px -14px rgba(58, 52, 41, 0.16);
-    --shadow-lift: 0 2px 4px rgba(58, 52, 41, 0.08), 0 18px 40px -18px rgba(58, 52, 41, 0.24);
+    --text-primary: #1D1D1F;
+    --text-secondary: #6E6E73;
+    --text-muted: #86868B;
 
-    --status-approve: #3B5A44;
-    --status-approve-soft: rgba(59, 90, 68, 0.10);
-    --status-review: #A87B34;
-    --status-review-soft: rgba(168, 123, 52, 0.10);
-    --status-block: #A83A2E;
-    --status-block-soft: rgba(168, 58, 46, 0.10);
+    --shadow-soft: 0 4px 18px -2px rgba(0, 0, 0, 0.06), 0 1px 3px 0 rgba(0, 0, 0, 0.04);
+    --shadow-lift: 0 10px 30px -4px rgba(0, 0, 0, 0.10), 0 3px 8px -1px rgba(0, 0, 0, 0.06);
+    --shadow-float: 0 20px 40px -8px rgba(0, 0, 0, 0.14), 0 6px 14px -2px rgba(0, 0, 0, 0.08);
+
+    --status-approve: #248A3D;
+    --status-approve-soft: rgba(36, 138, 61, 0.12);
+    --status-review: #C97500;
+    --status-review-soft: rgba(201, 117, 0, 0.12);
+    --status-block: #D70015;
+    --status-block-soft: rgba(215, 0, 21, 0.12);
+
+    --apple-blue: #0071E3;
+    --apple-indigo: #5856D6;
   }
 
   body {
     background-color: var(--bg-main);
-    background-image: radial-gradient(900px 420px at 50% -120px, var(--bg-glow), transparent 70%);
+    background-image: 
+      radial-gradient(1000px 500px at 20% -100px, var(--bg-glow-1), transparent 70%),
+      radial-gradient(900px 500px at 80% -100px, var(--bg-glow-2), transparent 70%);
     color: var(--text-primary);
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Inter', 'Segoe UI', Roboto, sans-serif;
     -webkit-font-smoothing: antialiased;
+    letter-spacing: -0.01em;
   }
 
   .font-mono {
-    font-family: 'IBM Plex Mono', 'JetBrains Mono', Consolas, Menlo, monospace;
+    font-family: 'SF Mono', 'IBM Plex Mono', 'JetBrains Mono', Menlo, Consolas, monospace;
     font-feature-settings: 'tnum' on, 'zero' on;
   }
 }
 
-/* Functional, calm panels — soft radius, depth via light, no glow */
+/* Apple-grade Glassmorphism & Squircles */
 .panel {
   background-color: var(--surface-1);
+  backdrop-filter: blur(24px) saturate(190%);
+  -webkit-backdrop-filter: blur(24px) saturate(190%);
   border: 1px solid var(--border-subtle);
-  border-radius: 14px;
-  box-shadow: var(--shadow-soft);
-  animation: rise 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
+  border-radius: 20px;
+  box-shadow: var(--shadow-soft), inset 0 1px 0 0 var(--specular-highlight);
+  animation: appleRise 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 .panel-hover {
   transition:
-    transform 0.35s cubic-bezier(0.22, 1, 0.36, 1),
-    box-shadow 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 0.35s cubic-bezier(0.16, 1, 0.3, 1),
     background-color 0.2s ease,
     border-color 0.2s ease;
 }
 .panel-hover:hover {
-  transform: translateY(-1px);
+  transform: translateY(-2px);
   background-color: var(--surface-hover);
-  border-color: var(--border-muted);
-  box-shadow: var(--shadow-lift);
+  border-color: var(--border-highlight);
+  box-shadow: var(--shadow-lift), inset 0 1px 0 0 var(--specular-highlight);
 }
 
+/* Apple Pill & Squircle Controls */
+.apple-capsule {
+  background-color: var(--surface-2);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid var(--border-subtle);
+  border-radius: 9999px;
+  box-shadow: var(--shadow-soft), inset 0 1px 0 0 var(--specular-highlight);
+}
+
+.btn-interactive {
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    transform 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 0.2s ease;
+  cursor: pointer;
+}
+.btn-interactive:hover {
+  transform: translateY(-1px);
+}
+.btn-interactive:active {
+  transform: scale(0.96);
+}
+
+/* Apple Smooth Animations */
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -118,12 +171,14 @@
   }
 }
 
-@keyframes rise {
+@keyframes appleRise {
   from {
-    transform: translateY(8px);
+    opacity: 0.7;
+    transform: translateY(10px) scale(0.995);
   }
   to {
-    transform: translateY(0);
+    opacity: 1;
+    transform: translateY(0) scale(1);
   }
 }
 
@@ -137,35 +192,24 @@
 }
 
 .animate-fade-in {
-  animation: fadeIn 0.15s ease-out forwards;
+  animation: fadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 .animate-row-flash {
-  animation: rowSettle 0.6s ease-out forwards;
+  animation: rowSettle 0.8s ease-out forwards;
 }
 
-.btn-interactive {
-  transition:
-    background-color 0.15s ease,
-    border-color 0.15s ease,
-    transform 0.15s cubic-bezier(0.22, 1, 0.36, 1);
-  cursor: pointer;
-}
-.btn-interactive:active {
-  transform: scale(0.97);
-}
-
-/* Compact, soft scrollbars */
+/* Smooth Apple Scrollbars */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
 ::-webkit-scrollbar-track {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
   background: var(--border-subtle);
-  border-radius: 8px;
+  border-radius: 9999px;
 }
 ::-webkit-scrollbar-thumb:hover {
   background: var(--text-muted);

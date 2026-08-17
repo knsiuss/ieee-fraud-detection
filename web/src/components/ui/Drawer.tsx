@@ -31,21 +31,21 @@ export const Drawer: React.FC<DrawerProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 overflow-hidden">
-      {/* Backdrop */}
+    <div className="fixed inset-0 z-50 overflow-hidden animate-fade-in">
+      {/* Apple Frosted Backdrop */}
       <div
-        className="fixed inset-0 bg-black/60 transition-opacity"
+        className="fixed inset-0 bg-black/50 backdrop-blur-sm transition-opacity"
         onClick={onClose}
       />
 
-      <div className="fixed inset-y-0 right-0 flex max-w-full pl-10">
+      <div className="fixed inset-y-0 right-0 flex max-w-full pl-6 sm:pl-10">
         <div
-          className={`w-screen ${widthClass} bg-surface-1 border-l border-border-subtle flex flex-col justify-between`}
+          className={`w-screen ${widthClass} bg-surface-1/90 backdrop-blur-2xl border-l border-border-highlight rounded-l-3xl flex flex-col justify-between shadow-float transform transition-transform duration-300 ease-out`}
         >
-          {/* Header */}
-          <div className="px-5 py-3.5 border-b border-border-subtle flex items-center justify-between bg-surface-2">
+          {/* Sheet Header */}
+          <div className="px-6 py-4 border-b border-border-subtle flex items-center justify-between bg-surface-2/60 backdrop-blur-md rounded-tl-3xl">
             <div>
-              <h2 className="text-sm font-semibold text-text-primary tracking-tight">
+              <h2 className="text-sm font-semibold text-text-primary tracking-tight font-sans">
                 {title}
               </h2>
               {subtitle && (
@@ -54,14 +54,14 @@ export const Drawer: React.FC<DrawerProps> = ({
             </div>
             <button
               onClick={onClose}
-              className="rounded p-1 text-text-muted hover:text-text-primary hover:bg-surface-hover transition-colors"
+              className="rounded-full p-1.5 text-text-muted hover:text-text-primary hover:bg-surface-hover bg-surface-2 border border-border-subtle transition-all hover:scale-105 active:scale-95 cursor-pointer"
             >
               <X className="w-4 h-4" />
             </button>
           </div>
 
           {/* Content body */}
-          <div className="flex-1 overflow-y-auto p-5 space-y-5">{children}</div>
+          <div className="flex-1 overflow-y-auto p-6 space-y-5">{children}</div>
         </div>
       </div>
     </div>

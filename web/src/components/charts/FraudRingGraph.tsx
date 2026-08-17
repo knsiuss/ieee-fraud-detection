@@ -19,12 +19,12 @@ export const FraudRingGraph: React.FC<FraudRingGraphProps> = ({
     if (!containerRef.current) return;
 
     const isDark = theme === 'dark';
-    const textColor = isDark ? '#F6F4EF' : '#17161A';
-    const edgeColor = isDark ? 'rgba(230, 227, 218, 0.15)' : '#DCD8CE';
-    const blockColor = isDark ? '#B23B2E' : '#A83A2E';
-    const reviewColor = isDark ? '#B8863A' : '#A87B34';
-    const approveColor = isDark ? '#4F7A5C' : '#3B5A44';
-    const surfaceBg = isDark ? '#26252B' : '#EFEDE5';
+    const textColor = isDark ? '#F5F5F7' : '#1D1D1F';
+    const edgeColor = isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.10)';
+    const blockColor = isDark ? '#FF453A' : '#D70015';
+    const reviewColor = isDark ? '#FF9F0A' : '#C97500';
+    const approveColor = isDark ? '#30D158' : '#248A3D';
+    const surfaceBg = isDark ? 'rgba(38, 38, 48, 0.8)' : 'rgba(240, 240, 246, 0.9)';
 
     const cy = cytoscape({
       container: containerRef.current,
@@ -34,13 +34,13 @@ export const FraudRingGraph: React.FC<FraudRingGraphProps> = ({
           style: {
             label: 'data(label)',
             color: textColor,
-            'font-family': 'IBM Plex Mono, JetBrains Mono, monospace',
-            'font-size': '10px',
+            'font-family': '-apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", sans-serif',
+            'font-size': '11px',
             'text-valign': 'bottom',
-            'text-margin-y': 5,
-            width: 28,
-            height: 28,
-            'border-width': 1.5,
+            'text-margin-y': 6,
+            width: 32,
+            height: 32,
+            'border-width': 2,
             'border-color': 'data(borderColor)',
             'background-color': 'data(bgColor)',
           },
@@ -49,22 +49,22 @@ export const FraudRingGraph: React.FC<FraudRingGraphProps> = ({
           selector: 'node[type = "transaction"]',
           style: {
             shape: 'round-rectangle',
-            width: 36,
-            height: 24,
+            width: 42,
+            height: 28,
           },
         },
         {
           selector: 'node[type = "card"]',
           style: {
             shape: 'diamond',
-            width: 28,
-            height: 28,
+            width: 32,
+            height: 32,
           },
         },
         {
           selector: 'edge',
           style: {
-            width: 1,
+            width: 1.5,
             'line-color': edgeColor,
             'curve-style': 'bezier',
             'target-arrow-shape': 'none',
@@ -75,16 +75,16 @@ export const FraudRingGraph: React.FC<FraudRingGraphProps> = ({
           selector: 'edge[fraud = "true"]',
           style: {
             'line-color': blockColor,
-            width: 1.5,
+            width: 2,
             'line-style': 'dashed',
-            opacity: 0.9,
+            opacity: 0.95,
           },
         },
         {
           selector: ':selected',
           style: {
             'border-color': textColor,
-            'border-width': 2.5,
+            'border-width': 3,
           },
         },
       ],
@@ -115,9 +115,9 @@ export const FraudRingGraph: React.FC<FraudRingGraphProps> = ({
       layout: {
         name: 'cose',
         animate: false,
-        padding: 24,
-        nodeRepulsion: () => 4000,
-        idealEdgeLength: () => 65,
+        padding: 28,
+        nodeRepulsion: () => 4500,
+        idealEdgeLength: () => 70,
       },
     });
 
@@ -136,10 +136,10 @@ export const FraudRingGraph: React.FC<FraudRingGraphProps> = ({
   }, [theme, onNodeClick]);
 
   return (
-    <div className="relative w-full panel overflow-hidden">
-      <div className="absolute top-2.5 left-2.5 z-10 flex items-center gap-1.5 bg-surface-2 px-2.5 py-1 rounded-[6px] border border-border-subtle text-[10px] font-mono text-text-secondary">
-        <span className="w-1.5 h-1.5 rounded-full bg-status-block"></span>
-        <span>Syndicate Cluster Entity Graph</span>
+    <div className="relative w-full panel rounded-2xl overflow-hidden border border-border-subtle shadow-soft">
+      <div className="absolute top-3.5 left-3.5 z-10 flex items-center gap-2 bg-surface-2/80 backdrop-blur-md px-3 py-1.5 rounded-full border border-border-subtle text-xs font-sans text-text-secondary shadow-sm">
+        <span className="w-2 h-2 rounded-full bg-status-block animate-pulse"></span>
+        <span className="font-medium">Syndicate Cluster Entity Graph</span>
       </div>
       <div ref={containerRef} style={{ height, width: '100%' }} />
     </div>

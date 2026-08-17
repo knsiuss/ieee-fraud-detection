@@ -38,10 +38,10 @@ export function DataTable<TData>({
   });
 
   return (
-    <div className="w-full overflow-hidden panel">
+    <div className="w-full overflow-hidden panel rounded-2xl border border-border-subtle shadow-soft">
       <div className="overflow-x-auto max-h-[560px]">
         <table className="w-full text-left text-xs border-collapse">
-          <thead className="bg-transparent sticky top-0 z-10 border-b border-border-subtle text-text-secondary uppercase tracking-wider font-mono text-[11px]">
+          <thead className="bg-surface-2/60 backdrop-blur-md sticky top-0 z-10 border-b border-border-subtle text-text-secondary uppercase tracking-wider font-sans font-semibold text-[11px]">
             {table.getHeaderGroups().map((headerGroup) => (
               <tr key={headerGroup.id}>
                 {headerGroup.headers.map((header) => {
@@ -51,8 +51,8 @@ export function DataTable<TData>({
                   return (
                     <th
                       key={header.id}
-                      className={`px-3 py-2 font-semibold select-none ${
-                        canSort ? 'cursor-pointer hover:text-text-primary' : ''
+                      className={`px-4 py-3 select-none ${
+                        canSort ? 'cursor-pointer hover:text-text-primary transition-colors' : ''
                       }`}
                       onClick={header.column.getToggleSortingHandler()}
                     >
@@ -61,11 +61,11 @@ export function DataTable<TData>({
                         {canSort && (
                           <span className="text-text-muted">
                             {isSorted === 'asc' ? (
-                              <ChevronUp className="w-3.5 h-3.5 text-text-primary" />
+                              <ChevronUp className="w-3.5 h-3.5 text-apple-blue" />
                             ) : isSorted === 'desc' ? (
-                              <ChevronDown className="w-3.5 h-3.5 text-text-primary" />
+                              <ChevronDown className="w-3.5 h-3.5 text-apple-blue" />
                             ) : (
-                              <ChevronsUpDown className="w-3 h-3 opacity-40" />
+                              <ChevronsUpDown className="w-3 h-3 opacity-30" />
                             )}
                           </span>
                         )}
@@ -76,12 +76,12 @@ export function DataTable<TData>({
               </tr>
             ))}
           </thead>
-          <tbody className="divide-y divide-border-subtle/40 font-mono text-xs">
+          <tbody className="divide-y divide-border-subtle/30 font-mono text-xs">
             {table.getRowModel().rows.length === 0 ? (
               <tr>
                 <td
                   colSpan={columns.length}
-                  className="px-4 py-10 text-center text-text-muted"
+                  className="px-4 py-12 text-center text-text-muted font-sans text-xs"
                 >
                   {emptyMessage}
                 </td>
@@ -95,16 +95,16 @@ export function DataTable<TData>({
                   <tr
                     key={row.id}
                     onClick={() => onRowClick && onRowClick(row.original)}
-                    className={`transition-colors duration-150 ${
+                    className={`transition-all duration-150 ${
                       onRowClick ? 'cursor-pointer' : ''
                     } ${
                       isSelected
-                        ? 'bg-surface-hover/80 text-text-primary font-semibold'
-                        : 'hover:bg-surface-hover/40 text-text-secondary hover:text-text-primary'
+                        ? 'bg-surface-hover/90 text-text-primary font-semibold shadow-inner'
+                        : 'hover:bg-surface-hover/50 text-text-secondary hover:text-text-primary'
                     }`}
                   >
                     {row.getVisibleCells().map((cell) => (
-                      <td key={cell.id} className="px-3 py-2 whitespace-nowrap">
+                      <td key={cell.id} className="px-4 py-2.5 whitespace-nowrap">
                         {flexRender(cell.column.columnDef.cell, cell.getContext())}
                       </td>
                     ))}

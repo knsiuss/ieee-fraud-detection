@@ -16,9 +16,9 @@ export const GaugeChart: React.FC<GaugeChartProps> = ({
   thresholds = { review_above: 0.2, decline_above: 0.8 },
 }) => {
   return (
-    <div className="p-3 bg-surface-2 rounded-xl border border-border-subtle space-y-2">
+    <div className="p-4 bg-surface-2/80 rounded-2xl border border-border-subtle space-y-2.5 backdrop-blur-md shadow-xs">
       {title && (
-        <div className="text-[11px] font-mono font-medium text-text-secondary uppercase tracking-wider">
+        <div className="text-xs font-sans font-semibold text-text-secondary uppercase tracking-wider">
           {title}
         </div>
       )}

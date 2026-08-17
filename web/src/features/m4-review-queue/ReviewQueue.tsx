@@ -3,7 +3,6 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../lib/api';
 import type { DecisionItem } from '../../lib/types';
 import { useSelectedTxStore } from '../../stores/useSelectedTxStore';
-import { StatusBadge } from '../../components/ui/StatusBadge';
 import { AuditSampledBadge } from '../../components/ui/AuditSampledBadge';
 import { ScoreBar } from '../../components/ui/ScoreBar';
 import { DataTable } from '../../components/ui/DataTable';
@@ -42,8 +41,8 @@ export const ReviewQueue: React.FC = () => {
       accessorKey: 'status',
       header: 'Queue State',
       cell: ({ row }) => (
-        <div className="flex items-center gap-1.5">
-          <span className="px-1.5 py-0.5 rounded-[6px] bg-surface-2 border border-border-subtle text-[11px] font-mono font-medium">
+        <div className="flex items-center gap-2">
+          <span className="px-2.5 py-0.5 rounded-full bg-surface-2/90 border border-border-subtle text-xs font-sans font-semibold text-text-primary">
             {row.original.status || 'NEW'}
           </span>
           {row.original.audit_sampled && <AuditSampledBadge />}
@@ -54,7 +53,7 @@ export const ReviewQueue: React.FC = () => {
       accessorKey: 'transaction_id',
       header: 'Transaction ID',
       cell: ({ row }) => (
-        <span className="font-bold text-text-primary">
+        <span className="font-bold font-mono text-text-primary text-xs">
           #{row.original.transaction_id.slice(-8)}
         </span>
       ),
@@ -83,26 +82,26 @@ export const ReviewQueue: React.FC = () => {
       id: 'actions',
       header: 'Analyst Disposition',
       cell: ({ row }) => (
-        <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
           <button
             onClick={() => handleAction(row.original.transaction_id, 'safe')}
             disabled={outcomeMutation.isPending}
-            className="btn-interactive px-2 py-0.5 bg-status-approve-soft text-status-approve border border-status-approve/30 rounded-[6px] text-[11px] font-mono font-semibold flex items-center gap-1"
+            className="btn-interactive px-3 py-1 bg-status-approve/12 text-status-approve border border-status-approve/30 rounded-full text-xs font-sans font-semibold flex items-center gap-1.5 shadow-xs hover:bg-status-approve/20 cursor-pointer"
           >
-            <Check className="w-3 h-3" />
+            <Check className="w-3.5 h-3.5" />
             <span>Approve (Safe)</span>
           </button>
           <button
             onClick={() => handleAction(row.original.transaction_id, 'fraud')}
             disabled={outcomeMutation.isPending}
-            className="btn-interactive px-2 py-0.5 bg-status-block-soft text-status-block border border-status-block/30 rounded-[6px] text-[11px] font-mono font-semibold flex items-center gap-1"
+            className="btn-interactive px-3 py-1 bg-status-block/12 text-status-block border border-status-block/30 rounded-full text-xs font-sans font-semibold flex items-center gap-1.5 shadow-xs hover:bg-status-block/20 cursor-pointer"
           >
-            <X className="w-3 h-3" />
+            <X className="w-3.5 h-3.5" />
             <span>Confirm Fraud</span>
           </button>
           <button
             onClick={() => openDrawer(row.original)}
-            className="btn-interactive px-2 py-0.5 bg-surface-2 hover:bg-surface-hover border border-border-subtle text-text-secondary hover:text-text-primary rounded-[6px] text-[11px] font-mono"
+            className="btn-interactive px-3 py-1 bg-surface-2/90 hover:bg-surface-hover border border-border-subtle text-text-secondary hover:text-text-primary rounded-full text-xs font-sans font-medium shadow-xs cursor-pointer"
           >
             Details
           </button>
@@ -112,26 +111,26 @@ export const ReviewQueue: React.FC = () => {
   ];
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       {/* Header & SLA Badges */}
-      <div className="flex flex-wrap items-center justify-between gap-3 panel p-3.5">
+      <div className="flex flex-wrap items-center justify-between gap-3 panel p-5 rounded-2xl">
         <div>
-          <h2 className="text-sm font-mono font-bold text-text-primary tracking-tight">
-            MANUAL REVIEW &amp; CASE RESOLUTION QUEUE
+          <h2 className="text-sm font-sans font-bold text-text-primary tracking-tight uppercase">
+            Manual Review &amp; Case Resolution Queue
           </h2>
-          <p className="text-xs font-mono text-text-muted">
+          <p className="text-xs font-sans text-text-muted mt-0.5">
             Human-in-the-loop analyst triage ledger. Confirmed outcomes feed bandit policy rewards.
           </p>
         </div>
 
-        <div className="flex items-center gap-2 font-mono text-xs">
-          <div className="flex items-center gap-1.5 px-2.5 py-1 bg-surface-2 rounded-[6px] border border-border-subtle text-text-secondary">
-            <Clock className="w-3 h-3 text-text-muted" />
-            <span>SLA: &lt; 2 Hours</span>
+        <div className="flex items-center gap-2.5 font-sans text-xs">
+          <div className="flex items-center gap-1.5 px-3 py-1.5 bg-surface-2/90 rounded-full border border-border-subtle text-text-secondary shadow-xs">
+            <Clock className="w-3.5 h-3.5 text-apple-blue" />
+            <span className="font-medium">SLA: &lt; 2 Hours</span>
           </div>
           <button
             onClick={() => refetch()}
-            className="btn-interactive p-1 bg-surface-2 hover:bg-surface-hover rounded-[6px] border border-border-subtle text-text-secondary hover:text-text-primary"
+            className="btn-interactive p-2 bg-surface-2/90 hover:bg-surface-hover rounded-full border border-border-subtle text-text-secondary hover:text-text-primary shadow-xs cursor-pointer"
             title="Refresh review queue"
             aria-label="Refresh review queue"
           >
@@ -141,17 +140,16 @@ export const ReviewQueue: React.FC = () => {
       </div>
 
       {/* Queue Filter Bar */}
-      <div className="flex items-center justify-between gap-3 panel p-3">
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-mono text-text-secondary">Filter Queue:</span>
+      <div className="flex flex-wrap items-center justify-between gap-3 panel p-4 rounded-2xl">
+        <div className="flex items-center gap-1.5 bg-surface-2/80 p-1 rounded-full border border-border-subtle shadow-inner">
           {['NEW', 'IN_PROGRESS', 'RESOLVED'].map((s) => (
             <button
               key={s}
               onClick={() => setSelectedStatus(s)}
-              className={`btn-interactive px-2.5 py-1 rounded-[6px] text-xs font-mono border ${
+              className={`btn-interactive px-4 py-1 rounded-full text-xs font-sans transition-all ${
                 selectedStatus === s
-                  ? 'bg-surface-hover text-text-primary border-border-muted font-bold'
-                  : 'bg-surface-2 text-text-secondary border-border-subtle hover:bg-surface-hover'
+                  ? 'bg-surface-1 text-text-primary font-semibold shadow-sm border border-border-highlight scale-[1.02]'
+                  : 'text-text-secondary hover:text-text-primary hover:bg-surface-hover/50 font-medium'
               }`}
             >
               {s}
@@ -165,7 +163,7 @@ export const ReviewQueue: React.FC = () => {
             placeholder="Disposition note (optional)..."
             value={feedbackNote}
             onChange={(e) => setFeedbackNote(e.target.value)}
-            className="bg-surface-2 border border-border-subtle text-text-primary text-xs font-mono px-2.5 py-1 rounded-[6px] w-64 placeholder:text-text-muted focus:outline-none"
+            className="bg-surface-2/90 border border-border-subtle text-text-primary text-xs font-sans px-3.5 py-1.5 rounded-full w-64 placeholder:text-text-muted focus:outline-none focus:border-border-highlight shadow-xs"
           />
         </div>
       </div>

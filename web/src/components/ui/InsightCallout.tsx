@@ -12,10 +12,10 @@ export const InsightCallout: React.FC<InsightCalloutProps> = ({
   children,
 }) => {
   return (
-    <div className="panel p-3 flex items-start gap-2.5 text-xs font-mono leading-relaxed bg-surface-1 text-text-primary">
-      <Info className="w-3.5 h-3.5 shrink-0 mt-0.5 text-text-muted" />
+    <div className="panel p-4 flex items-start gap-3 text-xs font-sans leading-relaxed bg-surface-1/80 backdrop-blur-xl text-text-primary rounded-2xl shadow-sm border border-border-subtle">
+      <Info className="w-4 h-4 shrink-0 mt-0.5 text-apple-blue" />
       <div>
-        {title && <span className="font-semibold text-text-primary mr-1.5">{title}:</span>}
+        {title && <span className="font-semibold text-text-primary mr-1.5 font-sans">{title}:</span>}
         <span className="text-text-secondary">{children}</span>
       </div>
     </div>

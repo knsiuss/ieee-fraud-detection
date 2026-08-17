@@ -109,14 +109,14 @@ export const Simulator: React.FC = () => {
     : undefined;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       {/* Header */}
-      <div className="flex items-center justify-between panel p-3.5">
+      <div className="flex items-center justify-between panel p-5 rounded-2xl">
         <div>
-          <h2 className="text-sm font-mono font-bold text-text-primary tracking-tight">
-            SIMULATION &amp; EXPLAINABILITY (XAI) STUDIO
+          <h2 className="text-sm font-sans font-bold text-text-primary tracking-tight uppercase">
+            Simulation &amp; Explainability (XAI) Studio
           </h2>
-          <p className="text-xs font-mono text-text-muted">
+          <p className="text-xs font-sans text-text-muted mt-0.5">
             Construct synthetic transaction parameters and inspect real-time SHAP feature attribution
           </p>
         </div>
@@ -124,16 +124,16 @@ export const Simulator: React.FC = () => {
 
       {/* Preset Buttons */}
       <div className="flex flex-wrap items-center gap-2">
-        <span className="text-xs font-mono text-text-muted">Presets:</span>
+        <span className="text-xs font-sans text-text-muted font-medium mr-1">Scenario Presets:</span>
         {presets.map((p) => {
           const Icon = p.icon;
           return (
             <button
               key={p.name}
               onClick={() => handleApplyPreset(p)}
-              className="btn-interactive inline-flex items-center gap-1.5 px-2.5 py-1 bg-surface-1 hover:bg-surface-hover border border-border-subtle rounded-[6px] text-xs font-mono text-text-secondary hover:text-text-primary transition-colors"
+              className="btn-interactive inline-flex items-center gap-2 px-3.5 py-1.5 bg-surface-1/90 hover:bg-surface-hover border border-border-subtle rounded-full text-xs font-sans font-medium text-text-secondary hover:text-text-primary shadow-xs backdrop-blur-md transition-all"
             >
-              <Icon className="w-3 h-3 text-text-muted" />
+              <Icon className="w-3.5 h-3.5 text-apple-blue" />
               <span>{p.name}</span>
             </button>
           );
@@ -142,21 +142,21 @@ export const Simulator: React.FC = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
         {/* Left Form (5 Cols) */}
-        <div className="lg:col-span-5 panel p-4 space-y-3">
-          <h3 className="text-xs font-mono font-semibold uppercase tracking-wider text-text-primary border-b border-border-subtle pb-2 flex items-center justify-between">
+        <div className="lg:col-span-5 panel p-5 space-y-4 rounded-2xl">
+          <h3 className="text-xs font-sans font-semibold uppercase tracking-wider text-text-primary border-b border-border-subtle pb-3 flex items-center justify-between">
             <span>Transaction Parameters</span>
-            <span className="text-[10px] font-mono text-text-muted">
+            <span className="text-[10px] font-mono text-text-muted px-2 py-0.5 rounded-full bg-surface-2">
               400 Auto-Imputed Feats
             </span>
           </h3>
 
-          <div className="space-y-3 text-xs font-mono">
+          <div className="space-y-3.5 text-xs font-sans">
             <div>
-              <label className="block text-text-secondary mb-1">Base Feature Profile</label>
+              <label className="block text-text-secondary mb-1.5 font-medium">Base Feature Profile</label>
               <select
                 value={profile}
                 onChange={(e) => setProfile(e.target.value as any)}
-                className="w-full bg-surface-2 border border-border-subtle text-text-primary px-2.5 py-1 rounded-[6px] focus:outline-none"
+                className="w-full bg-surface-2/90 border border-border-subtle text-text-primary px-3.5 py-2 rounded-xl focus:outline-none focus:border-border-highlight shadow-xs font-medium cursor-pointer"
               >
                 <option value="typical">Typical Baseline (Median distribution)</option>
                 <option value="nonfraud">Known Non-Fraud Benchmark</option>
@@ -164,23 +164,23 @@ export const Simulator: React.FC = () => {
               </select>
             </div>
 
-            <div className="grid grid-cols-2 gap-2.5">
+            <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-text-secondary mb-1">Amount ($)</label>
+                <label className="block text-text-secondary mb-1.5 font-medium">Amount ($)</label>
                 <input
                   type="number"
                   value={amount}
                   onChange={(e) => setAmount(Number(e.target.value))}
-                  className="w-full bg-surface-2 border border-border-subtle text-text-primary px-2.5 py-1 rounded-[6px] focus:outline-none"
+                  className="w-full bg-surface-2/90 border border-border-subtle text-text-primary px-3.5 py-2 rounded-xl focus:outline-none focus:border-border-highlight shadow-xs font-mono font-medium"
                 />
               </div>
 
               <div>
-                <label className="block text-text-secondary mb-1">Card Network</label>
+                <label className="block text-text-secondary mb-1.5 font-medium">Card Network</label>
                 <select
                   value={cardBrand}
                   onChange={(e) => setCardBrand(e.target.value)}
-                  className="w-full bg-surface-2 border border-border-subtle text-text-primary px-2.5 py-1 rounded-[6px] focus:outline-none"
+                  className="w-full bg-surface-2/90 border border-border-subtle text-text-primary px-3.5 py-2 rounded-xl focus:outline-none focus:border-border-highlight shadow-xs font-medium cursor-pointer"
                 >
                   <option value="visa">Visa (6200)</option>
                   <option value="mastercard">Mastercard (10200)</option>
@@ -190,46 +190,46 @@ export const Simulator: React.FC = () => {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-2.5">
+            <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-text-secondary mb-1">Billing Distance (dist1)</label>
+                <label className="block text-text-secondary mb-1.5 font-medium">Billing Distance (dist1)</label>
                 <input
                   type="number"
                   value={billingDistance}
                   onChange={(e) => setBillingDistance(Number(e.target.value))}
-                  className="w-full bg-surface-2 border border-border-subtle text-text-primary px-2.5 py-1 rounded-[6px] focus:outline-none"
+                  className="w-full bg-surface-2/90 border border-border-subtle text-text-primary px-3.5 py-2 rounded-xl focus:outline-none focus:border-border-highlight shadow-xs font-mono font-medium"
                 />
               </div>
 
               <div>
-                <label className="block text-text-secondary mb-1">Matching Cards (C1)</label>
+                <label className="block text-text-secondary mb-1.5 font-medium">Matching Cards (C1)</label>
                 <input
                   type="number"
                   value={cardMatchCount}
                   onChange={(e) => setCardMatchCount(Number(e.target.value))}
-                  className="w-full bg-surface-2 border border-border-subtle text-text-primary px-2.5 py-1 rounded-[6px] focus:outline-none"
+                  className="w-full bg-surface-2/90 border border-border-subtle text-text-primary px-3.5 py-2 rounded-xl focus:outline-none focus:border-border-highlight shadow-xs font-mono font-medium"
                 />
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-2.5">
+            <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-text-secondary mb-1">Hourly Velocity (C2)</label>
+                <label className="block text-text-secondary mb-1.5 font-medium">Hourly Velocity (C2)</label>
                 <input
                   type="number"
                   value={purchaseFrequency}
                   onChange={(e) => setPurchaseFrequency(Number(e.target.value))}
-                  className="w-full bg-surface-2 border border-border-subtle text-text-primary px-2.5 py-1 rounded-[6px] focus:outline-none"
+                  className="w-full bg-surface-2/90 border border-border-subtle text-text-primary px-3.5 py-2 rounded-xl focus:outline-none focus:border-border-highlight shadow-xs font-mono font-medium"
                 />
               </div>
 
               <div>
-                <label className="block text-text-secondary mb-1">Days Inactive (D1)</label>
+                <label className="block text-text-secondary mb-1.5 font-medium">Days Inactive (D1)</label>
                 <input
                   type="number"
                   value={daysSinceActivity}
                   onChange={(e) => setDaysSinceActivity(Number(e.target.value))}
-                  className="w-full bg-surface-2 border border-border-subtle text-text-primary px-2.5 py-1 rounded-[6px] focus:outline-none"
+                  className="w-full bg-surface-2/90 border border-border-subtle text-text-primary px-3.5 py-2 rounded-xl focus:outline-none focus:border-border-highlight shadow-xs font-mono font-medium"
                 />
               </div>
             </div>
@@ -237,45 +237,47 @@ export const Simulator: React.FC = () => {
             <button
               onClick={handleRunSimulation}
               disabled={isLoading}
-              className="btn-interactive w-full mt-2 py-2 bg-surface-2 hover:bg-surface-hover border border-border-subtle text-text-primary font-mono font-semibold rounded-[6px] flex items-center justify-center gap-2 cursor-pointer"
+              className="btn-interactive w-full mt-3 py-3 bg-apple-blue hover:bg-apple-blue/90 text-white font-sans font-semibold rounded-full flex items-center justify-center gap-2 shadow-md hover:scale-[1.01] active:scale-98 cursor-pointer disabled:opacity-50"
             >
               {isLoading ? (
-                <span>Executing Model Inference...</span>
+                <span className="font-medium animate-pulse">Executing Model Inference...</span>
               ) : (
                 <>
-                  <Play className="w-3.5 h-3.5 text-text-secondary" />
+                  <Play className="w-4 h-4 fill-white" />
                   <span>Run Inference &amp; Explain</span>
                 </>
               )}
             </button>
 
-            {error && <div className="text-status-block text-xs mt-2">{error}</div>}
+            {error && <div className="text-status-block text-xs mt-2 font-medium">{error}</div>}
           </div>
         </div>
 
         {/* Right Results & SHAP Inspector (7 Cols) */}
-        <div className="lg:col-span-7 space-y-3">
+        <div className="lg:col-span-7 space-y-3.5">
           {result ? (
-            <div className="panel p-4 space-y-4">
+            <div className="panel p-5 space-y-4 rounded-2xl">
               {/* Top Decision Header */}
-              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border-subtle pb-3">
+              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border-subtle pb-3.5">
                 <div>
-                  <span className="text-[10px] font-mono text-text-muted">Transaction ID:</span>
-                  <div className="font-mono font-bold text-text-primary text-xs">
+                  <span className="text-[10px] font-sans font-semibold uppercase tracking-wider text-text-muted">
+                    Transaction ID
+                  </span>
+                  <div className="font-mono font-bold text-text-primary text-sm mt-0.5">
                     #{result.transaction_id}
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-mono text-text-secondary">Decision:</span>
+                  <span className="text-xs font-sans text-text-secondary font-medium">Decision:</span>
                   <StatusBadge status={result.decision} size="md" />
                 </div>
               </div>
 
               {/* ScoreBar Instrument Track */}
-              <div className="p-3 bg-surface-2 rounded-[6px] border border-border-subtle space-y-2">
-                <div className="flex justify-between text-[11px] font-mono text-text-secondary">
+              <div className="p-4 bg-surface-2/90 rounded-2xl border border-border-subtle space-y-2.5 shadow-sm">
+                <div className="flex justify-between text-xs font-sans text-text-secondary font-medium">
                   <span>Calculated Probability Track:</span>
-                  <span className="text-text-muted">Latency: {String(result.feature_report?.latency_ms || 12.4)}ms</span>
+                  <span className="text-text-muted font-mono text-[11px]">Latency: {String(result.feature_report?.latency_ms || 12.4)}ms</span>
                 </div>
                 <ScoreBar
                   probability={result.probability}
@@ -286,26 +288,26 @@ export const Simulator: React.FC = () => {
 
               {/* SHAP Waterfall Attribution */}
               {explanation && (
-                <div className="pt-2 border-t border-border-subtle">
-                  <div className="flex items-center justify-between mb-2">
-                    <h4 className="text-xs font-mono font-semibold uppercase tracking-wider text-text-primary flex items-center gap-1.5">
-                      <Sparkles className="w-3 h-3 text-text-muted" />
+                <div className="pt-3 border-t border-border-subtle">
+                  <div className="flex items-center justify-between mb-3">
+                    <h4 className="text-xs font-sans font-semibold uppercase tracking-wider text-text-primary flex items-center gap-2">
+                      <Sparkles className="w-3.5 h-3.5 text-apple-indigo" />
                       <span>SHAP Feature Drivers (TreeExplainer)</span>
                     </h4>
-                    <span className="text-[10px] font-mono text-text-muted">Top Contributing Values</span>
+                    <span className="text-[11px] font-sans text-text-muted">Top Contributing Values</span>
                   </div>
                   <ShapWaterfallChart features={explanation.features} height="240px" />
                 </div>
               )}
             </div>
           ) : (
-            <div className="panel p-10 text-center text-text-muted flex flex-col items-center justify-center">
-              <Sparkles className="w-6 h-6 text-text-muted mb-2 opacity-40" />
-              <h3 className="text-xs font-mono font-semibold text-text-primary mb-1">
+            <div className="panel p-12 text-center text-text-muted flex flex-col items-center justify-center rounded-2xl">
+              <Sparkles className="w-8 h-8 text-apple-indigo/40 mb-3" />
+              <h3 className="text-sm font-sans font-semibold text-text-primary mb-1">
                 Awaiting Simulation Request
               </h3>
-              <p className="text-[11px] max-w-sm font-mono text-text-muted">
-                Select a preset on the left or customize parameters, then click &quot;Run Inference &amp; Explain&quot;.
+              <p className="text-xs max-w-sm font-sans text-text-muted leading-relaxed">
+                Select a preset scenario above or customize transaction parameters, then click &quot;Run Inference &amp; Explain&quot;.
               </p>
             </div>
           )}

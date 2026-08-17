@@ -27,25 +27,28 @@ export const EChartBase: React.FC<EChartBaseProps> = ({
   }, [theme]);
 
   const isDark = theme === 'dark';
-  const textColor = isDark ? '#A8A49A' : '#6E6A62';
-  const borderColor = isDark ? 'rgba(230, 227, 218, 0.10)' : '#DCD8CE';
-  const splitLineColor = isDark ? 'rgba(230, 227, 218, 0.05)' : 'rgba(110, 106, 98, 0.08)';
+  const textColor = isDark ? '#9898A0' : '#6E6E73';
+  const borderColor = isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.10)';
+  const splitLineColor = isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)';
 
   const mergedOption: EChartsOption = {
     backgroundColor: 'transparent',
     textStyle: {
-      fontFamily: 'IBM Plex Mono, JetBrains Mono, monospace',
+      fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", sans-serif',
       color: textColor,
     },
     tooltip: {
-      backgroundColor: isDark ? '#26252B' : '#FFFFFF',
+      backgroundColor: isDark ? 'rgba(30, 30, 38, 0.88)' : 'rgba(255, 255, 255, 0.92)',
       borderColor: borderColor,
       borderWidth: 1,
-      padding: [8, 12],
+      padding: [10, 14],
+      borderRadius: 14,
+      shadowColor: 'rgba(0, 0, 0, 0.25)',
+      shadowBlur: 16,
       textStyle: {
-        color: isDark ? '#F6F4EF' : '#17161A',
-        fontSize: 11,
-        fontFamily: 'IBM Plex Mono, JetBrains Mono, monospace',
+        color: isDark ? '#F5F5F7' : '#1D1D1F',
+        fontSize: 12,
+        fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", monospace',
       },
       ...option.tooltip,
     },

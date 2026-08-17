@@ -13,35 +13,41 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({
 }) => {
   const norm = status?.toUpperCase() || '';
 
-  let colorClasses = 'text-status-review bg-status-review-soft border-status-review/20';
+  let colorClasses = 'text-status-review bg-status-review/12 border-status-review/30';
+  let dotColor = 'bg-status-review';
   let label = status;
 
   if (norm === 'APPROVE' || norm === 'APPROVED') {
-    colorClasses = 'text-status-approve bg-status-approve-soft border-status-approve/20';
+    colorClasses = 'text-status-approve bg-status-approve/12 border-status-approve/30';
+    dotColor = 'bg-status-approve';
     label = 'APPROVE';
   } else if (norm === 'DECLINE' || norm === 'DECLINED' || norm === 'BLOCKED') {
-    colorClasses = 'text-status-block bg-status-block-soft border-status-block/20';
+    colorClasses = 'text-status-block bg-status-block/12 border-status-block/30';
+    dotColor = 'bg-status-block';
     label = 'DECLINE';
   } else if (norm === 'MANUAL_REVIEW' || norm === 'REVIEW') {
-    colorClasses = 'text-status-review bg-status-review-soft border-status-review/20';
+    colorClasses = 'text-status-review bg-status-review/12 border-status-review/30';
+    dotColor = 'bg-status-review';
     label = 'REVIEW';
   } else if (norm === 'PENDING') {
     colorClasses = 'text-text-muted bg-surface-2 border-border-subtle';
+    dotColor = 'bg-text-muted';
     label = 'PENDING';
   }
 
   const sizeClasses =
     size === 'sm'
-      ? 'px-1.5 py-0.5 text-[10px]'
+      ? 'px-2 py-0.5 text-[10px]'
       : size === 'lg'
-      ? 'px-2.5 py-1 text-xs'
-      : 'px-2 py-0.5 text-[11px]';
+      ? 'px-3 py-1 text-xs'
+      : 'px-2.5 py-0.5 text-[11px]';
 
   return (
     <span
-      className={`inline-flex items-center font-mono font-semibold rounded-full border ${sizeClasses} ${colorClasses} tracking-wider`}
+      className={`inline-flex items-center gap-1.5 font-sans font-semibold rounded-full border shadow-xs ${sizeClasses} ${colorClasses} tracking-tight backdrop-blur-md`}
     >
-      {label}
+      <span className={`w-1.5 h-1.5 rounded-full ${dotColor} shadow-sm`} />
+      <span>{label}</span>
     </span>
   );
 };

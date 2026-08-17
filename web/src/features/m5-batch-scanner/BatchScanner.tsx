@@ -107,7 +107,7 @@ export const BatchScanner: React.FC = () => {
       accessorKey: 'risk_tier',
       header: 'Tier',
       cell: ({ row }) => (
-        <span className="uppercase font-mono text-[10px] text-text-secondary">
+        <span className="uppercase font-sans font-semibold text-xs text-text-secondary px-2 py-0.5 rounded-full bg-surface-2">
           {row.original.risk_tier}
         </span>
       ),
@@ -116,7 +116,7 @@ export const BatchScanner: React.FC = () => {
       accessorKey: 'action',
       header: 'Policy Action',
       cell: ({ row }) => (
-        <span className="font-mono text-xs text-text-primary">{row.original.action}</span>
+        <span className="font-sans text-xs text-text-primary font-medium">{row.original.action}</span>
       ),
     },
   ];
@@ -128,25 +128,25 @@ export const BatchScanner: React.FC = () => {
   const declined = response?.rows.filter((r) => r.decision === 'DECLINE').length || 0;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       {/* Header */}
-      <div className="flex items-center justify-between panel p-3.5">
+      <div className="flex items-center justify-between panel p-5 rounded-2xl">
         <div>
-          <h2 className="text-sm font-mono font-bold text-text-primary tracking-tight">
-            BATCH DATASET SCORING &amp; SCANNER
+          <h2 className="text-sm font-sans font-bold text-text-primary tracking-tight uppercase">
+            Batch Dataset Scoring &amp; Scanner
           </h2>
-          <p className="text-xs font-mono text-text-muted">
+          <p className="text-xs font-sans text-text-muted mt-0.5">
             Upload CSV datasets of transactions for high-speed offline inference and triage
           </p>
         </div>
       </div>
 
       {/* Upload Box */}
-      <div className="panel p-4 space-y-3">
+      <div className="panel p-5 space-y-4 rounded-2xl">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <label className="btn-interactive inline-flex items-center gap-1.5 px-3 py-1.5 bg-surface-2 hover:bg-surface-hover border border-border-subtle rounded-[6px] text-xs font-mono text-text-primary cursor-pointer">
-              <Upload className="w-3.5 h-3.5 text-text-muted" />
+            <label className="btn-interactive inline-flex items-center gap-2 px-4 py-2 bg-surface-2/90 hover:bg-surface-hover border border-border-subtle rounded-full text-xs font-sans font-medium text-text-primary cursor-pointer shadow-xs">
+              <Upload className="w-4 h-4 text-apple-blue" />
               <span>{file ? file.name : 'Select CSV File...'}</span>
               <input type="file" accept=".csv" onChange={handleFileChange} className="hidden" />
             </label>
@@ -154,7 +154,7 @@ export const BatchScanner: React.FC = () => {
             <button
               onClick={handleUpload}
               disabled={!file || isLoading}
-              className="btn-interactive px-3 py-1.5 bg-surface-hover text-text-primary border border-border-muted rounded-[6px] text-xs font-mono font-semibold disabled:opacity-50"
+              className="btn-interactive px-4 py-2 bg-apple-blue hover:bg-apple-blue/90 text-white rounded-full text-xs font-sans font-semibold disabled:opacity-50 shadow-sm cursor-pointer"
             >
               {isLoading ? 'Processing Batch...' : 'Execute Batch Score'}
             </button>
@@ -164,45 +164,45 @@ export const BatchScanner: React.FC = () => {
             <button
               onClick={handleLoadSample}
               disabled={isLoading}
-              className="btn-interactive inline-flex items-center gap-1 px-2.5 py-1 bg-surface-2 hover:bg-surface-hover border border-border-subtle rounded-[6px] text-xs font-mono text-text-secondary hover:text-text-primary"
+              className="btn-interactive inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-surface-2/90 hover:bg-surface-hover border border-border-subtle rounded-full text-xs font-sans font-medium text-text-secondary hover:text-text-primary shadow-xs cursor-pointer"
             >
-              <FileText className="w-3 h-3 text-text-muted" />
+              <FileText className="w-3.5 h-3.5 text-text-muted" />
               <span>Load 6-Row Sample CSV</span>
             </button>
 
             {response && (
               <button
                 onClick={handleExportCsv}
-                className="btn-interactive inline-flex items-center gap-1 px-2.5 py-1 bg-surface-2 hover:bg-surface-hover border border-border-subtle rounded-[6px] text-xs font-mono text-text-primary"
+                className="btn-interactive inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-surface-2/90 hover:bg-surface-hover border border-border-subtle rounded-full text-xs font-sans font-semibold text-text-primary shadow-xs cursor-pointer"
               >
-                <Download className="w-3 h-3 text-text-muted" />
+                <Download className="w-3.5 h-3.5 text-apple-indigo" />
                 <span>Export Scored CSV</span>
               </button>
             )}
           </div>
         </div>
 
-        {error && <div className="text-status-block text-xs font-mono">{error}</div>}
+        {error && <div className="text-status-block text-xs font-sans font-medium">{error}</div>}
       </div>
 
       {/* Batch Summary Counters */}
       {response && (
-        <div className="grid grid-cols-4 gap-3 font-mono text-xs">
-          <div className="panel p-3">
-            <span className="text-text-muted uppercase text-[10px] block">Total Processed</span>
-            <span className="text-xl font-bold text-text-primary tabular-nums">{total}</span>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3.5 font-sans text-xs">
+          <div className="panel p-4 rounded-2xl">
+            <span className="text-text-muted uppercase text-[11px] font-semibold block">Total Processed</span>
+            <span className="text-2xl font-bold font-mono text-text-primary tabular-nums mt-1">{total}</span>
           </div>
-          <div className="panel p-3">
-            <span className="text-text-muted uppercase text-[10px] block">Auto-Approved</span>
-            <span className="text-xl font-bold text-status-approve tabular-nums">{approved}</span>
+          <div className="panel p-4 rounded-2xl">
+            <span className="text-text-muted uppercase text-[11px] font-semibold block">Auto-Approved</span>
+            <span className="text-2xl font-bold font-mono text-status-approve tabular-nums mt-1">{approved}</span>
           </div>
-          <div className="panel p-3">
-            <span className="text-text-muted uppercase text-[10px] block">Flagged for Review</span>
-            <span className="text-xl font-bold text-status-review tabular-nums">{reviewed}</span>
+          <div className="panel p-4 rounded-2xl">
+            <span className="text-text-muted uppercase text-[11px] font-semibold block">Flagged for Review</span>
+            <span className="text-2xl font-bold font-mono text-status-review tabular-nums mt-1">{reviewed}</span>
           </div>
-          <div className="panel p-3">
-            <span className="text-text-muted uppercase text-[10px] block">Auto-Declined</span>
-            <span className="text-xl font-bold text-status-block tabular-nums">{declined}</span>
+          <div className="panel p-4 rounded-2xl">
+            <span className="text-text-muted uppercase text-[11px] font-semibold block">Auto-Declined</span>
+            <span className="text-2xl font-bold font-mono text-status-block tabular-nums mt-1">{declined}</span>
           </div>
         </div>
       )}

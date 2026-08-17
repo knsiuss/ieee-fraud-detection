@@ -97,63 +97,85 @@ export const LiveRadar: React.FC = () => {
       accessorKey: 'decision',
       header: 'Decision',
       cell: ({ row }) => (
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-2">
           <StatusBadge status={row.original.decision} size="sm" />
           {row.original.audit_sampled && <AuditSampledBadge />}
         </div>
       ),
     },
     {
-      accessorKey: 'timestamp',
-      header: 'Time (UTC)',
+      accessorKey: 'score',
+      header: 'Risk Score & Driver',
       cell: ({ row }) => {
-        try {
-          const t = new Date(row.original.timestamp);
-          return `${t.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}.${String(
-            t.getMilliseconds()
-          ).padStart(3, '0')}`;
-        } catch {
-          return row.original.timestamp;
-        }
+        const firstReason = row.original.reason_codes?.[0];
+        const topDriver = firstReason?.feature
+          ? {
+              label: firstReason.feature,
+              direction: (firstReason.contribution && firstReason.contribution > 0 ? 'fraud' : 'safe') as 'fraud' | 'safe',
+            }
+          : undefined;
+
+        return (
+          <div className="w-52">
+            <ScoreBar
+              probability={row.original.score}
+              topDriver={topDriver}
+              showPercentage={true}
+              compact={false}
+            />
+          </div>
+        );
       },
     },
     {
       accessorKey: 'transaction_id',
       header: 'Transaction ID',
       cell: ({ row }) => (
-        <span className="font-bold text-text-primary">
-          #{row.original.transaction_id.slice(-8)}
+        <span className="font-mono text-xs font-semibold text-text-primary">
+          {row.original.transaction_id}
         </span>
       ),
     },
     {
-      accessorKey: 'score',
-      header: 'Risk Probability Track',
-      cell: ({ row }) => (
-        <div className="w-44">
-          <ScoreBar probability={row.original.score} compact={true} />
-        </div>
-      ),
+      id: 'amount',
+      header: 'Amount',
+      cell: ({ row }) => {
+        const amt = row.original.input_features?.TransactionAmt;
+        return (
+          <span className="font-mono text-xs font-medium text-text-primary tabular-nums">
+            {amt !== undefined ? `$${Number(amt).toFixed(2)}` : '—'}
+          </span>
+        );
+      },
     },
     {
       accessorKey: 'action',
-      header: 'Policy Action',
+      header: 'Policy Route',
       cell: ({ row }) => (
-        <span className="text-text-muted text-[11px] font-mono">
+        <span className="text-[11px] font-sans font-medium text-text-secondary bg-surface-2/90 px-2.5 py-0.5 rounded-full border border-border-subtle">
           {row.original.action || 'Default Policy'}
         </span>
       ),
     },
     {
+      accessorKey: 'timestamp',
+      header: 'Observed',
+      cell: ({ row }) => (
+        <span className="text-[11px] font-mono text-text-muted">
+          {row.original.timestamp ? new Date(row.original.timestamp).toLocaleTimeString() : '—'}
+        </span>
+      ),
+    },
+    {
       id: 'actions',
-      header: 'Inspect',
+      header: '',
       cell: ({ row }) => (
         <button
           onClick={(e) => {
             e.stopPropagation();
             openDrawer(row.original);
           }}
-          className="btn-interactive px-2 py-0.5 bg-surface-2 hover:bg-surface-hover border border-border-subtle rounded-[6px] text-[11px] text-text-primary font-mono"
+          className="btn-interactive px-3 py-1 bg-surface-2/90 hover:bg-surface-hover border border-border-subtle rounded-full text-xs text-text-primary font-sans font-medium shadow-xs"
         >
           Details →
         </button>
@@ -162,32 +184,32 @@ export const LiveRadar: React.FC = () => {
   ];
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       {/* Top Real-time Control Strip */}
-      <div className="flex flex-wrap items-center justify-between gap-3 panel p-3">
+      <div className="flex flex-wrap items-center justify-between gap-3 panel p-4 rounded-2xl">
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 px-3 py-1.5 bg-surface-2 rounded-full border border-border-subtle font-mono text-xs">
-            <span className="w-2 h-2 rounded-full bg-status-approve" />
-            <span className="text-text-primary font-medium">LIVE DECISION STREAM</span>
-            <span className="text-text-muted text-[11px]">({rollingTps} TPS)</span>
+          <div className="flex items-center gap-2 px-3.5 py-1.5 bg-surface-2/90 rounded-full border border-border-subtle font-sans text-xs shadow-xs">
+            <span className="w-2 h-2 rounded-full bg-status-approve animate-pulse" />
+            <span className="text-text-primary font-semibold">Live Decision Stream</span>
+            <span className="text-text-muted text-[11px] font-mono">({rollingTps} TPS)</span>
           </div>
 
           <button
             onClick={togglePause}
-            className="btn-interactive inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-mono rounded-[6px] border border-border-subtle bg-surface-2 text-text-secondary hover:text-text-primary hover:bg-surface-hover"
+            className="btn-interactive inline-flex items-center gap-2 px-3.5 py-1.5 text-xs font-sans font-medium rounded-full border border-border-subtle bg-surface-2/90 text-text-secondary hover:text-text-primary hover:bg-surface-hover shadow-xs"
           >
-            {isPaused ? <Play className="w-3 h-3" /> : <Pause className="w-3 h-3" />}
+            {isPaused ? <Play className="w-3.5 h-3.5 text-status-approve" /> : <Pause className="w-3.5 h-3.5 text-status-review" />}
             <span>{isPaused ? 'Resume Stream' : 'Pause Stream'}</span>
           </button>
         </div>
 
         {/* Traffic Simulation Controls */}
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-mono text-text-muted">Simulate:</span>
+        <div className="flex items-center gap-2.5">
+          <span className="text-xs font-sans text-text-muted font-medium">Simulate:</span>
           <select
             value={simSpeed}
             onChange={(e) => setSimSpeed(Number(e.target.value))}
-            className="bg-surface-2 border border-border-subtle text-text-primary text-xs font-mono px-2 py-1 rounded-[6px] focus:outline-none"
+            className="bg-surface-2/90 border border-border-subtle text-text-primary text-xs font-sans px-3 py-1.5 rounded-full focus:outline-none shadow-xs font-medium cursor-pointer"
           >
             <option value={1}>1 tx/s</option>
             <option value={3}>3 tx/s</option>
@@ -196,19 +218,19 @@ export const LiveRadar: React.FC = () => {
 
           <button
             onClick={handleToggleSimulation}
-            className={`btn-interactive inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-mono rounded-[6px] border ${
+            className={`btn-interactive inline-flex items-center gap-1.5 px-4 py-1.5 text-xs font-sans rounded-full border shadow-xs ${
               isSimulating
-                ? 'bg-surface-hover text-text-primary border-border-muted font-bold'
-                : 'bg-surface-2 text-text-primary border-border-subtle hover:bg-surface-hover'
+                ? 'bg-apple-blue text-white border-apple-blue font-semibold shadow-md'
+                : 'bg-surface-2/90 text-text-primary border-border-subtle hover:bg-surface-hover font-medium'
             }`}
           >
-            <Zap className="w-3 h-3 text-text-muted" />
-            <span>{isSimulating ? 'Injecting...' : 'Inject Traffic'}</span>
+            <Zap className={`w-3.5 h-3.5 ${isSimulating ? 'text-amber-300 fill-amber-300' : 'text-text-muted'}`} />
+            <span>{isSimulating ? 'Injecting Traffic...' : 'Inject Traffic'}</span>
           </button>
 
           <button
             onClick={() => refetchSummary()}
-            className="btn-interactive p-1 text-text-muted hover:text-text-primary hover:bg-surface-hover rounded-[6px] border border-border-subtle"
+            className="btn-interactive p-2 text-text-secondary hover:text-text-primary hover:bg-surface-hover rounded-full border border-border-subtle shadow-xs bg-surface-2/90"
             title="Refresh metrics"
             aria-label="Refresh metrics"
           >
@@ -218,7 +240,7 @@ export const LiveRadar: React.FC = () => {
       </div>
 
       {/* Row 1: KPI Cards Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3.5">
         <KpiCard
           title="Total Volume"
           value={(summary?.total_decisions || 0).toLocaleString()}
@@ -257,60 +279,60 @@ export const LiveRadar: React.FC = () => {
       </div>
 
       {/* Row 2: Charts Split */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
-        <div className="lg:col-span-2 panel p-3.5">
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-1.5">
-              <Activity className="w-3.5 h-3.5 text-text-muted" />
-              <h3 className="text-xs font-mono font-semibold uppercase tracking-wider text-text-primary">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3.5">
+        <div className="lg:col-span-2 panel p-5 rounded-2xl">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <Activity className="w-4 h-4 text-apple-blue" />
+              <h3 className="text-xs font-sans font-semibold uppercase tracking-wider text-text-primary">
                 Transaction Velocity &amp; Policy Decision Stream
               </h3>
             </div>
-            <span className="text-[10px] font-mono text-text-muted">30m Rolling (60s Windows)</span>
+            <span className="text-[11px] font-mono text-text-muted">30m Rolling (60s Windows)</span>
           </div>
           <TimeseriesChart data={timeseries || []} height="260px" />
         </div>
 
-        <div className="panel p-3.5 flex flex-col justify-between">
+        <div className="panel p-5 rounded-2xl flex flex-col justify-between">
           <div>
-            <div className="flex items-center justify-between mb-2">
-              <h3 className="text-xs font-mono font-semibold uppercase tracking-wider text-text-primary">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-xs font-sans font-semibold uppercase tracking-wider text-text-primary">
                 Score Distribution
               </h3>
-              <span className="text-[10px] font-mono text-text-muted">10-Bin Histogram</span>
+              <span className="text-[11px] font-mono text-text-muted">10-Bin Histogram</span>
             </div>
             <DistributionChart
               scores={decisions.map((d) => d.score)}
               height="220px"
             />
           </div>
-          <div className="text-[10px] font-mono text-text-muted flex justify-between pt-2 border-t border-border-subtle">
-            <span>Approve &lt; 0.20</span>
-            <span>Review 0.20–0.80</span>
-            <span>Decline &gt; 0.80</span>
+          <div className="text-[11px] font-sans font-medium text-text-muted flex justify-between pt-3 border-t border-border-subtle">
+            <span className="text-status-approve">Approve &lt; 0.20</span>
+            <span className="text-status-review">Review 0.20–0.80</span>
+            <span className="text-status-block">Decline &gt; 0.80</span>
           </div>
         </div>
       </div>
 
       {/* Row 3: Live Feed Table + Search & Filter */}
-      <div className="panel p-3.5 space-y-3">
+      <div className="panel p-5 space-y-4 rounded-2xl">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h3 className="text-xs font-mono font-semibold uppercase tracking-wider text-text-primary">
+            <h3 className="text-xs font-sans font-semibold uppercase tracking-wider text-text-primary">
               Real-Time Decision Stream
             </h3>
-            <p className="text-[11px] font-mono text-text-muted">
+            <p className="text-xs font-sans text-text-muted">
               In-memory ring buffer ({decisions.length} events buffered)
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
-            <div className="flex items-center gap-1.5 bg-surface-2 border border-border-subtle px-2 py-1 rounded-[6px] text-xs font-mono">
-              <Filter className="w-3 h-3 text-text-muted" />
+          <div className="flex flex-wrap items-center gap-2.5">
+            <div className="flex items-center gap-2 bg-surface-2/90 border border-border-subtle px-3 py-1.5 rounded-full text-xs font-sans shadow-xs">
+              <Filter className="w-3.5 h-3.5 text-text-muted" />
               <select
                 value={filterDecision}
                 onChange={(e) => setFilterDecision(e.target.value as any)}
-                className="bg-transparent text-text-primary focus:outline-none"
+                className="bg-transparent text-text-primary focus:outline-none font-medium cursor-pointer"
               >
                 <option value="ALL">All Decisions</option>
                 <option value="APPROVE">Approve Only</option>
@@ -324,7 +346,7 @@ export const LiveRadar: React.FC = () => {
               placeholder="Search TxID or Action..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="bg-surface-2 border border-border-subtle text-text-primary text-xs font-mono px-2.5 py-1 rounded-[6px] w-48 placeholder:text-text-muted focus:outline-none focus:border-border-muted"
+              className="bg-surface-2/90 border border-border-subtle text-text-primary text-xs font-sans px-3.5 py-1.5 rounded-full w-52 placeholder:text-text-muted focus:outline-none focus:border-border-highlight shadow-xs"
             />
           </div>
         </div>
