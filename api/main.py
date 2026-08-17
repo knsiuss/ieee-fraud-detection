@@ -114,12 +114,12 @@ def _seed_initial_decisions():
                 profile = profiles[i % len(profiles)]
                 amount = 920.0 + (i * 35.0) if profile == "fraud" else 24.5 + (i * 12.0)
                 card_brand = "discover" if profile == "fraud" else "visa"
-                data = simmod.scenario_payload(
-                    profile,
-                    amount=amount,
-                    card_brand=card_brand,
-                    billing_distance=450.0 if profile == "fraud" else 15.0,
-                )
+                data = {
+                    "profile": profile,
+                    "amount": amount,
+                    "card_brand": card_brand,
+                    "billing_distance": 450.0 if profile == "fraud" else 15.0,
+                }
                 row = simmod.build_row(data, art.features, art.baseline, art.profiles)
                 prob = float(predict_proba(art.model, row)[0])
                 input_features = {c: float(row.iloc[0][c]) for c in art.features}

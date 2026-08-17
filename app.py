@@ -24,6 +24,7 @@ if not MODEL_FILE.exists():
     subprocess.run([sys.executable, str(train_script)], check=False)
 
 import gradio as gr
+import uvicorn
 from fastapi.middleware.cors import CORSMiddleware
 from api.main import app as fastapi_app
 
@@ -78,10 +79,8 @@ with gr.Blocks(title="SENTINEL // ML Engine & API") as demo:
         """
     )
 
-# Mount Gradio onto FastAPI root so FastAPI routes /api/* and /docs are served natively
+# Mount Gradio onto FastAPI root so FastAPI handles all /api/* routes directly
 app = gr.mount_gradio_app(fastapi_app, demo, path="/gradio")
 
 if __name__ == "__main__":
-    import uvicorn
-    port = int(os.environ.get("PORT", 7860))
-    uvicorn.run(app, host="0.0.0.0", port=port)
+    uvicorn.run(app, host="0.0.0.0", port=7860)
