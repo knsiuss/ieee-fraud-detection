@@ -104,6 +104,47 @@ app.add_middleware(
 )
 
 
+async def _background_traffic_loop():
+    """Continuously simulate incoming transactions (every 3.5s) for live radar feed."""
+    await asyncio.sleep(2.0)
+    profiles = ["typical", "nonfraud", "typical", "fraud", "typical", "nonfraud"]
+    i = 100
+    while True:
+        try:
+            art = _current()
+            profile = profiles[i % len(profiles)]
+            amount = 820.0 + ((i % 12) * 65.0) if profile == "fraud" else 15.5 + ((i % 30) * 9.5)
+            card_brand = "discover" if profile == "fraud" else ("visa" if i % 2 == 0 else "mastercard")
+            data = {
+                "profile": profile,
+                "amount": round(amount, 2),
+                "card_brand": card_brand,
+                "billing_distance": 480.0 if profile == "fraud" else 12.0,
+            }
+            row = simmod.build_row(data, art.features, art.baseline, art.profiles)
+            prob = float(predict_proba(art.model, row)[0])
+            input_features = {c: float(row.iloc[0][c]) for c in art.features}
+            drivers = decision_drivers(art.model, row, art.features, art.baseline, top_n=3)
+            decided = _decide_with_policy(prob, drivers, input_features)
+            store.record_decision(
+                transaction_id=f"tx-live-{uuid.uuid4().hex[:8]}",
+                model_version=store.version(art),
+                contract_version=CONTRACT_VERSION,
+                score=prob,
+                decision=decided["decision"],
+                action=decided["action"],
+                policy_version=decided["policy_version"],
+                thresholds=decided["thresholds"],
+                reason_codes=drivers,
+                feature_report={},
+                input_features=input_features,
+            )
+            i += 1
+        except Exception:
+            pass
+        await asyncio.sleep(3.5)
+
+
 @app.on_event("startup")
 def _seed_initial_decisions():
     try:
@@ -140,6 +181,9 @@ def _seed_initial_decisions():
                 )
     except Exception as e:
         print("Startup seed skipped:", e)
+    
+    # Launch continuous live traffic generator in background
+    asyncio.create_task(_background_traffic_loop())
 
 
 @app.exception_handler(MissingArtefactError)

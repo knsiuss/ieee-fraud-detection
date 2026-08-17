@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../../lib/api';
 import { useLiveStore } from '../../stores/useLiveStore';
@@ -12,12 +12,13 @@ import { DataTable } from '../../components/ui/DataTable';
 import { TimeseriesChart } from '../../components/charts/TimeseriesChart';
 import { DistributionChart } from '../../components/charts/DistributionChart';
 import { InsightCallout } from '../../components/ui/InsightCallout';
-import { Play, Pause, Zap, Activity, Filter, RefreshCw } from 'lucide-react';
+import { Play, Pause, Zap, Activity, Filter, RefreshCw, Square } from 'lucide-react';
 import type { ColumnDef } from '@tanstack/react-table';
 
 export const LiveRadar: React.FC = () => {
   const [isSimulating, setIsSimulating] = useState(false);
   const [simSpeed, setSimSpeed] = useState<number>(1);
+  const simIntervalRef = useRef<any>(null);
 
   const {
     decisions,
@@ -45,31 +46,37 @@ export const LiveRadar: React.FC = () => {
     refetchInterval: 5000,
   });
 
+  // Clean up interval on unmount
+  useEffect(() => {
+    return () => {
+      if (simIntervalRef.current) {
+        clearInterval(simIntervalRef.current);
+      }
+    };
+  }, []);
+
   // Simulator helper: triggers rapid transactions
   const handleToggleSimulation = () => {
     if (isSimulating) {
+      if (simIntervalRef.current) {
+        clearInterval(simIntervalRef.current);
+        simIntervalRef.current = null;
+      }
       setIsSimulating(false);
       return;
     }
 
     setIsSimulating(true);
-    let count = 0;
-    const profiles: Array<'typical' | 'nonfraud' | 'fraud'> = ['typical', 'nonfraud', 'fraud', 'typical'];
+    const profiles: Array<'typical' | 'nonfraud' | 'fraud'> = ['typical', 'nonfraud', 'fraud', 'typical', 'typical', 'nonfraud'];
 
-    const interval = setInterval(async () => {
-      if (count >= 30) {
-        clearInterval(interval);
-        setIsSimulating(false);
-        return;
-      }
-      count++;
+    simIntervalRef.current = setInterval(async () => {
       const profile = profiles[Math.floor(Math.random() * profiles.length)];
       const amount = profile === 'fraud' ? 850 + Math.random() * 1200 : 25 + Math.random() * 200;
       try {
         await api.simulate({
           profile,
           amount: Math.round(amount * 100) / 100,
-          card_brand: profile === 'fraud' ? 'discover' : 'visa',
+          card_brand: profile === 'fraud' ? 'discover' : (Math.random() > 0.5 ? 'visa' : 'mastercard'),
           billing_distance: profile === 'fraud' ? 450 : 12,
         });
       } catch {
@@ -218,14 +225,18 @@ export const LiveRadar: React.FC = () => {
 
           <button
             onClick={handleToggleSimulation}
-            className={`btn-interactive inline-flex items-center gap-1.5 px-4 py-1.5 text-xs font-sans rounded-full border shadow-xs ${
+            className={`btn-interactive inline-flex items-center gap-1.5 px-4 py-1.5 text-xs font-sans rounded-full border shadow-xs transition-all ${
               isSimulating
-                ? 'bg-apple-blue text-white border-apple-blue font-semibold shadow-md'
+                ? 'bg-rose-500/20 text-rose-300 border-rose-500/40 font-semibold shadow-md animate-pulse'
                 : 'bg-surface-2/90 text-text-primary border-border-subtle hover:bg-surface-hover font-medium'
             }`}
           >
-            <Zap className={`w-3.5 h-3.5 ${isSimulating ? 'text-amber-300 fill-amber-300' : 'text-text-muted'}`} />
-            <span>{isSimulating ? 'Injecting Traffic...' : 'Inject Traffic'}</span>
+            {isSimulating ? (
+              <Square className="w-3.5 h-3.5 fill-rose-400 text-rose-400" />
+            ) : (
+              <Zap className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
+            )}
+            <span>{isSimulating ? `Streaming (${simSpeed} tx/s) • Stop` : 'Inject Traffic'}</span>
           </button>
 
           <button
