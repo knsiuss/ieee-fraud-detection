@@ -1,6 +1,6 @@
 """Hugging Face Spaces entry point for IEEE-CIS Fraud Decisioning Platform.
 
-Compatible with Hugging Face Spaces (Gradio SDK - Free Tier, no credit card required).
+Compatible with Hugging Face Spaces (Gradio SDK - Free Tier).
 Mounts the FastAPI application which serves both the React SPA at / and API endpoints at /api.
 """
 
