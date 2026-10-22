@@ -37,22 +37,22 @@ export const Simulator: React.FC = () => {
       name: 'High-Risk Overseas Transfer',
       icon: ShieldAlert,
       profile: 'fraud' as const,
-      amount: 1850.0,
+      amount: 2450.0,
       cardBrand: 'discover',
-      billingDistance: 4500.0,
-      cardMatchCount: 4,
-      purchaseFrequency: 8,
-      daysSinceActivity: 120,
+      billingDistance: 4800.0,
+      cardMatchCount: 15,
+      purchaseFrequency: 35,
+      daysSinceActivity: 0,
     },
     {
-      name: 'Velocity Spike Attack',
+      name: 'Botnet Velocity Spike Attack',
       icon: AlertTriangle,
       profile: 'fraud' as const,
-      amount: 420.0,
-      cardBrand: 'mastercard',
-      billingDistance: 250.0,
-      cardMatchCount: 8,
-      purchaseFrequency: 24,
+      amount: 890.0,
+      cardBrand: 'discover',
+      billingDistance: 1200.0,
+      cardMatchCount: 28,
+      purchaseFrequency: 65,
       daysSinceActivity: 0,
     },
   ];
@@ -111,9 +111,9 @@ export const Simulator: React.FC = () => {
   return (
     <div className="space-y-5">
       {/* Header */}
-      <div className="flex items-center justify-between panel p-5 rounded-2xl">
+      <div className="flex items-center justify-between panel p-5 rounded-xl">
         <div>
-          <h2 className="text-sm font-sans font-bold text-text-primary tracking-tight uppercase">
+          <h2 className="text-[15px] font-semibold tracking-tight text-text-primary">
             Simulation &amp; Explainability (XAI) Studio
           </h2>
           <p className="text-xs font-sans text-text-muted mt-0.5">
@@ -131,7 +131,7 @@ export const Simulator: React.FC = () => {
             <button
               key={p.name}
               onClick={() => handleApplyPreset(p)}
-              className="btn-interactive inline-flex items-center gap-2 px-3.5 py-1.5 bg-surface-1/90 hover:bg-surface-hover border border-border-subtle rounded-full text-xs font-sans font-medium text-text-secondary hover:text-text-primary shadow-xs backdrop-blur-md transition-all"
+              className="btn-interactive inline-flex items-center gap-2 px-3.5 py-1.5 bg-surface-1 hover:bg-surface-hover border border-border-subtle rounded-full text-xs font-sans font-medium text-text-secondary hover:text-text-primary transition-all"
             >
               <Icon className="w-3.5 h-3.5 text-apple-blue" />
               <span>{p.name}</span>
@@ -142,8 +142,8 @@ export const Simulator: React.FC = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
         {/* Left Form (5 Cols) */}
-        <div className="lg:col-span-5 panel p-5 space-y-4 rounded-2xl">
-          <h3 className="text-xs font-sans font-semibold uppercase tracking-wider text-text-primary border-b border-border-subtle pb-3 flex items-center justify-between">
+        <div className="lg:col-span-5 panel p-5 space-y-4 rounded-xl">
+          <h3 className="flex items-center justify-between border-b border-border-subtle pb-3 text-[13px] font-semibold text-text-primary">
             <span>Transaction Parameters</span>
             <span className="text-[10px] font-mono text-text-muted px-2 py-0.5 rounded-full bg-surface-2">
               400 Auto-Imputed Feats
@@ -156,7 +156,7 @@ export const Simulator: React.FC = () => {
               <select
                 value={profile}
                 onChange={(e) => setProfile(e.target.value as any)}
-                className="w-full bg-surface-2/90 border border-border-subtle text-text-primary px-3.5 py-2 rounded-xl focus:outline-none focus:border-border-highlight shadow-xs font-medium cursor-pointer"
+                className="w-full bg-surface-2 border border-border-subtle text-text-primary px-3.5 py-2 rounded-xl focus:outline-none focus:border-border-highlight font-medium cursor-pointer"
               >
                 <option value="typical">Typical Baseline (Median distribution)</option>
                 <option value="nonfraud">Known Non-Fraud Benchmark</option>
@@ -171,7 +171,7 @@ export const Simulator: React.FC = () => {
                   type="number"
                   value={amount}
                   onChange={(e) => setAmount(Number(e.target.value))}
-                  className="w-full bg-surface-2/90 border border-border-subtle text-text-primary px-3.5 py-2 rounded-xl focus:outline-none focus:border-border-highlight shadow-xs font-mono font-medium"
+                  className="w-full bg-surface-2 border border-border-subtle text-text-primary px-3.5 py-2 rounded-xl focus:outline-none focus:border-border-highlight font-mono font-medium"
                 />
               </div>
 
@@ -180,7 +180,7 @@ export const Simulator: React.FC = () => {
                 <select
                   value={cardBrand}
                   onChange={(e) => setCardBrand(e.target.value)}
-                  className="w-full bg-surface-2/90 border border-border-subtle text-text-primary px-3.5 py-2 rounded-xl focus:outline-none focus:border-border-highlight shadow-xs font-medium cursor-pointer"
+                  className="w-full bg-surface-2 border border-border-subtle text-text-primary px-3.5 py-2 rounded-xl focus:outline-none focus:border-border-highlight font-medium cursor-pointer"
                 >
                   <option value="visa">Visa (6200)</option>
                   <option value="mastercard">Mastercard (10200)</option>
@@ -197,7 +197,7 @@ export const Simulator: React.FC = () => {
                   type="number"
                   value={billingDistance}
                   onChange={(e) => setBillingDistance(Number(e.target.value))}
-                  className="w-full bg-surface-2/90 border border-border-subtle text-text-primary px-3.5 py-2 rounded-xl focus:outline-none focus:border-border-highlight shadow-xs font-mono font-medium"
+                  className="w-full bg-surface-2 border border-border-subtle text-text-primary px-3.5 py-2 rounded-xl focus:outline-none focus:border-border-highlight font-mono font-medium"
                 />
               </div>
 
@@ -207,7 +207,7 @@ export const Simulator: React.FC = () => {
                   type="number"
                   value={cardMatchCount}
                   onChange={(e) => setCardMatchCount(Number(e.target.value))}
-                  className="w-full bg-surface-2/90 border border-border-subtle text-text-primary px-3.5 py-2 rounded-xl focus:outline-none focus:border-border-highlight shadow-xs font-mono font-medium"
+                  className="w-full bg-surface-2 border border-border-subtle text-text-primary px-3.5 py-2 rounded-xl focus:outline-none focus:border-border-highlight font-mono font-medium"
                 />
               </div>
             </div>
@@ -219,7 +219,7 @@ export const Simulator: React.FC = () => {
                   type="number"
                   value={purchaseFrequency}
                   onChange={(e) => setPurchaseFrequency(Number(e.target.value))}
-                  className="w-full bg-surface-2/90 border border-border-subtle text-text-primary px-3.5 py-2 rounded-xl focus:outline-none focus:border-border-highlight shadow-xs font-mono font-medium"
+                  className="w-full bg-surface-2 border border-border-subtle text-text-primary px-3.5 py-2 rounded-xl focus:outline-none focus:border-border-highlight font-mono font-medium"
                 />
               </div>
 
@@ -229,7 +229,7 @@ export const Simulator: React.FC = () => {
                   type="number"
                   value={daysSinceActivity}
                   onChange={(e) => setDaysSinceActivity(Number(e.target.value))}
-                  className="w-full bg-surface-2/90 border border-border-subtle text-text-primary px-3.5 py-2 rounded-xl focus:outline-none focus:border-border-highlight shadow-xs font-mono font-medium"
+                  className="w-full bg-surface-2 border border-border-subtle text-text-primary px-3.5 py-2 rounded-xl focus:outline-none focus:border-border-highlight font-mono font-medium"
                 />
               </div>
             </div>
@@ -256,7 +256,7 @@ export const Simulator: React.FC = () => {
         {/* Right Results & SHAP Inspector (7 Cols) */}
         <div className="lg:col-span-7 space-y-3.5">
           {result ? (
-            <div className="panel p-5 space-y-4 rounded-2xl">
+            <div className="panel p-5 space-y-4 rounded-xl">
               {/* Top Decision Header */}
               <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border-subtle pb-3.5">
                 <div>
@@ -274,10 +274,10 @@ export const Simulator: React.FC = () => {
               </div>
 
               {/* ScoreBar Instrument Track */}
-              <div className="p-4 bg-surface-2/90 rounded-2xl border border-border-subtle space-y-2.5 shadow-sm">
+              <div className="p-4 bg-surface-2 rounded-xl border border-border-subtle space-y-2.5">
                 <div className="flex justify-between text-xs font-sans text-text-secondary font-medium">
                   <span>Calculated Probability Track:</span>
-                  <span className="text-text-muted font-mono text-[11px]">Latency: {String(result.feature_report?.latency_ms || 12.4)}ms</span>
+                  <span className="text-text-muted font-mono text-[11px]">Latency: {result.feature_report?.latency_ms != null ? `${result.feature_report.latency_ms}ms` : '—'}</span>
                 </div>
                 <ScoreBar
                   probability={result.probability}
@@ -290,7 +290,7 @@ export const Simulator: React.FC = () => {
               {explanation && (
                 <div className="pt-3 border-t border-border-subtle">
                   <div className="flex items-center justify-between mb-3">
-                    <h4 className="text-xs font-sans font-semibold uppercase tracking-wider text-text-primary flex items-center gap-2">
+                    <h4 className="flex items-center gap-2 text-[13px] font-semibold text-text-primary">
                       <Sparkles className="w-3.5 h-3.5 text-apple-indigo" />
                       <span>SHAP Feature Drivers (TreeExplainer)</span>
                     </h4>
@@ -301,7 +301,7 @@ export const Simulator: React.FC = () => {
               )}
             </div>
           ) : (
-            <div className="panel p-12 text-center text-text-muted flex flex-col items-center justify-center rounded-2xl">
+            <div className="panel p-12 text-center text-text-muted flex flex-col items-center justify-center rounded-xl">
               <Sparkles className="w-8 h-8 text-apple-indigo/40 mb-3" />
               <h3 className="text-sm font-sans font-semibold text-text-primary mb-1">
                 Awaiting Simulation Request

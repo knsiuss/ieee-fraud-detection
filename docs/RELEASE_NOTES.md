@@ -24,7 +24,7 @@ drift monitoring, and reproducible scripts.
   reported only for transparency.
 - PR-AUC 0.562 · Brier 0.021 · precision @0.5 0.824 · recall @0.5 0.360.
 - Precision at realistic review capacity: **0.899 @ top 1%**, **0.414 @ top 5%**.
-- Full suite: 86.6% test coverage, ruff lint + format clean.
+- Full suite: 282 tests, 91% coverage, ruff lint + format clean.
 
 Reproduce with `scripts/evaluate_model.py` → `data/metadata/evaluation.json`.
 
@@ -34,6 +34,11 @@ Reproduce with `scripts/evaluate_model.py` → `data/metadata/evaluation.json`.
   `/api/feedback`, `/api/retrain`, `/api/health`, `/api/model`, `/api/stats`).
 - React/TypeScript review console with ECharts and a demo-data disclaimer.
 - Checkout-style input mapping + SHAP decision summaries.
+- Cost-model decisioning (`DECISION_POLICY=cost`): per-transaction expected-cost
+  policy, review-capacity calibration by review benefit, realised-vs-counterfactual
+  economics endpoint (`/api/metrics/economics`) and an offline policy backtest
+  (`scripts/backtest_policies.py` → `data/metadata/policy_backtest.json`),
+  documented in [`ECONOMICS.md`](ECONOMICS.md).
 - Gated auto-retraining (a candidate is only promoted if it beats the served
   model on a held-out split).
 - Model card, deployment guide, external-data research, release checklist,

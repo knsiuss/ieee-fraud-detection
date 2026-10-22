@@ -130,9 +130,9 @@ export const BatchScanner: React.FC = () => {
   return (
     <div className="space-y-5">
       {/* Header */}
-      <div className="flex items-center justify-between panel p-5 rounded-2xl">
+      <div className="flex items-center justify-between panel p-5 rounded-xl">
         <div>
-          <h2 className="text-sm font-sans font-bold text-text-primary tracking-tight uppercase">
+          <h2 className="text-[15px] font-semibold tracking-tight text-text-primary">
             Batch Dataset Scoring &amp; Scanner
           </h2>
           <p className="text-xs font-sans text-text-muted mt-0.5">
@@ -141,66 +141,115 @@ export const BatchScanner: React.FC = () => {
         </div>
       </div>
 
-      {/* Upload Box */}
-      <div className="panel p-5 space-y-4 rounded-2xl">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <label className="btn-interactive inline-flex items-center gap-2 px-4 py-2 bg-surface-2/90 hover:bg-surface-hover border border-border-subtle rounded-full text-xs font-sans font-medium text-text-primary cursor-pointer shadow-xs">
-              <Upload className="w-4 h-4 text-apple-blue" />
-              <span>{file ? file.name : 'Select CSV File...'}</span>
-              <input type="file" accept=".csv" onChange={handleFileChange} className="hidden" />
-            </label>
+      {/* Upload + Requirements */}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
+        <div className="panel space-y-4 rounded-xl p-5 lg:col-span-7">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <label className="btn-interactive inline-flex cursor-pointer items-center gap-2 rounded-full border border-border-subtle bg-surface-2 px-4 py-2 text-xs font-medium text-text-primary hover:bg-surface-hover">
+                <Upload className="h-4 w-4 text-apple-blue" />
+                <span>{file ? file.name : 'Select CSV File...'}</span>
+                <input type="file" accept=".csv" onChange={handleFileChange} className="hidden" />
+              </label>
 
-            <button
-              onClick={handleUpload}
-              disabled={!file || isLoading}
-              className="btn-interactive px-4 py-2 bg-apple-blue hover:bg-apple-blue/90 text-white rounded-full text-xs font-sans font-semibold disabled:opacity-50 shadow-sm cursor-pointer"
-            >
-              {isLoading ? 'Processing Batch...' : 'Execute Batch Score'}
-            </button>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <button
-              onClick={handleLoadSample}
-              disabled={isLoading}
-              className="btn-interactive inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-surface-2/90 hover:bg-surface-hover border border-border-subtle rounded-full text-xs font-sans font-medium text-text-secondary hover:text-text-primary shadow-xs cursor-pointer"
-            >
-              <FileText className="w-3.5 h-3.5 text-text-muted" />
-              <span>Load 6-Row Sample CSV</span>
-            </button>
-
-            {response && (
               <button
-                onClick={handleExportCsv}
-                className="btn-interactive inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-surface-2/90 hover:bg-surface-hover border border-border-subtle rounded-full text-xs font-sans font-semibold text-text-primary shadow-xs cursor-pointer"
+                onClick={handleUpload}
+                disabled={!file || isLoading}
+                className="btn-interactive cursor-pointer rounded-full bg-apple-blue px-4 py-2 text-xs font-semibold text-white hover:bg-apple-blue/90 disabled:opacity-50"
               >
-                <Download className="w-3.5 h-3.5 text-apple-indigo" />
-                <span>Export Scored CSV</span>
+                {isLoading ? 'Processing Batch...' : 'Execute Batch Score'}
               </button>
-            )}
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleLoadSample}
+                disabled={isLoading}
+                className="btn-interactive inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-border-subtle bg-surface-2 px-3.5 py-1.5 text-xs font-medium text-text-secondary hover:bg-surface-hover hover:text-text-primary"
+              >
+                <FileText className="h-3.5 w-3.5 text-text-muted" />
+                <span>Load 6-Row Sample CSV</span>
+              </button>
+
+              {response && (
+                <button
+                  onClick={handleExportCsv}
+                  className="btn-interactive inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-border-subtle bg-surface-2 px-3.5 py-1.5 text-xs font-semibold text-text-primary hover:bg-surface-hover"
+                >
+                  <Download className="h-3.5 w-3.5 text-apple-indigo" />
+                  <span>Export Scored CSV</span>
+                </button>
+              )}
+            </div>
           </div>
+
+          {error && (
+            <div className="text-xs font-medium text-status-block">{error}</div>
+          )}
+
+          {!response && !isLoading && (
+            <div className="rounded-xl border border-dashed border-border-subtle bg-surface-2/40 p-5 text-center">
+              <p className="text-[12.5px] font-medium text-text-secondary">
+                No batch scored yet
+              </p>
+              <p className="mt-1 text-[11.5px] leading-relaxed text-text-muted">
+                Load the sample file to see the full flow, or drop your own CSV and run it.
+              </p>
+            </div>
+          )}
         </div>
 
-        {error && <div className="text-status-block text-xs font-sans font-medium">{error}</div>}
+        <div className="panel space-y-3 rounded-xl p-5 lg:col-span-5">
+          <h3 className="text-[13px] font-semibold text-text-primary">File requirements</h3>
+          <ul className="space-y-2 text-[11.5px] leading-relaxed text-text-secondary">
+            <li className="flex gap-2">
+              <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-apple-blue" />
+              <span>
+                CSV with a <code>TransactionID</code> column; any subset of the 400 IEEE-CIS
+                features may be omitted.
+              </span>
+            </li>
+            <li className="flex gap-2">
+              <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-apple-blue" />
+              <span>
+                Missing features are auto-imputed from the served model's training medians, so a
+                minimal file still scores.
+              </span>
+            </li>
+            <li className="flex gap-2">
+              <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-apple-blue" />
+              <span>
+                <code>TransactionAmt</code> is used by the cost-based policy when{' '}
+                <code>DECISION_POLICY=cost</code>.
+              </span>
+            </li>
+            <li className="flex gap-2">
+              <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-apple-blue" />
+              <span>
+                Rows are scored in memory and returned inline; export the scored CSV from this
+                page to keep a copy.
+              </span>
+            </li>
+          </ul>
+        </div>
       </div>
 
       {/* Batch Summary Counters */}
       {response && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3.5 font-sans text-xs">
-          <div className="panel p-4 rounded-2xl">
+          <div className="panel p-4 rounded-xl">
             <span className="text-text-muted uppercase text-[11px] font-semibold block">Total Processed</span>
             <span className="text-2xl font-bold font-mono text-text-primary tabular-nums mt-1">{total}</span>
           </div>
-          <div className="panel p-4 rounded-2xl">
+          <div className="panel p-4 rounded-xl">
             <span className="text-text-muted uppercase text-[11px] font-semibold block">Auto-Approved</span>
             <span className="text-2xl font-bold font-mono text-status-approve tabular-nums mt-1">{approved}</span>
           </div>
-          <div className="panel p-4 rounded-2xl">
+          <div className="panel p-4 rounded-xl">
             <span className="text-text-muted uppercase text-[11px] font-semibold block">Flagged for Review</span>
             <span className="text-2xl font-bold font-mono text-status-review tabular-nums mt-1">{reviewed}</span>
           </div>
-          <div className="panel p-4 rounded-2xl">
+          <div className="panel p-4 rounded-xl">
             <span className="text-text-muted uppercase text-[11px] font-semibold block">Auto-Declined</span>
             <span className="text-2xl font-bold font-mono text-status-block tabular-nums mt-1">{declined}</span>
           </div>

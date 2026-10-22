@@ -7,6 +7,7 @@
   --color-surface-hover: var(--surface-hover);
   --color-border-subtle: var(--border-subtle);
   --color-border-muted: var(--border-muted);
+  --color-border-highlight: var(--border-highlight);
 
   --color-text-primary: var(--text-primary);
   --color-text-secondary: var(--text-secondary);
@@ -19,166 +20,218 @@
   --color-status-block: var(--status-block);
   --color-status-block-soft: var(--status-block-soft);
 
-  --color-apple-blue: var(--apple-blue);
-  --color-apple-indigo: var(--apple-indigo);
+  --color-apple-blue: var(--accent);
+  --color-apple-indigo: var(--accent-muted);
+
+  --font-sans: var(--font-sans-stack);
+  --font-mono: var(--font-mono-stack);
 }
 
 @layer base {
   :root {
-    /* macOS / iOS Dark Graphite Theme */
-    --bg-main: #0D0D11;
-    --surface-1: rgba(24, 24, 30, 0.75);
-    --surface-2: rgba(36, 36, 45, 0.65);
-    --surface-hover: rgba(48, 48, 60, 0.75);
-    
-    --border-subtle: rgba(255, 255, 255, 0.08);
-    --border-muted: rgba(255, 255, 255, 0.04);
-    --border-highlight: rgba(255, 255, 255, 0.16);
-    --specular-highlight: rgba(255, 255, 255, 0.12);
+    /* Dark: neutral graphite console palette (no decorative gradients). */
+    --bg-main: #0b0c0f;
+    --surface-1: #111318;
+    --surface-2: #171a21;
+    --surface-hover: #1d212a;
+    --border-subtle: #22272f;
+    --border-muted: #1a1e25;
+    --border-highlight: #333a45;
+    --specular-highlight: rgba(255, 255, 255, 0.04);
+    --panel-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
 
-    --bg-glow-1: rgba(10, 132, 255, 0.06);
-    --bg-glow-2: rgba(94, 92, 230, 0.04);
+    --text-primary: #e9ebef;
+    --text-secondary: #9aa1ad;
+    --text-muted: #6c7481;
 
-    --text-primary: #F5F5F7;
-    --text-secondary: #9898A0;
-    --text-muted: #63636E;
+    --accent: #4c7dff;
+    --accent-muted: #7c8cf8;
 
-    /* Apple layered ambient diffusion shadows */
-    --shadow-soft: 0 4px 20px -2px rgba(0, 0, 0, 0.4), 0 2px 6px -1px rgba(0, 0, 0, 0.3);
-    --shadow-lift: 0 12px 36px -4px rgba(0, 0, 0, 0.55), 0 4px 12px -2px rgba(0, 0, 0, 0.4);
-    --shadow-float: 0 20px 50px -10px rgba(0, 0, 0, 0.65), 0 6px 16px -2px rgba(0, 0, 0, 0.4);
+    --status-approve: #3fbf7f;
+    --status-approve-soft: rgba(63, 191, 127, 0.12);
+    --status-review: #e0a83c;
+    --status-review-soft: rgba(224, 168, 60, 0.12);
+    --status-block: #e26055;
+    --status-block-soft: rgba(226, 96, 85, 0.12);
 
-    /* Apple Cupertino System Signal Colors */
-    --status-approve: #30D158;
-    --status-approve-soft: rgba(48, 209, 88, 0.14);
-    --status-review: #FF9F0A;
-    --status-review-soft: rgba(255, 159, 10, 0.14);
-    --status-block: #FF453A;
-    --status-block-soft: rgba(255, 69, 58, 0.14);
-
-    --apple-blue: #0A84FF;
-    --apple-indigo: #5E5CE6;
+    --font-sans-stack: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+      'Helvetica Neue', Arial, sans-serif;
+    --font-mono-stack: 'JetBrains Mono', 'SF Mono', ui-monospace, Menlo, Consolas, monospace;
   }
 
   .light {
-    /* macOS / iOS Light Clean Theme */
-    --bg-main: #F5F5F7;
-    --surface-1: rgba(255, 255, 255, 0.82);
-    --surface-2: rgba(238, 238, 242, 0.80);
-    --surface-hover: rgba(228, 228, 234, 0.90);
-    
-    --border-subtle: rgba(0, 0, 0, 0.07);
-    --border-muted: rgba(0, 0, 0, 0.04);
-    --border-highlight: rgba(0, 0, 0, 0.12);
-    --specular-highlight: rgba(255, 255, 255, 0.95);
+    --bg-main: #f6f7f9;
+    --surface-1: #ffffff;
+    --surface-2: #f2f4f7;
+    --surface-hover: #eaecf0;
+    --border-subtle: #e4e7ec;
+    --border-muted: #edf0f3;
+    --border-highlight: #d0d5dd;
+    --specular-highlight: transparent;
+    --panel-shadow: 0 1px 2px rgba(16, 24, 40, 0.05);
 
-    --bg-glow-1: rgba(0, 122, 255, 0.05);
-    --bg-glow-2: rgba(88, 86, 214, 0.03);
+    --text-primary: #101828;
+    --text-secondary: #475467;
+    --text-muted: #98a2b3;
 
-    --text-primary: #1D1D1F;
-    --text-secondary: #6E6E73;
-    --text-muted: #86868B;
+    --accent: #2563eb;
+    --accent-muted: #6366f1;
 
-    --shadow-soft: 0 4px 18px -2px rgba(0, 0, 0, 0.06), 0 1px 3px 0 rgba(0, 0, 0, 0.04);
-    --shadow-lift: 0 10px 30px -4px rgba(0, 0, 0, 0.10), 0 3px 8px -1px rgba(0, 0, 0, 0.06);
-    --shadow-float: 0 20px 40px -8px rgba(0, 0, 0, 0.14), 0 6px 14px -2px rgba(0, 0, 0, 0.08);
+    --status-approve: #17803d;
+    --status-approve-soft: rgba(23, 128, 61, 0.1);
+    --status-review: #b54708;
+    --status-review-soft: rgba(181, 71, 8, 0.1);
+    --status-block: #d92d20;
+    --status-block-soft: rgba(217, 45, 32, 0.1);
+  }
 
-    --status-approve: #248A3D;
-    --status-approve-soft: rgba(36, 138, 61, 0.12);
-    --status-review: #C97500;
-    --status-review-soft: rgba(201, 117, 0, 0.12);
-    --status-block: #D70015;
-    --status-block-soft: rgba(215, 0, 21, 0.12);
-
-    --apple-blue: #0071E3;
-    --apple-indigo: #5856D6;
+  html {
+    color-scheme: dark;
+  }
+  html.light {
+    color-scheme: light;
   }
 
   body {
     background-color: var(--bg-main);
-    background-image: 
-      radial-gradient(1000px 500px at 20% -100px, var(--bg-glow-1), transparent 70%),
-      radial-gradient(900px 500px at 80% -100px, var(--bg-glow-2), transparent 70%);
     color: var(--text-primary);
-    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Inter', 'Segoe UI', Roboto, sans-serif;
+    font-family: var(--font-sans-stack);
+    font-size: 13px;
+    line-height: 1.5;
     -webkit-font-smoothing: antialiased;
-    letter-spacing: -0.01em;
+    -moz-osx-font-smoothing: grayscale;
+    letter-spacing: -0.006em;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    letter-spacing: -0.015em;
   }
 
   .font-mono {
-    font-family: 'SF Mono', 'IBM Plex Mono', 'JetBrains Mono', Menlo, Consolas, monospace;
+    font-family: var(--font-mono-stack);
     font-feature-settings: 'tnum' on, 'zero' on;
+  }
+
+  ::selection {
+    background: color-mix(in srgb, var(--accent) 28%, transparent);
+  }
+
+  *:focus-visible {
+    outline: 2px solid color-mix(in srgb, var(--accent) 65%, transparent);
+    outline-offset: 2px;
   }
 }
 
-/* Apple-grade Glassmorphism & Squircles */
+/* ── Surfaces ─────────────────────────────────────────────────────────── */
+
 .panel {
   background-color: var(--surface-1);
-  backdrop-filter: blur(24px) saturate(190%);
-  -webkit-backdrop-filter: blur(24px) saturate(190%);
   border: 1px solid var(--border-subtle);
-  border-radius: 20px;
-  box-shadow: var(--shadow-soft), inset 0 1px 0 0 var(--specular-highlight);
-  animation: appleRise 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+  border-radius: 14px;
+  box-shadow: var(--panel-shadow);
 }
 
 .panel-hover {
   transition:
-    transform 0.35s cubic-bezier(0.16, 1, 0.3, 1),
-    box-shadow 0.35s cubic-bezier(0.16, 1, 0.3, 1),
-    background-color 0.2s ease,
-    border-color 0.2s ease;
+    background-color 0.15s ease,
+    border-color 0.15s ease;
 }
 .panel-hover:hover {
-  transform: translateY(-2px);
-  background-color: var(--surface-hover);
+  background-color: var(--surface-2);
   border-color: var(--border-highlight);
-  box-shadow: var(--shadow-lift), inset 0 1px 0 0 var(--specular-highlight);
 }
 
-/* Apple Pill & Squircle Controls */
-.apple-capsule {
+.panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 13px 20px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.panel-body {
+  padding: 20px;
+}
+
+/* ── Typography helpers ───────────────────────────────────────────────── */
+
+.eyebrow {
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.section-title {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
+}
+
+.meta-text {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Controls ─────────────────────────────────────────────────────────── */
+
+.control {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   background-color: var(--surface-2);
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
   border: 1px solid var(--border-subtle);
-  border-radius: 9999px;
-  box-shadow: var(--shadow-soft), inset 0 1px 0 0 var(--specular-highlight);
+  border-radius: 8px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 500;
+  padding: 6px 10px;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+.control:hover {
+  background-color: var(--surface-hover);
+  color: var(--text-primary);
+}
+.control:focus-visible {
+  border-color: var(--accent);
+  outline: none;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent);
 }
 
 .btn-interactive {
   transition:
-    background-color 0.2s ease,
-    border-color 0.2s ease,
-    transform 0.2s cubic-bezier(0.16, 1, 0.3, 1),
-    box-shadow 0.2s ease;
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease,
+    box-shadow 0.15s ease;
   cursor: pointer;
 }
-.btn-interactive:hover {
-  transform: translateY(-1px);
-}
-.btn-interactive:active {
-  transform: scale(0.96);
+
+/* Legacy glass capsule kept for compatibility, restyled flat. */
+.apple-capsule {
+  background-color: var(--surface-2);
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
 }
 
-/* Apple Smooth Animations */
+/* ── Motion ───────────────────────────────────────────────────────────── */
+
 @keyframes fadeIn {
   from {
     opacity: 0;
   }
   to {
     opacity: 1;
-  }
-}
-
-@keyframes appleRise {
-  from {
-    opacity: 0.7;
-    transform: translateY(10px) scale(0.995);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
   }
 }
 
@@ -192,25 +245,26 @@
 }
 
 .animate-fade-in {
-  animation: fadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: fadeIn 0.18s ease-out forwards;
 }
 
 .animate-row-flash {
   animation: rowSettle 0.8s ease-out forwards;
 }
 
-/* Smooth Apple Scrollbars */
+/* ── Scrollbars ───────────────────────────────────────────────────────── */
+
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
 }
 ::-webkit-scrollbar-track {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
   background: var(--border-subtle);
-  border-radius: 9999px;
+  border-radius: 8px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--text-muted);
+  background: var(--border-highlight);
 }

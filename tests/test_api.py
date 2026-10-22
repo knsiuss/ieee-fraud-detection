@@ -126,6 +126,23 @@ class TestReadEndpoints:
         assert body["version"] == "test-1"
         assert "roc_auc" in body
 
+    def test_policy(self, client):
+        body = client.get("/api/policy").json()
+        assert body["kind"] == "threshold"
+        assert body["version"] == "v1"
+        assert body["thresholds"]["review_above"] == 0.15
+        assert body["bandit"]["enabled"] is False
+
+    def test_review_queue_all_statuses(self, client):
+        # status=ALL must not filter everything out (audit ledger).
+        res = client.get("/api/review/queue?status=ALL&limit=10")
+        assert res.status_code == 200
+
+    def test_model_drift(self, client):
+        body = client.get("/api/model/drift").json()
+        assert "available" in body
+        assert isinstance(body["top_drift"], list)
+
     def test_predict(self, client):
         res = client.post("/api/predict", json={"values": {"x": 2.0, "y": -2.0}})
         assert res.status_code == 200
@@ -231,6 +248,60 @@ class TestReadEndpoints:
         assert "chargeback_bps" in body
 
 
+class TestEconomics:
+    """Cost-model economics: assumptions, label join, and the cost policy."""
+
+    def test_economics_reports_assumptions_and_counterfactual(self, client):
+        res = client.get("/api/metrics/economics")
+        assert res.status_code == 200
+        body = res.json()
+        assert body["assumptions"]["review_cost"] > 0
+        assert body["counterfactual"]["kind"] == "cost"
+        assert {"net_cost", "cost_by_action", "mix"} <= set(body["counterfactual"])
+        assert {"n_decisions", "n_labelled"} <= set(body["coverage"])
+        assert body["assumptions"]["policy_mode"] in {"threshold", "cost"}
+
+    def test_economics_joins_labelled_outcomes(self, dclient):
+        values = {"TransactionAmt": 250.0, "card1": 5000, "C1": 25, "D1": 200, "x": 12.0}
+        r = dclient.post("/api/predict", json={"transaction_id": "eco-1", "values": values}).json()
+        dclient.post(f"/api/review/{r['transaction_id']}/outcome", json={"verdict": "fraud"})
+        body = dclient.get("/api/metrics/economics").json()
+        assert body["coverage"]["n_labelled"] >= 1
+        assert body["actual"]["net_cost"] >= 0
+        assert body["delta"]["net_cost_saved"] == pytest.approx(
+            body["actual"]["net_cost"] - body["counterfactual"]["net_cost"], abs=0.02
+        )
+        assert "kind" not in body["delta"]
+
+    def test_cost_policy_mode_is_recorded_on_the_decision(self, dclient, monkeypatch):
+        monkeypatch.setattr(main, "_POLICY_MODE", "cost")
+        values = {"TransactionAmt": 250.0, "card1": 5000, "C1": 25, "D1": 200, "x": 12.0}
+        body = dclient.post(
+            "/api/predict", json={"transaction_id": "cost-1", "values": values}
+        ).json()
+        assert body["policy_version"] == "cost-v1"
+        assert body["decision"] in {"APPROVE", "MANUAL_REVIEW", "DECLINE"}
+        detail = dclient.get("/api/review/cost-1").json()
+        assert detail["policy_version"] == "cost-v1"
+        thresholds = detail["thresholds"]
+        assert thresholds["kind"] == "cost"
+        assert thresholds["needs_review"] == (body["decision"] == "MANUAL_REVIEW")
+        assert {"review_above", "decline_above"} <= set(thresholds)
+        assert set(thresholds["expected_costs"]) == {"APPROVE", "MANUAL_REVIEW", "DECLINE"}
+
+    def test_decision_latency_is_recorded_and_reported(self, dclient):
+        values = {"TransactionAmt": 120.0, "card1": 4100, "C1": 5, "D1": 90, "x": 3.0}
+        body = dclient.post(
+            "/api/predict", json={"transaction_id": "lat-1", "values": values}
+        ).json()
+        latency = body["feature_report"]["latency_ms"]
+        assert isinstance(latency, float)
+        assert latency >= 0.0
+        summary = dclient.get("/api/metrics/summary").json()
+        assert summary["latency"]["samples"] >= 1
+        assert summary["latency"]["p50_ms"] is not None
+
+
 class TestSimulate:
     def test_sim_fields(self, client):
         body = client.get("/api/sim/fields").json()
@@ -249,14 +320,37 @@ class TestSimulate:
         assert body["mapped_values"]["card1"] == 6200.0  # visa issuer code
         assert body["risk_tier"] in {"low", "medium", "high"}
 
+    def test_simulate_records_decision_latency(self, client):
+        client.post(
+            "/api/simulate",
+            json={"profile": "fraud", "amount": 900.0, "card_brand": "discover"},
+        )
+        summary = client.get("/api/metrics/summary").json()
+        assert summary["latency"]["samples"] >= 1
+        assert summary["latency"]["p50_ms"] is not None
+
 
 class TestWriteEndpoints:
-    def test_feedback_records(self, client, tmp_path):
+    def test_feedback_records(self, client, tmp_path, monkeypatch):
+        monkeypatch.setattr(main, "_ADMIN_KEY", "secret")
         payload = {"values": {"x": 1.0, "y": 1.0}, "verdict": "fraud"}
-        res = client.post("/api/feedback", json=payload)
+        res = client.post("/api/feedback", json=payload, headers={"X-Admin-Key": "secret"})
         assert res.status_code == 200
         assert res.json()["pool_size"] == 1
         assert (tmp_path / "feedback.jsonl").exists()
+
+    def test_feedback_requires_admin_key(self, client, monkeypatch):
+        payload = {"values": {"x": 1.0, "y": 1.0}, "verdict": "fraud"}
+        # No key configured -> endpoint disabled, same gate as /api/retrain.
+        monkeypatch.setattr(main, "_ADMIN_KEY", None)
+        res = client.post("/api/feedback", json=payload)
+        assert res.status_code == 503
+        assert "FRAUD_API_ADMIN_KEY" in res.json()["detail"]
+        # Key configured but missing/wrong header -> 403.
+        monkeypatch.setattr(main, "_ADMIN_KEY", "secret")
+        assert client.post("/api/feedback", json=payload).status_code == 403
+        wrong = client.post("/api/feedback", json=payload, headers={"X-Admin-Key": "wrong"})
+        assert wrong.status_code == 403
 
     def test_retrain_disabled_when_admin_key_not_configured(self, client, monkeypatch):
         monkeypatch.setattr(main, "_ADMIN_KEY", None)
@@ -397,6 +491,8 @@ class TestSseStream:
         # Sensitive raw features must never appear on the wire.
         assert all("input_features" not in r for r in records)
         assert all("score" in r and "decision" in r for r in records)
+        # The display-safe amount travels with the decision metadata.
+        assert all("amount" in r for r in records)
 
     def test_a_transaction_is_emitted_once_per_connection(self, dclient):
         self._seed(dclient)

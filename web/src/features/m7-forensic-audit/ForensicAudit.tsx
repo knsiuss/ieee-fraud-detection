@@ -97,7 +97,7 @@ export const ForensicAudit: React.FC = () => {
         if (!out) return <span className="text-text-muted font-mono text-xs">—</span>;
         return (
           <span
-            className={`font-sans text-xs font-semibold px-2.5 py-0.5 rounded-full border shadow-xs ${
+            className={`font-sans text-xs font-semibold px-2.5 py-0.5 rounded-full border ${
               out === 'fraud'
                 ? 'bg-status-block/12 text-status-block border-status-block/30'
                 : 'bg-status-approve/12 text-status-approve border-status-approve/30'
@@ -115,7 +115,7 @@ export const ForensicAudit: React.FC = () => {
         <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
           <button
             onClick={() => handleFetchReport(row.original.transaction_id)}
-            className="btn-interactive px-3 py-1 bg-surface-2/90 hover:bg-surface-hover border border-border-subtle text-text-primary rounded-full text-xs font-sans font-medium flex items-center gap-1.5 shadow-xs cursor-pointer"
+            className="btn-interactive px-3 py-1 bg-surface-2 hover:bg-surface-hover border border-border-subtle text-text-primary rounded-full text-xs font-sans font-medium flex items-center gap-1.5 cursor-pointer"
           >
             <Bot className="w-3.5 h-3.5 text-apple-blue" />
             <span>Audit Narrative</span>
@@ -130,7 +130,7 @@ export const ForensicAudit: React.FC = () => {
                 })
               }
               disabled={appealMutation.isPending}
-              className="btn-interactive px-3 py-1 bg-status-approve/12 text-status-approve border border-status-approve/30 rounded-full text-xs font-sans font-semibold flex items-center gap-1.5 shadow-xs cursor-pointer hover:bg-status-approve/20"
+              className="btn-interactive px-3 py-1 bg-status-approve/12 text-status-approve border border-status-approve/30 rounded-full text-xs font-sans font-semibold flex items-center gap-1.5 cursor-pointer hover:bg-status-approve/20"
             >
               <Undo2 className="w-3.5 h-3.5" />
               <span>Overturn</span>
@@ -139,7 +139,7 @@ export const ForensicAudit: React.FC = () => {
 
           <button
             onClick={() => openDrawer(row.original)}
-            className="btn-interactive px-3 py-1 bg-surface-2/90 hover:bg-surface-hover border border-border-subtle text-text-secondary hover:text-text-primary rounded-full text-xs font-sans font-medium shadow-xs cursor-pointer"
+            className="btn-interactive px-3 py-1 bg-surface-2 hover:bg-surface-hover border border-border-subtle text-text-secondary hover:text-text-primary rounded-full text-xs font-sans font-medium cursor-pointer"
           >
             Payload
           </button>
@@ -151,9 +151,9 @@ export const ForensicAudit: React.FC = () => {
   return (
     <div className="space-y-5">
       {/* Header */}
-      <div className="flex items-center justify-between panel p-5 rounded-2xl">
+      <div className="flex items-center justify-between panel p-5 rounded-xl">
         <div>
-          <h2 className="text-sm font-sans font-bold text-text-primary tracking-tight uppercase">
+          <h2 className="text-[15px] font-semibold tracking-tight text-text-primary">
             Forensic Audit &amp; Decision Appeal Trail
           </h2>
           <p className="text-xs font-sans text-text-muted mt-0.5">
@@ -169,7 +169,7 @@ export const ForensicAudit: React.FC = () => {
               placeholder="Filter by TxID, decision..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="bg-surface-2/90 border border-border-subtle text-text-primary text-xs font-sans pl-9 pr-3.5 py-1.5 rounded-full w-60 placeholder:text-text-muted focus:outline-none focus:border-border-highlight shadow-xs font-medium"
+              className="bg-surface-2 border border-border-subtle text-text-primary text-xs font-sans pl-9 pr-3.5 py-1.5 rounded-full w-60 placeholder:text-text-muted focus:outline-none focus:border-border-highlight font-medium"
             />
           </div>
         </div>
@@ -177,9 +177,9 @@ export const ForensicAudit: React.FC = () => {
 
       {/* Selected Audit Narrative Panel */}
       {selectedAuditReport && (
-        <div className="panel p-5 space-y-4 rounded-2xl animate-fade-in border border-apple-blue/30 shadow-lift">
+        <div className="panel p-5 space-y-4 rounded-xl animate-fade-in border border-apple-blue/30 shadow-lift">
           <div className="flex items-center justify-between border-b border-border-subtle pb-3">
-            <h3 className="text-xs font-sans font-semibold uppercase tracking-wider text-text-primary flex items-center gap-2">
+            <h3 className="flex items-center gap-2 text-[13px] font-semibold text-text-primary">
               <Bot className="w-4 h-4 text-apple-blue" />
               <span>AI Decision Narrative Record · Tx #{selectedAuditReport.id.slice(-8)}</span>
             </h3>

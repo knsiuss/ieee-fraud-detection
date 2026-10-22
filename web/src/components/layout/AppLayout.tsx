@@ -7,9 +7,6 @@ import { Drawer } from '../ui/Drawer';
 import { StatusBadge } from '../ui/StatusBadge';
 import { ScoreBar } from '../ui/ScoreBar';
 import {
-  Shield,
-  Sun,
-  Moon,
   Activity,
   BarChart3,
   Sliders,
@@ -18,7 +15,72 @@ import {
   Network,
   History,
   Cpu,
+  Sun,
+  Moon,
+  ChevronRight,
 } from 'lucide-react';
+
+interface NavItem {
+  path: string;
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+  live?: boolean;
+}
+
+const NAV_GROUPS: Array<{ label: string; items: NavItem[] }> = [
+  {
+    label: 'Monitoring',
+    items: [
+      { path: '/', label: 'Live Radar', icon: Activity, live: true },
+      { path: '/impact', label: 'Exec Impact', icon: BarChart3 },
+    ],
+  },
+  {
+    label: 'Operations',
+    items: [
+      { path: '/review', label: 'Review Queue', icon: Inbox },
+      { path: '/audit', label: 'Forensic Audit', icon: History },
+    ],
+  },
+  {
+    label: 'Analysis',
+    items: [
+      { path: '/simulator', label: 'Simulator & XAI', icon: Sliders },
+      { path: '/batch', label: 'Batch Scanner', icon: FileSpreadsheet },
+      { path: '/policy', label: 'Policy & Graph', icon: Network },
+    ],
+  },
+  {
+    label: 'Platform',
+    items: [{ path: '/model', label: 'Model Operations', icon: Cpu }],
+  },
+];
+
+const PAGE_META: Record<string, { title: string; subtitle: string }> = {
+  '/': { title: 'Live Radar', subtitle: 'Real-time decisioning and fraud operations' },
+  '/impact': { title: 'Executive Impact', subtitle: 'Fraud losses prevented and portfolio economics' },
+  '/simulator': { title: 'Decision Simulator', subtitle: 'Score a transaction and inspect model explanations' },
+  '/review': { title: 'Review Queue', subtitle: 'Human-in-the-loop case dispositions' },
+  '/batch': { title: 'Batch Scanner', subtitle: 'Score transaction files at throughput' },
+  '/policy': { title: 'Policy & Decision Graph', subtitle: 'Decision policy, adaptive layer and network topology' },
+  '/audit': { title: 'Forensic Audit', subtitle: 'Decision ledger, appeals and compliance trail' },
+  '/model': { title: 'Model Operations', subtitle: 'Served model, drift monitoring and retraining' },
+};
+
+const StreamStatus: React.FC<{ isConnected: boolean; latencyMs: number }> = ({
+  isConnected,
+  latencyMs,
+}) => (
+  <span className="control h-8 gap-2">
+    <span
+      className={`h-1.5 w-1.5 rounded-full ${isConnected ? 'bg-status-approve' : 'bg-status-review'}`}
+    />
+    <span className="text-[11.5px]">{isConnected ? 'Live' : 'Connecting'}</span>
+    <span className="border-l border-border-subtle pl-2 font-mono text-[11px] text-text-muted">
+      {latencyMs}ms
+    </span>
+  </span>
+);
 
 export const AppLayout: React.FC = () => {
   const { isConnected, latencyMs } = useSSE();
@@ -26,183 +88,189 @@ export const AppLayout: React.FC = () => {
   const { selectedTx, isDrawerOpen, closeDrawer } = useSelectedTxStore();
   const location = useLocation();
 
-  const navItems = [
-    { path: '/', label: 'Live Radar', icon: Activity, badge: 'LIVE' },
-    { path: '/impact', label: 'Exec Impact', icon: BarChart3 },
-    { path: '/simulator', label: 'Simulator & XAI', icon: Sliders },
-    { path: '/review', label: 'Review Queue', icon: Inbox },
-    { path: '/batch', label: 'Batch Scanner', icon: FileSpreadsheet },
-    { path: '/policy', label: 'Policy & Graph', icon: Network },
-    { path: '/audit', label: 'Forensic Audit', icon: History },
-    { path: '/model', label: 'Model MLOps', icon: Cpu },
-  ];
+  const meta = PAGE_META[location.pathname] ?? PAGE_META['/'];
+
+  const themeButton = (
+    <button
+      onClick={toggleTheme}
+      className="control h-8 w-8 justify-center p-0"
+      title="Toggle theme"
+      aria-label="Toggle theme"
+    >
+      {theme === 'dark' ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
+    </button>
+  );
 
   return (
-    <div className="min-h-screen flex flex-col bg-bg-main text-text-primary selection:bg-status-approve/20 selection:text-text-primary">
-      {/* Top Global Apple Frosted Command Bar */}
-      <header className="sticky top-0 z-40 bg-surface-1/80 backdrop-blur-2xl border-b border-border-subtle px-4 lg:px-8 py-3 flex items-center justify-between transition-all">
-        {/* Brand & System Status */}
-        <div className="flex items-center gap-3.5">
-          <div className="relative w-9 h-9 rounded-xl overflow-hidden border border-cyan-500/30 shadow-[0_0_12px_rgba(6,182,212,0.25)] transition-transform hover:scale-105 bg-surface-2 flex items-center justify-center">
-            <img src="/logo.jpg" alt="Sentinel Unicorn" className="w-full h-full object-cover" />
+    <div className="min-h-screen bg-bg-main text-text-primary">
+      {/* ── Sidebar (desktop) ─────────────────────────────────────────── */}
+      <aside className="fixed inset-y-0 left-0 z-40 hidden w-[232px] flex-col border-r border-border-subtle bg-surface-1 lg:flex">
+        <div className="flex items-center gap-2.5 px-5 py-4">
+          <div className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-lg border border-border-subtle bg-surface-2">
+            <img src="/logo.jpg" alt="Sentinel" className="h-full w-full object-cover" />
           </div>
-          <div>
-            <div className="flex items-center gap-2.5">
-              <span className="font-bold text-sm tracking-tight text-text-primary font-sans bg-gradient-to-r from-white via-cyan-200 to-indigo-300 bg-clip-text text-transparent">
-                SENTINEL
-              </span>
-              <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded-full bg-cyan-950/60 text-cyan-400 border border-cyan-800/50 shadow-xs">
-                UNICORN v4.5
-              </span>
+          <div className="min-w-0">
+            <div className="truncate text-[13.5px] font-semibold tracking-tight">Sentinel</div>
+            <div className="truncate text-[11px] text-text-muted">Fraud Decisioning</div>
+          </div>
+        </div>
+
+        <nav className="flex-1 space-y-5 overflow-y-auto px-3 py-3">
+          {NAV_GROUPS.map((group) => (
+            <div key={group.label}>
+              <div className="eyebrow px-2 pb-1.5">{group.label}</div>
+              <div className="space-y-0.5">
+                {group.items.map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <NavLink
+                      key={item.path}
+                      to={item.path}
+                      className={({ isActive }) =>
+                        `group flex h-8 items-center gap-2.5 rounded-md px-2 text-[12.5px] font-medium transition-colors ${
+                          isActive
+                            ? 'bg-surface-2 text-text-primary'
+                            : 'text-text-secondary hover:bg-surface-2 hover:text-text-primary'
+                        }`
+                      }
+                    >
+                      {({ isActive }) => (
+                        <>
+                          <Icon
+                            className={`h-4 w-4 shrink-0 ${
+                              isActive ? 'text-apple-blue' : 'text-text-muted'
+                            }`}
+                          />
+                          <span className="truncate">{item.label}</span>
+                          {item.live && (
+                            <span className="ml-auto flex items-center gap-1 text-[10px] text-text-muted">
+                              <span className="h-1.5 w-1.5 rounded-full bg-status-approve" />
+                              LIVE
+                            </span>
+                          )}
+                        </>
+                      )}
+                    </NavLink>
+                  );
+                })}
+              </div>
             </div>
-            <span className="text-[11px] text-text-muted hidden sm:block font-normal">
-              Autonomous Risk Intelligence &amp; Decisioning Console
+          ))}
+        </nav>
+
+        <div className="border-t border-border-subtle px-5 py-3">
+          <div className="flex items-center justify-between text-[11px] text-text-muted">
+            <span>Environment</span>
+            <span className="flex items-center gap-1.5 text-text-secondary">
+              <span className="h-1.5 w-1.5 rounded-full bg-status-approve" />
+              Local
             </span>
           </div>
+          <div className="mt-1 flex items-center justify-between text-[11px] text-text-muted">
+            <span>Policy</span>
+            <span className="font-mono text-text-secondary">threshold v1</span>
+          </div>
         </div>
+      </aside>
 
-        {/* Status Indicators & Controls */}
-        <div className="flex items-center gap-3">
-          {/* Live Engine Stream Indicator Pill */}
-          <div className="flex items-center gap-2 px-3 py-1.5 bg-surface-2/80 rounded-full text-xs border border-border-subtle shadow-sm backdrop-blur-md">
-            <span className="relative flex h-2 w-2">
-              {isConnected && (
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-status-approve opacity-75" />
-              )}
-              <span
-                className={`relative inline-flex rounded-full h-2 w-2 ${isConnected ? 'bg-status-approve' : 'bg-status-review'
-                  }`}
-              />
-            </span>
-            <span className="text-text-secondary text-[11px] font-medium tracking-tight font-sans">
-              {isConnected ? 'Stream Active' : 'Connecting...'}
-            </span>
-            <span className="text-text-muted text-[10px] font-mono pl-1.5 border-l border-border-subtle">
-              {latencyMs}ms
-            </span>
+      {/* ── Main column ──────────────────────────────────────────────── */}
+      <div className="flex min-h-screen flex-col lg:pl-[232px]">
+        <header className="sticky top-0 z-30 flex h-14 items-center justify-between gap-4 border-b border-border-subtle bg-bg-main px-4 lg:px-7">
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-lg border border-border-subtle bg-surface-2 lg:hidden">
+              <img src="/logo.jpg" alt="Sentinel" className="h-full w-full object-cover" />
+            </div>
+            <nav
+              aria-label="Breadcrumb"
+              className="hidden min-w-0 items-center gap-1.5 text-[12px] lg:flex"
+            >
+              <span className="text-text-muted">Sentinel</span>
+              <ChevronRight className="h-3 w-3 shrink-0 text-text-muted" />
+              <span className="truncate font-medium text-text-primary">{meta.title}</span>
+            </nav>
           </div>
 
-          {/* Theme Toggle Pill */}
-          <button
-            onClick={toggleTheme}
-            className="p-2 rounded-full bg-surface-2/80 hover:bg-surface-hover text-text-secondary hover:text-text-primary transition-all duration-200 border border-border-subtle shadow-sm hover:scale-105 active:scale-95 cursor-pointer"
-            title="Toggle theme"
-            aria-label="Toggle theme"
-          >
-            {theme === 'dark' ? (
-              <Sun className="w-3.5 h-3.5 text-amber-300" />
-            ) : (
-              <Moon className="w-3.5 h-3.5 text-slate-700" />
-            )}
-          </button>
-        </div>
-      </header>
+          <div className="flex shrink-0 items-center gap-2">
+            <StreamStatus isConnected={isConnected} latencyMs={latencyMs} />
+            {themeButton}
+          </div>
+        </header>
 
-      {/* Apple Floating Navigation Dock Bar */}
-      <nav className="sticky top-[57px] z-30 bg-surface-1/70 backdrop-blur-xl border-b border-border-subtle/80 px-4 lg:px-8 py-2 overflow-x-auto">
-        <div className="flex items-center gap-1.5 min-w-max">
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = location.pathname === item.path;
+        {/* Mobile navigation */}
+        <nav className="sticky top-14 z-20 flex gap-1 overflow-x-auto border-b border-border-subtle bg-surface-1 px-3 lg:hidden">
+          {NAV_GROUPS.flatMap((g) => g.items).map((item) => (
+            <NavLink
+              key={item.path}
+              to={item.path}
+              className={({ isActive }) =>
+                `whitespace-nowrap border-b-2 px-2.5 py-2.5 text-[12px] font-medium transition-colors ${
+                  isActive
+                    ? 'border-apple-blue text-text-primary'
+                    : 'border-transparent text-text-secondary hover:text-text-primary'
+                }`
+              }
+            >
+              {item.label}
+            </NavLink>
+          ))}
+        </nav>
 
-            return (
-              <NavLink
-                key={item.path}
-                to={item.path}
-                className={`flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-medium transition-all duration-200 ${isActive
-                    ? 'bg-surface-hover text-text-primary font-semibold shadow-sm border border-border-highlight scale-[1.02]'
-                    : 'text-text-secondary hover:text-text-primary hover:bg-surface-2/60 hover:scale-[1.01]'
-                  }`}
-              >
-                <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-apple-blue' : 'text-text-muted'}`} />
-                <span>{item.label}</span>
-                {item.badge && (
-                  <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-status-approve/15 text-status-approve border border-status-approve/30 animate-pulse">
-                    {item.badge}
-                  </span>
-                )}
-              </NavLink>
-            );
-          })}
-        </div>
-      </nav>
+        <main className="flex-1">
+          <div className="mx-auto w-full max-w-[1600px] animate-fade-in px-4 py-5 lg:px-7 lg:py-6">
+            <Outlet />
+          </div>
+        </main>
+      </div>
 
-      {/* Main View Area */}
-      <main className="flex-1 p-4 lg:p-8 max-w-7xl w-full mx-auto animate-fade-in">
-        <Outlet />
-      </main>
-
-      {/* Deep Forensics Slide-Over Drawer */}
+      {/* ── Transaction drawer ───────────────────────────────────────── */}
       <Drawer
         isOpen={isDrawerOpen}
         onClose={closeDrawer}
-        title={`Transaction Forensics: #${selectedTx?.transaction_id?.slice(-8) || ''}`}
+        title={`Transaction #${selectedTx?.transaction_id?.slice(-8) || ''}`}
         subtitle={`ID: ${selectedTx?.transaction_id || ''}`}
       >
         {selectedTx && (
-          <div className="space-y-4 text-xs font-sans">
-            {/* Decision Bar */}
-            <div className="p-4 bg-surface-2 rounded-2xl border border-border-subtle flex items-center justify-between shadow-sm">
+          <div className="space-y-4 text-xs">
+            <div className="flex items-center justify-between rounded-xl border border-border-subtle bg-surface-2 p-4">
               <div>
-                <span className="text-[10px] text-text-muted block mb-1 uppercase tracking-wider font-semibold">
-                  Outcome Decision
-                </span>
+                <span className="eyebrow mb-1 block">Decision</span>
                 <StatusBadge status={selectedTx.decision} size="lg" />
               </div>
               <div className="text-right">
-                <span className="text-[10px] text-text-muted block mb-0.5 uppercase tracking-wider font-semibold">
-                  Probability Score
-                </span>
-                <span className="text-xl font-bold font-mono text-text-primary tabular-nums tracking-tight">
+                <span className="eyebrow mb-1 block">Fraud probability</span>
+                <span className="font-mono text-xl font-semibold tabular-nums tracking-tight text-text-primary">
                   {(selectedTx.score * 100).toFixed(1)}%
                 </span>
               </div>
             </div>
 
-            {/* ScoreBar Instrument Track */}
-            <div className="panel p-4 rounded-2xl">
-              <span className="text-[10px] text-text-muted uppercase tracking-wider block mb-2 font-semibold">
-                Risk Distribution Track
-              </span>
+            <div className="panel p-4">
+              <span className="eyebrow mb-2 block">Risk distribution</span>
               <ScoreBar probability={selectedTx.score} showPercentage={true} />
             </div>
 
-            {/* Meta Table */}
             <div className="space-y-2">
-              <h4 className="text-text-secondary font-semibold uppercase tracking-wider text-[11px] px-1">
-                Inference &amp; Policy Metadata
-              </h4>
-              <div className="divide-y divide-border-subtle/50 panel p-4 space-y-2 text-text-secondary rounded-2xl">
-                <div className="flex justify-between pt-1">
-                  <span>Timestamp (UTC):</span>
-                  <span className="text-text-primary font-mono">{selectedTx.timestamp}</span>
-                </div>
-                <div className="flex justify-between pt-1">
-                  <span>Model Version:</span>
-                  <span className="text-text-primary font-mono">{selectedTx.model_version}</span>
-                </div>
-                <div className="flex justify-between pt-1">
-                  <span>Policy Version:</span>
-                  <span className="text-text-primary font-mono">{selectedTx.policy_version || '2.4'}</span>
-                </div>
-                <div className="flex justify-between pt-1">
-                  <span>Policy Action:</span>
-                  <span className="text-text-primary font-mono">{selectedTx.action || 'Default Policy'}</span>
-                </div>
-                <div className="flex justify-between pt-1">
-                  <span>Reviewer Outcome:</span>
-                  <span className="font-bold text-text-primary font-mono">{selectedTx.reviewer_outcome || 'Pending'}</span>
-                </div>
+              <h4 className="eyebrow px-1">Inference &amp; policy metadata</h4>
+              <div className="space-y-2 rounded-xl border border-border-subtle bg-surface-2 p-4 text-text-secondary">
+                {[
+                  ['Timestamp (UTC)', selectedTx.timestamp],
+                  ['Model version', selectedTx.model_version],
+                  ['Policy version', selectedTx.policy_version || '—'],
+                  ['Policy action', selectedTx.action || '—'],
+                  ['Reviewer outcome', selectedTx.reviewer_outcome || 'Pending'],
+                ].map(([label, value]) => (
+                  <div key={label} className="flex justify-between gap-4">
+                    <span>{label}</span>
+                    <span className="truncate font-mono text-text-primary">{value}</span>
+                  </div>
+                ))}
               </div>
             </div>
 
-            {/* Input Features Payload */}
             {selectedTx.input_features && (
               <div className="space-y-2">
-                <h4 className="text-text-secondary font-semibold uppercase tracking-wider text-[11px] px-1">
-                  Raw Input Features Payload
-                </h4>
-                <pre className="p-4 panel rounded-2xl text-[11px] text-text-primary overflow-x-auto max-h-48 font-mono">
+                <h4 className="eyebrow px-1">Input features</h4>
+                <pre className="panel max-h-48 overflow-x-auto p-4 font-mono text-[11px] text-text-primary">
                   {JSON.stringify(selectedTx.input_features, null, 2)}
                 </pre>
               </div>

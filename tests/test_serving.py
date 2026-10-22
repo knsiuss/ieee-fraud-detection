@@ -112,6 +112,15 @@ class TestExplain:
             assert {"feature", "label", "value_text", "typical_text", "direction"} <= set(d)
             assert d["direction"] in {"fraud", "safe"}
 
+    def test_explainer_is_cached_per_model(self, tmp_path):
+        _tiny_lightgbm(tmp_path / "art")
+        art = load_artefact(tmp_path / "art")
+        serving._EXPLAINER_CACHE.clear()
+        first = serving._explainer(art.model)
+        second = serving._explainer(art.model)
+        assert first is second
+        assert list(serving._EXPLAINER_CACHE.values())[0][0] is art.model
+
     def test_decision_summary_builds_prose(self):
         drivers = [
             {

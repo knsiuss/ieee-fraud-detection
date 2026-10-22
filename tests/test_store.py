@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import json
+import sqlite3
 import sys
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import numpy as np
@@ -153,3 +155,56 @@ class TestRetrainGate:
         monkeypatch.setattr(store, "CURRENT_DIR", tmp_path / "missing")
         with pytest.raises(RuntimeError, match="train_model"):
             store.retrain_and_swap(data_df=_build_df())
+
+
+class TestHonestMetrics:
+    """Aggregates that must refuse to report nonsense when data is thin."""
+
+    def test_chargeback_requires_min_labelled_approvals(self):
+        rows = [{"decision": "APPROVE", "outcome": "fraud", "amount": 100.0}]
+        assert store._chargeback_bps(rows) is None
+
+    def test_chargeback_reported_at_min_sample(self):
+        rows = [
+            {"decision": "APPROVE", "outcome": "fraud", "amount": 100.0}
+        ] * store._MIN_LABELLED_APPROVED
+        assert store._chargeback_bps(rows) == 10000.0
+
+    def test_chargeback_zero_when_labeled_approvals_are_clean(self):
+        rows = [{"decision": "APPROVE", "outcome": "safe", "amount": 50.0}] * 20
+        assert store._chargeback_bps(rows) == 0.0
+
+    def _latency_conn(self, old_ms: float, new_ms: float) -> sqlite3.Connection:
+        conn = sqlite3.connect(":memory:")
+        conn.row_factory = sqlite3.Row
+        conn.execute("CREATE TABLE decisions (timestamp TEXT, latency_ms REAL)")
+        stale = (datetime.now(timezone.utc) - timedelta(hours=2)).isoformat()
+        fresh = datetime.now(timezone.utc).isoformat()
+        conn.executemany(
+            "INSERT INTO decisions (timestamp, latency_ms) VALUES (?, ?)",
+            [(stale, old_ms), (fresh, new_ms)],
+        )
+        return conn
+
+    def test_latency_ignores_samples_outside_window(self):
+        conn = self._latency_conn(5000.0, 180.0)
+        try:
+            out = store._latency(conn)
+        finally:
+            conn.close()
+        assert out["samples"] == 1
+        assert out["p50_ms"] == 180.0
+        assert out["window_seconds"] == 900
+
+    def test_latency_empty_when_no_recent_samples(self):
+        conn = sqlite3.connect(":memory:")
+        conn.row_factory = sqlite3.Row
+        conn.execute("CREATE TABLE decisions (timestamp TEXT, latency_ms REAL)")
+        stale = (datetime.now(timezone.utc) - timedelta(hours=2)).isoformat()
+        conn.execute("INSERT INTO decisions VALUES (?, ?)", (stale, 5000.0))
+        try:
+            out = store._latency(conn)
+        finally:
+            conn.close()
+        assert out["samples"] == 0
+        assert out["p50_ms"] is None

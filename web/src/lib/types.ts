@@ -12,6 +12,7 @@ export interface DecisionItem {
   action?: string;
   policy_version?: string;
   reason_code?: string;
+  amount?: number | null;
   auto_actioned?: boolean;
   audit_sampled?: boolean;
   thresholds?: {
@@ -56,12 +57,16 @@ export interface MetricsSummary {
   loss_under_review: number;
   tps: number;
   latency: {
-    p50_ms: number;
-    p95_ms: number;
-    p99_ms: number;
+    p50_ms: number | null;
+    p95_ms: number | null;
+    p99_ms: number | null;
+    samples: number;
   };
-  psi_drift: number;
-  chargeback_bps: number;
+  psi_drift: number | null;
+  psi_source?: string | null;
+  psi_drifted_features?: number;
+  psi_alert?: string | null;
+  chargeback_bps: number | null;
   sla_bands: {
     under_1h: number;
     under_4h: number;
@@ -102,7 +107,7 @@ export interface MetricsLoss {
   under_review_exposure: number;
   cleared_safe_volume: number;
   fraud_prevention_roi: number;
-  chargeback_bps: number;
+  chargeback_bps: number | null;
   network_threshold_bps: number;
 }
 
@@ -205,4 +210,43 @@ export interface BatchScoreResponse {
   count: number;
   rows: BatchScoreRow[];
   errors: Array<{ [key: string]: string }>;
+}
+
+export interface DriftFeature {
+  feature: string;
+  psi: number;
+  status?: string;
+}
+
+export interface ModelDrift {
+  available: boolean;
+  generated_at: string | null;
+  drifted_features: number | null;
+  top_drift: DriftFeature[];
+  thresholds?: Record<string, number> | null;
+  data_quality?: Record<string, unknown> | null;
+}
+
+export interface PolicyInfo {
+  kind: string;
+  version: string;
+  thresholds: { policy_version: string; review_above: number; decline_above: number };
+  cost_model: Record<string, unknown> | null;
+  review_benefit_floor: number | null;
+  bandit: { enabled: boolean; version: string | null };
+}
+
+export interface BanditStatus {
+  enabled: boolean;
+  policy: Record<string, unknown> | null;
+  checkpoint_version: string | null;
+  summary: {
+    n: number;
+    reward_sum: number | null;
+    reward_avg: number | null;
+    rewarded: number | null;
+    by_action: Record<string, number>;
+    auto_actioned: number;
+    audit_sampled: number;
+  };
 }

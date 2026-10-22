@@ -15,6 +15,16 @@ import { InsightCallout } from '../../components/ui/InsightCallout';
 import { Play, Pause, Zap, Activity, Filter, RefreshCw, Square } from 'lucide-react';
 import type { ColumnDef } from '@tanstack/react-table';
 
+const chargebackTrend = (bps?: number | null) => {
+  if (bps == null) return { value: 'No data', direction: 'neutral' as const };
+  if (bps >= 90) return { value: 'Elevated', direction: 'down' as const };
+  if (bps >= 50) return { value: 'Watch', direction: 'neutral' as const };
+  return { value: 'Nominal', direction: 'up' as const };
+};
+
+const fmtMs = (value?: number | null) =>
+  value == null ? '—' : value >= 1000 ? `${(value / 1000).toFixed(2)}s` : `${value.toFixed(0)}ms`;
+
 export const LiveRadar: React.FC = () => {
   const [isSimulating, setIsSimulating] = useState(false);
   const [simSpeed, setSimSpeed] = useState<number>(1);
@@ -77,7 +87,10 @@ export const LiveRadar: React.FC = () => {
           profile,
           amount: Math.round(amount * 100) / 100,
           card_brand: profile === 'fraud' ? 'discover' : (Math.random() > 0.5 ? 'visa' : 'mastercard'),
-          billing_distance: profile === 'fraud' ? 450 : 12,
+          billing_distance: profile === 'fraud' ? 1200 + Math.random() * 2000 : 12,
+          card_match_count: profile === 'fraud' ? 12 + Math.floor(Math.random() * 15) : 1,
+          purchase_frequency: profile === 'fraud' ? 25 + Math.floor(Math.random() * 40) : 1,
+          days_since_activity: profile === 'fraud' ? 0 : 2,
         });
       } catch {
         // ignore
@@ -128,7 +141,7 @@ export const LiveRadar: React.FC = () => {
               probability={row.original.score}
               topDriver={topDriver}
               showPercentage={true}
-              compact={false}
+              compact={true}
             />
           </div>
         );
@@ -147,7 +160,7 @@ export const LiveRadar: React.FC = () => {
       id: 'amount',
       header: 'Amount',
       cell: ({ row }) => {
-        const amt = row.original.input_features?.TransactionAmt;
+        const amt = row.original.amount ?? row.original.input_features?.TransactionAmt;
         return (
           <span className="font-mono text-xs font-medium text-text-primary tabular-nums">
             {amt !== undefined ? `$${Number(amt).toFixed(2)}` : '—'}
@@ -159,7 +172,7 @@ export const LiveRadar: React.FC = () => {
       accessorKey: 'action',
       header: 'Policy Route',
       cell: ({ row }) => (
-        <span className="text-[11px] font-sans font-medium text-text-secondary bg-surface-2/90 px-2.5 py-0.5 rounded-full border border-border-subtle">
+        <span className="text-[11px] font-sans font-medium text-text-secondary bg-surface-2 px-2.5 py-0.5 rounded-full border border-border-subtle">
           {row.original.action || 'Default Policy'}
         </span>
       ),
@@ -182,7 +195,7 @@ export const LiveRadar: React.FC = () => {
             e.stopPropagation();
             openDrawer(row.original);
           }}
-          className="btn-interactive px-3 py-1 bg-surface-2/90 hover:bg-surface-hover border border-border-subtle rounded-full text-xs text-text-primary font-sans font-medium shadow-xs"
+          className="btn-interactive px-3 py-1 bg-surface-2 hover:bg-surface-hover border border-border-subtle rounded-full text-xs text-text-primary font-sans font-medium"
         >
           Details →
         </button>
@@ -191,189 +204,185 @@ export const LiveRadar: React.FC = () => {
   ];
 
   return (
-    <div className="space-y-5">
-      {/* Top Real-time Control Strip */}
-      <div className="flex flex-wrap items-center justify-between gap-3 panel p-4 rounded-2xl">
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 px-3.5 py-1.5 bg-surface-2/90 rounded-full border border-border-subtle font-sans text-xs shadow-xs">
-            <span className="w-2 h-2 rounded-full bg-status-approve animate-pulse" />
-            <span className="text-text-primary font-semibold">Live Decision Stream</span>
-            <span className="text-text-muted text-[11px] font-mono">({rollingTps} TPS)</span>
-          </div>
-
-          <button
-            onClick={togglePause}
-            className="btn-interactive inline-flex items-center gap-2 px-3.5 py-1.5 text-xs font-sans font-medium rounded-full border border-border-subtle bg-surface-2/90 text-text-secondary hover:text-text-primary hover:bg-surface-hover shadow-xs"
-          >
-            {isPaused ? <Play className="w-3.5 h-3.5 text-status-approve" /> : <Pause className="w-3.5 h-3.5 text-status-review" />}
-            <span>{isPaused ? 'Resume Stream' : 'Pause Stream'}</span>
+    <div className="space-y-4">
+      {/* Toolbar */}
+      <div className="panel flex flex-wrap items-center justify-between gap-3 px-4 py-2.5">
+        <div className="flex items-center gap-2.5">
+          <span className="flex items-center gap-2 text-[12px] font-medium text-text-secondary">
+            <span
+              className={`h-1.5 w-1.5 rounded-full ${
+                isPaused ? 'bg-status-review' : 'bg-status-approve'
+              }`}
+            />
+            {isPaused ? 'Stream paused' : 'Live stream'}
+            <span className="font-mono text-[11px] text-text-muted">· {rollingTps} TPS</span>
+          </span>
+          <button onClick={togglePause} className="control h-7 text-[11.5px]">
+            {isPaused ? (
+              <Play className="h-3 w-3 text-status-approve" />
+            ) : (
+              <Pause className="h-3 w-3 text-text-muted" />
+            )}
+            <span>{isPaused ? 'Resume' : 'Pause'}</span>
           </button>
         </div>
 
-        {/* Traffic Simulation Controls */}
-        <div className="flex items-center gap-2.5">
-          <span className="text-xs font-sans text-text-muted font-medium">Simulate:</span>
-          <select
-            value={simSpeed}
-            onChange={(e) => setSimSpeed(Number(e.target.value))}
-            className="bg-surface-2/90 border border-border-subtle text-text-primary text-xs font-sans px-3 py-1.5 rounded-full focus:outline-none shadow-xs font-medium cursor-pointer"
-          >
-            <option value={1}>1 tx/s</option>
-            <option value={3}>3 tx/s</option>
-            <option value={8}>8 tx/s</option>
-          </select>
+        <div className="flex flex-wrap items-center gap-2">
+          <label className="text-[11.5px] text-text-muted">Simulate</label>
+          <div className="control h-7 gap-1.5 py-0">
+            <select
+              value={simSpeed}
+              onChange={(e) => setSimSpeed(Number(e.target.value))}
+              className="cursor-pointer bg-transparent pr-1 text-[12px] font-medium text-text-primary outline-none"
+            >
+              <option value={1}>1 tx/s</option>
+              <option value={3}>3 tx/s</option>
+              <option value={8}>8 tx/s</option>
+            </select>
+          </div>
 
           <button
             onClick={handleToggleSimulation}
-            className={`btn-interactive inline-flex items-center gap-1.5 px-4 py-1.5 text-xs font-sans rounded-full border shadow-xs transition-all ${
+            className={`btn-interactive inline-flex h-7 items-center gap-1.5 rounded-lg border px-3 text-[11.5px] font-medium ${
               isSimulating
-                ? 'bg-rose-500/20 text-rose-300 border-rose-500/40 font-semibold shadow-md animate-pulse'
-                : 'bg-surface-2/90 text-text-primary border-border-subtle hover:bg-surface-hover font-medium'
+                ? 'border-status-block/40 bg-status-block/10 text-status-block'
+                : 'border-border-subtle bg-surface-2 text-text-primary hover:bg-surface-hover'
             }`}
           >
             {isSimulating ? (
-              <Square className="w-3.5 h-3.5 fill-rose-400 text-rose-400" />
+              <Square className="h-3 w-3" />
             ) : (
-              <Zap className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
+              <Zap className="h-3 w-3 text-status-review" />
             )}
-            <span>{isSimulating ? `Streaming (${simSpeed} tx/s) • Stop` : 'Inject Traffic'}</span>
+            <span>{isSimulating ? 'Stop traffic' : 'Inject traffic'}</span>
           </button>
 
           <button
             onClick={() => refetchSummary()}
-            className="btn-interactive p-2 text-text-secondary hover:text-text-primary hover:bg-surface-hover rounded-full border border-border-subtle shadow-xs bg-surface-2/90"
+            className="control h-7 w-7 justify-center p-0"
             title="Refresh metrics"
             aria-label="Refresh metrics"
           >
-            <RefreshCw className="w-3.5 h-3.5" />
+            <RefreshCw className="h-3.5 w-3.5" />
           </button>
         </div>
       </div>
 
-      {/* Row 1: KPI Cards Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3.5">
+      {/* KPI row */}
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
         <KpiCard
-          title="Total Volume"
+          title="Volume"
           value={(summary?.total_decisions || 0).toLocaleString()}
           subtitle={`$${((summary?.gmv_total || 0) / 1000).toFixed(1)}k GMV`}
-          trend={{ value: `${rollingTps} TPS`, direction: 'up' }}
+          trend={{ value: `${rollingTps} TPS`, direction: 'neutral' }}
         />
         <KpiCard
-          title="Auto-Approved"
+          title="Approved"
           value={`${summary?.percentages.APPROVE || 0}%`}
-          subtitle={`${(summary?.counts.APPROVE || 0).toLocaleString()} tx`}
-          trend={{ value: `${counts.APPROVE} live`, direction: 'neutral' }}
+          subtitle={`${(summary?.counts.APPROVE || 0).toLocaleString()} transactions`}
+          trend={{ value: `${counts.APPROVE} live`, direction: 'up' }}
         />
         <KpiCard
-          title="Manual Review"
+          title="Review"
           value={`${summary?.percentages.MANUAL_REVIEW || 0}%`}
           subtitle={`${(summary?.counts.MANUAL_REVIEW || 0).toLocaleString()} in queue`}
           trend={{ value: `${counts.MANUAL_REVIEW} live`, direction: 'neutral' }}
         />
         <KpiCard
-          title="Declined (Fraud)"
+          title="Declined"
           value={`${summary?.percentages.DECLINE || 0}%`}
-          subtitle={`$${((summary?.loss_prevented || 0) / 1000).toFixed(1)}k Prevented`}
+          subtitle={`$${((summary?.loss_prevented || 0) / 1000).toFixed(1)}k prevented`}
           trend={{ value: `${counts.DECLINE} live`, direction: 'down' }}
         />
         <KpiCard
-          title="Inference Latency"
-          value={`${summary?.latency.p95_ms || 14.2}ms`}
-          subtitle={`p50: ${summary?.latency.p50_ms || 7.8}ms | p99: ${summary?.latency.p99_ms || 23.5}ms`}
+          title="Latency"
+          value={fmtMs(summary?.latency.p95_ms)}
+          subtitle={`p50 ${fmtMs(summary?.latency.p50_ms)} · p99 ${fmtMs(summary?.latency.p99_ms)} · n=${summary?.latency.samples ?? 0}`}
         />
         <KpiCard
-          title="Chargeback BPS"
-          value={`${summary?.chargeback_bps || 16.4}`}
-          subtitle="Visa Limit: 90 BPS"
-          trend={{ value: 'Nominal', direction: 'up' }}
+          title="Chargeback"
+          value={summary?.chargeback_bps != null ? `${summary.chargeback_bps}` : '—'}
+          subtitle="Visa limit 90 BPS"
+          trend={chargebackTrend(summary?.chargeback_bps)}
         />
       </div>
 
-      {/* Row 2: Charts Split */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3.5">
-        <div className="lg:col-span-2 panel p-5 rounded-2xl">
-          <div className="flex items-center justify-between mb-3">
+      {/* Charts */}
+      <div className="grid grid-cols-1 gap-3.5 lg:grid-cols-3">
+        <section className="panel lg:col-span-2">
+          <div className="panel-header">
             <div className="flex items-center gap-2">
-              <Activity className="w-4 h-4 text-apple-blue" />
-              <h3 className="text-xs font-sans font-semibold uppercase tracking-wider text-text-primary">
-                Transaction Velocity &amp; Policy Decision Stream
-              </h3>
+              <Activity className="h-3.5 w-3.5 text-text-muted" />
+              <h3 className="section-title">Transaction velocity &amp; decision stream</h3>
             </div>
-            <span className="text-[11px] font-mono text-text-muted">30m Rolling (60s Windows)</span>
+            <span className="meta-text">30m rolling · 60s windows</span>
           </div>
-          <TimeseriesChart data={timeseries || []} height="260px" />
-        </div>
+          <div className="panel-body pt-3">
+            <TimeseriesChart data={timeseries || []} height="244px" />
+          </div>
+        </section>
 
-        <div className="panel p-5 rounded-2xl flex flex-col justify-between">
-          <div>
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-xs font-sans font-semibold uppercase tracking-wider text-text-primary">
-                Score Distribution
-              </h3>
-              <span className="text-[11px] font-mono text-text-muted">10-Bin Histogram</span>
-            </div>
-            <DistributionChart
-              scores={decisions.map((d) => d.score)}
-              height="220px"
-            />
+        <section className="panel flex flex-col">
+          <div className="panel-header">
+            <h3 className="section-title">Score distribution</h3>
+            <span className="meta-text">10-bin histogram</span>
           </div>
-          <div className="text-[11px] font-sans font-medium text-text-muted flex justify-between pt-3 border-t border-border-subtle">
+          <div className="panel-body flex-1 pt-3">
+            <DistributionChart scores={decisions.map((d) => d.score)} height="200px" />
+          </div>
+          <div className="flex items-center justify-between border-t border-border-subtle px-4 py-2.5 text-[11px]">
             <span className="text-status-approve">Approve &lt; 0.20</span>
             <span className="text-status-review">Review 0.20–0.80</span>
             <span className="text-status-block">Decline &gt; 0.80</span>
           </div>
-        </div>
+        </section>
       </div>
 
-      {/* Row 3: Live Feed Table + Search & Filter */}
-      <div className="panel p-5 space-y-4 rounded-2xl">
-        <div className="flex flex-wrap items-center justify-between gap-3">
+      {/* Decision stream */}
+      <section className="panel overflow-hidden">
+        <div className="panel-header flex-wrap gap-3">
           <div>
-            <h3 className="text-xs font-sans font-semibold uppercase tracking-wider text-text-primary">
-              Real-Time Decision Stream
-            </h3>
-            <p className="text-xs font-sans text-text-muted">
-              In-memory ring buffer ({decisions.length} events buffered)
-            </p>
+            <h3 className="section-title">Real-time decision stream</h3>
+            <p className="meta-text mt-0.5">In-memory buffer · {decisions.length} events</p>
           </div>
-
-          <div className="flex flex-wrap items-center gap-2.5">
-            <div className="flex items-center gap-2 bg-surface-2/90 border border-border-subtle px-3 py-1.5 rounded-full text-xs font-sans shadow-xs">
-              <Filter className="w-3.5 h-3.5 text-text-muted" />
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="control h-8 gap-2 py-0">
+              <Filter className="h-3.5 w-3.5 text-text-muted" />
               <select
                 value={filterDecision}
                 onChange={(e) => setFilterDecision(e.target.value as any)}
-                className="bg-transparent text-text-primary focus:outline-none font-medium cursor-pointer"
+                className="cursor-pointer bg-transparent pr-1 text-[12px] font-medium text-text-primary outline-none"
               >
-                <option value="ALL">All Decisions</option>
-                <option value="APPROVE">Approve Only</option>
-                <option value="MANUAL_REVIEW">Review Only</option>
-                <option value="DECLINE">Decline Only</option>
+                <option value="ALL">All decisions</option>
+                <option value="APPROVE">Approve only</option>
+                <option value="MANUAL_REVIEW">Review only</option>
+                <option value="DECLINE">Decline only</option>
               </select>
             </div>
 
             <input
               type="text"
-              placeholder="Search TxID or Action..."
+              placeholder="Search transaction or action"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="bg-surface-2/90 border border-border-subtle text-text-primary text-xs font-sans px-3.5 py-1.5 rounded-full w-52 placeholder:text-text-muted focus:outline-none focus:border-border-highlight shadow-xs"
+              className="h-8 w-56 rounded-lg border border-border-subtle bg-surface-2 px-3 text-[12px] text-text-primary placeholder:text-text-muted focus:border-apple-blue focus:outline-none"
             />
           </div>
         </div>
 
         <DataTable
+          bare
           columns={columns}
           data={filteredDecisions}
           onRowClick={(row) => openDrawer(row)}
           idAccessor={(row) => row.transaction_id}
-          emptyMessage="No decisions in buffer yet. Start traffic simulator or execute scoring requests."
+          emptyMessage="No decisions in buffer yet. Start the traffic simulator or score a transaction."
         />
-      </div>
+      </section>
 
-      {/* Key Insight */}
-      <InsightCallout title="SOC Operations Note">
-        Pipeline latency is operating within target SLAs (<b>{summary?.latency.p95_ms || 14.2}ms p95</b>).
+      <InsightCallout title="Operations note">
+        Decision latency p95 is <b>{fmtMs(summary?.latency.p95_ms)}</b> across{' '}
+        <b>{summary?.latency.samples ?? 0}</b> measured decisions in the last 15 minutes.
         Auto-approval rate is <b>{summary?.percentages.APPROVE || 0}%</b>, with an estimated{' '}
         <b>${((summary?.loss_prevented || 0) / 1000).toFixed(1)}k</b> in prevented fraud losses.
       </InsightCallout>

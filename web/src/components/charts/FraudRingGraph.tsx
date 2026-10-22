@@ -8,7 +8,7 @@ interface FraudRingGraphProps {
 }
 
 export const FraudRingGraph: React.FC<FraudRingGraphProps> = ({
-  height = '420px',
+  height = '440px',
   onNodeClick,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -35,9 +35,13 @@ export const FraudRingGraph: React.FC<FraudRingGraphProps> = ({
             label: 'data(label)',
             color: textColor,
             'font-family': '-apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", sans-serif',
-            'font-size': '11px',
+            'font-size': '10px',
             'text-valign': 'bottom',
-            'text-margin-y': 6,
+            'text-margin-y': 8,
+            'text-wrap': 'wrap',
+            'text-max-width': '96px',
+            'text-outline-width': 2,
+            'text-outline-color': isDark ? '#0B0C0F' : '#FFFFFF',
             width: 32,
             height: 32,
             'border-width': 2,
@@ -115,9 +119,9 @@ export const FraudRingGraph: React.FC<FraudRingGraphProps> = ({
       layout: {
         name: 'cose',
         animate: false,
-        padding: 28,
-        nodeRepulsion: () => 4500,
-        idealEdgeLength: () => 70,
+        padding: 44,
+        nodeRepulsion: () => 7000,
+        idealEdgeLength: () => 100,
       },
     });
 
@@ -136,11 +140,7 @@ export const FraudRingGraph: React.FC<FraudRingGraphProps> = ({
   }, [theme, onNodeClick]);
 
   return (
-    <div className="relative w-full panel rounded-2xl overflow-hidden border border-border-subtle shadow-soft">
-      <div className="absolute top-3.5 left-3.5 z-10 flex items-center gap-2 bg-surface-2/80 backdrop-blur-md px-3 py-1.5 rounded-full border border-border-subtle text-xs font-sans text-text-secondary shadow-sm">
-        <span className="w-2 h-2 rounded-full bg-status-block animate-pulse"></span>
-        <span className="font-medium">Syndicate Cluster Entity Graph</span>
-      </div>
+    <div className="relative w-full overflow-hidden rounded-lg border border-border-subtle bg-surface-2/40">
       <div ref={containerRef} style={{ height, width: '100%' }} />
     </div>
   );

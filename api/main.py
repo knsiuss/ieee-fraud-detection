@@ -58,9 +58,8 @@ from fastapi import (
 )
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
-from fastapi.staticfiles import StaticFiles
 
-from fraud_detect import bandit_policy
+from fraud_detect import bandit_policy, economics
 from fraud_detect import sim as simmod
 from fraud_detect._exceptions import MissingArtefactError
 from fraud_detect.bandit_policy import BANDIT_VERSION, BanditPolicy
@@ -95,10 +94,17 @@ _CORS_ORIGINS = [
     ).split(",")
     if o.strip()
 ]
+# Public demo frontends (Netlify/Vercel/localhost) call with plain fetch and
+# no cookies. A wildcard origin keeps them working, but credentials must stay
+# off: browsers reject `Access-Control-Allow-Origin: *` combined with
+# allow_credentials=True. Explicit origins via FRAUD_CORS_ORIGINS re-enable
+# credentials and put the computed _CORS_ORIGINS list to use.
+_explicit_origins = os.getenv("FRAUD_CORS_ORIGINS")
+_cors_origins = _CORS_ORIGINS if _explicit_origins else ["*"]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
+    allow_origins=_cors_origins,
+    allow_credentials="*" not in _cors_origins,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -107,25 +113,50 @@ app.add_middleware(
 async def _background_traffic_loop():
     """Continuously simulate incoming transactions (every 3.5s) for live radar feed."""
     await asyncio.sleep(2.0)
-    profiles = ["typical", "nonfraud", "typical", "fraud", "typical", "nonfraud"]
+    profiles = ["typical", "nonfraud", "fraud", "typical", "fraud", "nonfraud"]
     i = 100
     while True:
         try:
             art = _current()
             profile = profiles[i % len(profiles)]
-            amount = 820.0 + ((i % 12) * 65.0) if profile == "fraud" else 15.5 + ((i % 30) * 9.5)
-            card_brand = "discover" if profile == "fraud" else ("visa" if i % 2 == 0 else "mastercard")
+            if profile == "fraud":
+                amount = 850.0 + ((i % 10) * 140.0)
+                card_brand = "discover" if i % 2 == 0 else "mastercard"
+                billing_distance = 1500.0 + ((i % 8) * 400.0)
+                card_match_count = 14 + (i % 16)
+                purchase_frequency = 32 + (i % 35)
+                days_since_activity = 0.0
+            elif profile == "typical" and i % 3 == 0:
+                amount = 320.0 + ((i % 5) * 85.0)
+                card_brand = "mastercard"
+                billing_distance = 280.0
+                card_match_count = 5
+                purchase_frequency = 12
+                days_since_activity = 1.0
+            else:
+                amount = 15.5 + ((i % 30) * 9.5)
+                card_brand = "visa" if i % 2 == 0 else "mastercard"
+                billing_distance = 12.0
+                card_match_count = 1
+                purchase_frequency = 1 + (i % 3)
+                days_since_activity = 2.0 + (i % 10)
+
             data = {
                 "profile": profile,
                 "amount": round(amount, 2),
                 "card_brand": card_brand,
-                "billing_distance": 480.0 if profile == "fraud" else 12.0,
+                "billing_distance": billing_distance,
+                "card_match_count": card_match_count,
+                "purchase_frequency": purchase_frequency,
+                "days_since_activity": days_since_activity,
             }
+            started = time.perf_counter()
             row = simmod.build_row(data, art.features, art.baseline, art.profiles)
             prob = float(predict_proba(art.model, row)[0])
             input_features = {c: float(row.iloc[0][c]) for c in art.features}
             drivers = decision_drivers(art.model, row, art.features, art.baseline, top_n=3)
             decided = _decide_with_policy(prob, drivers, input_features)
+            latency_ms = round((time.perf_counter() - started) * 1000.0, 2)
             store.record_decision(
                 transaction_id=f"tx-live-{uuid.uuid4().hex[:8]}",
                 model_version=store.version(art),
@@ -138,6 +169,7 @@ async def _background_traffic_loop():
                 reason_codes=drivers,
                 feature_report={},
                 input_features=input_features,
+                latency_ms=latency_ms,
             )
             i += 1
         except Exception:
@@ -150,22 +182,39 @@ def _seed_initial_decisions():
     try:
         if len(store.list_decisions(limit=5)) == 0:
             art = _current()
-            profiles = ["typical", "nonfraud", "fraud", "typical", "nonfraud"]
+            profiles = ["typical", "nonfraud", "fraud", "typical", "fraud", "nonfraud"]
             for i in range(25):
                 profile = profiles[i % len(profiles)]
-                amount = 920.0 + (i * 35.0) if profile == "fraud" else 24.5 + (i * 12.0)
-                card_brand = "discover" if profile == "fraud" else "visa"
+                if profile == "fraud":
+                    amount = 920.0 + (i * 35.0)
+                    card_brand = "discover"
+                    billing_distance = 1800.0
+                    card_match_count = 16
+                    purchase_frequency = 36
+                    days_since_activity = 0.0
+                else:
+                    amount = 24.5 + (i * 12.0)
+                    card_brand = "visa"
+                    billing_distance = 15.0
+                    card_match_count = 1
+                    purchase_frequency = 1
+                    days_since_activity = 3.0
                 data = {
                     "profile": profile,
                     "amount": amount,
                     "card_brand": card_brand,
-                    "billing_distance": 450.0 if profile == "fraud" else 15.0,
+                    "billing_distance": billing_distance,
+                    "card_match_count": card_match_count,
+                    "purchase_frequency": purchase_frequency,
+                    "days_since_activity": days_since_activity,
                 }
+                started = time.perf_counter()
                 row = simmod.build_row(data, art.features, art.baseline, art.profiles)
                 prob = float(predict_proba(art.model, row)[0])
                 input_features = {c: float(row.iloc[0][c]) for c in art.features}
                 drivers = decision_drivers(art.model, row, art.features, art.baseline, top_n=3)
                 decided = _decide_with_policy(prob, drivers, input_features)
+                latency_ms = round((time.perf_counter() - started) * 1000.0, 2)
                 store.record_decision(
                     transaction_id=f"tx-seed-{i:03d}",
                     model_version=store.version(art),
@@ -178,10 +227,11 @@ def _seed_initial_decisions():
                     reason_codes=drivers,
                     feature_report={},
                     input_features=input_features,
+                    latency_ms=latency_ms,
                 )
     except Exception as e:
         print("Startup seed skipped:", e)
-    
+
     # Launch continuous live traffic generator in background
     asyncio.create_task(_background_traffic_loop())
 
@@ -242,6 +292,35 @@ _POLICY: DecisionPolicy = policy_from_env(
     review_above=_env_float("DECISION_REVIEW_ABOVE"),
     decline_above=_env_float("DECISION_DECLINE_ABOVE"),
 )
+
+
+def _env_float_or(name: str, default: float) -> float:
+    """Env override for a cost assumption; zero is a valid value."""
+    value = os.getenv(name)
+    if value is None or not value.strip():
+        return default
+    return float(value)
+
+
+# Cost-based policy (policy v3 -- expected-cost minimisation). Opt-in via
+# DECISION_POLICY=cost so the stored policy version always says which policy
+# produced a decision. Every assumption is env-overridable and recorded.
+_POLICY_MODE = os.getenv("DECISION_POLICY", "threshold").strip().lower()
+_COST_DEFAULTS = economics.CostModel()
+_COST_MODEL = economics.CostModel(
+    margin_rate=_env_float_or("COST_MARGIN_RATE", _COST_DEFAULTS.margin_rate),
+    review_cost=_env_float_or("COST_REVIEW_COST", _COST_DEFAULTS.review_cost),
+    chargeback_fee=_env_float_or("COST_CHARGEBACK_FEE", _COST_DEFAULTS.chargeback_fee),
+    friction_cost=_env_float_or("COST_FRICTION_COST", _COST_DEFAULTS.friction_cost),
+    liability_rate=_env_float_or("COST_LIABILITY_RATE", _COST_DEFAULTS.liability_rate),
+    review_catch_rate=_env_float_or("COST_REVIEW_CATCH_RATE", _COST_DEFAULTS.review_catch_rate),
+    max_review_rate=_env_float_or("COST_MAX_REVIEW_RATE", _COST_DEFAULTS.max_review_rate),
+    version=os.getenv("COST_MODEL_VERSION", _COST_DEFAULTS.version),
+)
+# Review-capacity floor on the expected saving of a review. 0 means "review
+# whenever a review is the cheapest action"; calibrate it offline with
+# scripts/backtest_policies.py (recommended_env) to respect analyst capacity.
+_REVIEW_FLOOR = _env_float("DECISION_REVIEW_BENEFIT_FLOOR")
 
 # Adaptive decision layer (policy v2 — contextual bandit). Opt-in via env so
 # policy v1 remains the default and both versions coexist auditably.
@@ -317,6 +396,7 @@ def _decide(
     ``background`` is optional: when provided, DECLINE / MANUAL_REVIEW
     decisions schedule the LLM audit report (decoupled from the response).
     """
+    started = time.perf_counter()
     art = _current()
     report = validate_payload(values, art.features)
     tx = transaction_id or uuid.uuid4().hex[:12]
@@ -336,6 +416,11 @@ def _decide(
 
     if decided["bandit_event"] is not None:
         store.record_bandit_event(transaction_id=tx, **decided["bandit_event"])
+    latency_ms = round((time.perf_counter() - started) * 1000.0, 2)
+    report_dict = report.as_dict()
+    # The simulator surfaces feature_report.latency_ms and the metrics endpoint
+    # aggregates the persisted column, so the number shown is the real one.
+    report_dict["latency_ms"] = latency_ms
     store.record_decision(
         transaction_id=tx,
         model_version=store.version(art),
@@ -346,8 +431,9 @@ def _decide(
         policy_version=decided["policy_version"],
         thresholds=decided["thresholds"],
         reason_codes=drivers,
-        feature_report=report.as_dict(),
+        feature_report=report_dict,
         input_features=input_features,
+        latency_ms=latency_ms,
     )
     if background is not None and decided["decision"] in ("DECLINE", "MANUAL_REVIEW"):
         _schedule_report(background, tx)
@@ -394,6 +480,27 @@ def _decide_with_policy(
     as the bandit context.
     """
     bandit_ready = _BANDIT_ENABLED and _BANDIT_STATE.n_rewards >= _BANDIT_MIN_REWARDS
+    if not bandit_ready and _POLICY_MODE == "cost":
+        amount = float(input_features.get("TransactionAmt", 0.0) or 0.0)
+        decision, expected_costs = economics.decide(
+            _COST_MODEL, amount, prob, benefit_floor=_REVIEW_FLOOR or 0.0
+        )
+        return {
+            "decision": decision,
+            "action": _POLICY.actions[decision],
+            "policy_version": _COST_MODEL.version,
+            "thresholds": {
+                "kind": "cost",
+                "cost_model": _COST_MODEL.as_dict(),
+                "expected_costs": expected_costs,
+                "review_benefit_floor": _REVIEW_FLOOR or 0.0,
+                "needs_review": decision == economics.MANUAL_REVIEW,
+                # Implied threshold at this amount, so report/LLM readers still
+                # find review_above / decline_above on every decision.
+                **economics.breakeven_thresholds(_COST_MODEL, amount),
+            },
+            "bandit_event": None,
+        }
     if not bandit_ready:
         decision, action = _POLICY.apply(prob)
         return {
@@ -474,6 +581,29 @@ def model_info() -> dict:
     return store.model_info()
 
 
+@app.get("/api/model/drift")
+def model_drift() -> dict:
+    """Offline PSI drift artefact powering the MLOps health panel."""
+    return store.model_drift()
+
+
+@app.get("/api/policy")
+def policy() -> dict:
+    """Live decision policy + adaptive layer status for the policy console."""
+    cost_mode = _POLICY_MODE == "cost"
+    return {
+        "kind": _POLICY_MODE,
+        "version": _COST_MODEL.version if cost_mode else _POLICY.version,
+        "thresholds": _POLICY.as_dict(),
+        "cost_model": _COST_MODEL.as_dict() if cost_mode else None,
+        "review_benefit_floor": _REVIEW_FLOOR if cost_mode else None,
+        "bandit": {
+            "enabled": _BANDIT_ENABLED,
+            "version": _BANDIT_STATE.version if _BANDIT_ENABLED else None,
+        },
+    }
+
+
 @app.get("/api/stats")
 def stats() -> dict:
     return store.public_stats()
@@ -547,11 +677,13 @@ def simulate(
         record = existing
         prob = float(record["score"])
     else:
+        started = time.perf_counter()
         row = simmod.build_row(data, art.features, art.baseline, art.profiles)
         prob = float(predict_proba(art.model, row)[0])
         input_features = {c: float(row.iloc[0][c]) for c in art.features}
         drivers = decision_drivers(art.model, row, art.features, art.baseline, top_n=3)
         decided = _decide_with_policy(prob, drivers, input_features)
+        latency_ms = round((time.perf_counter() - started) * 1000.0, 2)
         if decided["bandit_event"] is not None:
             store.record_bandit_event(transaction_id=tx, **decided["bandit_event"])
         store.record_decision(
@@ -566,6 +698,7 @@ def simulate(
             reason_codes=drivers,
             feature_report=feature_report,
             input_features=input_features,
+            latency_ms=latency_ms,
         )
         if decided["decision"] in ("DECLINE", "MANUAL_REVIEW"):
             _schedule_report(background, tx)
@@ -612,6 +745,7 @@ async def predict_batch(  # noqa: PLR0915 - row loop carries the full decision p
     rows: list[schemas.BatchScoreRow] = []
     errors: list[dict[str, str]] = []
     for i in range(len(df)):
+        row_started = time.perf_counter()
         row_values = {c: df.iloc[i][c] for c in numeric_cols}
         try:
             report = validate_payload(row_values, art.features)
@@ -655,6 +789,7 @@ async def predict_batch(  # noqa: PLR0915 - row loop carries the full decision p
                 }
             if decided["bandit_event"] is not None:
                 store.record_bandit_event(transaction_id=tx, **decided["bandit_event"])
+            latency_ms = round((time.perf_counter() - row_started) * 1000.0, 2)
             store.record_decision(
                 transaction_id=tx,
                 model_version=store.version(art),
@@ -667,6 +802,7 @@ async def predict_batch(  # noqa: PLR0915 - row loop carries the full decision p
                 reason_codes=drivers,
                 feature_report=report.as_dict(),
                 input_features=input_features,
+                latency_ms=latency_ms,
             )
             if (
                 drivers is not None
@@ -748,7 +884,16 @@ def review_queue(
     status: str | None = None,
     limit: int = Query(default=100, ge=1, le=200),
 ) -> list[dict]:
-    records = store.list_decisions(decision=decision, status=status, limit=limit)
+    """Decision ledger with optional decision/status filters.
+
+    ``status=ALL`` (or omitted) means every status, so the audit ledger can
+    show resolved and open rows together instead of always coming back empty.
+    """
+    normalized_status = status.upper() if status and status.upper() != "ALL" else None
+    normalized_decision = decision.upper() if decision else None
+    records = store.list_decisions(
+        decision=normalized_decision, status=normalized_status, limit=limit
+    )
     return [{k: v for k, v in r.items() if k != "input_features"} for r in records]
 
 
@@ -820,6 +965,12 @@ def metrics_loss() -> dict:
     return store.metrics_loss()
 
 
+@app.get("/api/metrics/economics")
+def metrics_economics() -> dict:
+    """Cost-model economics on labelled decisions + cost-policy counterfactual."""
+    return store.metrics_economics(cost_model=_COST_MODEL.as_dict(), policy_mode=_POLICY_MODE)
+
+
 @app.get("/api/metrics/rules")
 def metrics_rules() -> list[dict]:
     """Top SHAP risk drivers rolled up into a rule-performance table."""
@@ -841,6 +992,13 @@ def _sse_frames(records: list[dict], seen: set[str]) -> list[str]:
             continue
         seen.add(tx_id)
         frame = {k: v for k, v in record.items() if k != "input_features"}
+        # Raw features stay server-side, but the transaction amount is a safe,
+        # useful display field for the live stream.
+        features = record.get("input_features") or {}
+        try:
+            frame["amount"] = float(features["TransactionAmt"])
+        except (KeyError, TypeError, ValueError):
+            frame["amount"] = None
         frames.append(f"id: {tx_id}\nevent: decision\ndata: {json.dumps(frame)}\n\n")
     return frames
 
@@ -884,7 +1042,11 @@ async def decisions_stream():
 @app.post("/api/feedback", response_model=schemas.FeedbackResponse)
 def feedback(
     req: schemas.FeedbackRequest,
+    admin_key: str | None = Header(default=None, alias="X-Admin-Key"),
 ) -> schemas.FeedbackResponse:
+    # Legacy reviewer-label endpoint feeding the retrain pool: same gate as
+    # /api/retrain. Fail-closed when FRAUD_API_ADMIN_KEY is not configured.
+    _require_admin(admin_key, "Feedback endpoint")
     verdict = 1 if (req.verdict in ("fraud", 1)) else 0
     pool_size = store.record_feedback(req.values, verdict)
     return schemas.FeedbackResponse(accepted=True, pool_size=pool_size)
@@ -1001,6 +1163,7 @@ _INDEX_FILE = os.path.join(_DIST_DIR, "index.html")
 
 if os.path.isdir(_DIST_DIR) and os.path.isfile(_INDEX_FILE):
     _ASSETS_DIR = os.path.join(_DIST_DIR, "assets")
+
     @app.get("/config", include_in_schema=False)
     @app.get("/info", include_in_schema=False)
     @app.get("/heartbeat", include_in_schema=False)
@@ -1024,7 +1187,11 @@ if os.path.isdir(_DIST_DIR) and os.path.isfile(_INDEX_FILE):
     @app.get("/{full_path:path}", include_in_schema=False)
     async def _spa_catchall(full_path: str):
         path_clean = full_path.strip("/")
-        if any(path_clean == prefix or path_clean.startswith(f"{prefix}/") for prefix in _EXCLUDED_SPA_PREFIXES):
+        excluded = any(
+            path_clean == prefix or path_clean.startswith(f"{prefix}/")
+            for prefix in _EXCLUDED_SPA_PREFIXES
+        )
+        if excluded:
             raise HTTPException(status_code=404, detail="Not Found")
         file_path = os.path.join(_DIST_DIR, full_path)
         if full_path and os.path.isfile(file_path):

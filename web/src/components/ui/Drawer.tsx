@@ -34,16 +34,16 @@ export const Drawer: React.FC<DrawerProps> = ({
     <div className="fixed inset-0 z-50 overflow-hidden animate-fade-in">
       {/* Apple Frosted Backdrop */}
       <div
-        className="fixed inset-0 bg-black/50 backdrop-blur-sm transition-opacity"
+        className="fixed inset-0 bg-black/50 transition-opacity"
         onClick={onClose}
       />
 
       <div className="fixed inset-y-0 right-0 flex max-w-full pl-6 sm:pl-10">
         <div
-          className={`w-screen ${widthClass} bg-surface-1/90 backdrop-blur-2xl border-l border-border-highlight rounded-l-3xl flex flex-col justify-between shadow-float transform transition-transform duration-300 ease-out`}
+          className={`w-screen ${widthClass} bg-surface-1 border-l border-border-highlight rounded-l-3xl flex flex-col justify-between transform transition-transform duration-300 ease-out`}
         >
           {/* Sheet Header */}
-          <div className="px-6 py-4 border-b border-border-subtle flex items-center justify-between bg-surface-2/60 backdrop-blur-md rounded-tl-3xl">
+          <div className="px-6 py-4 border-b border-border-subtle flex items-center justify-between bg-surface-2 rounded-tl-3xl">
             <div>
               <h2 className="text-sm font-semibold text-text-primary tracking-tight font-sans">
                 {title}

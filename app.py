@@ -37,11 +37,13 @@ import gradio as gr
 from fastapi.middleware.cors import CORSMiddleware
 from api.main import app as fastapi_app
 
-# Enable open CORS for Netlify, Vercel, and localhost
+# Enable open CORS for Netlify, Vercel, and localhost. Credentials stay off:
+# browsers reject a wildcard origin combined with allow_credentials=True,
+# and no endpoint uses cookies (admin auth travels via X-Admin-Key header).
 fastapi_app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=True,
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )

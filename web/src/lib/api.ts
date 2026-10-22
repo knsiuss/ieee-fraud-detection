@@ -5,6 +5,9 @@ import type {
   MetricsDispositions,
   MetricsLoss,
   MetricsRule,
+  ModelDrift,
+  PolicyInfo,
+  BanditStatus,
   ExplainResponse,
   ModelInfo,
   HealthResponse,
@@ -46,14 +49,19 @@ export const api = {
   getPublicStats: () => fetchJson<{ model: ModelInfo; overview: Record<string, unknown>; top_features: Array<{ feature: string; importance: number }> }>('/api/stats'),
   
   getMetricsSummary: () => fetchJson<MetricsSummary>('/api/metrics/summary'),
+  getModelDrift: () => fetchJson<ModelDrift>('/api/model/drift'),
   getMetricsTimeseries: (windowMinutes = 60, bucketSeconds = 60) =>
     fetchJson<TimeseriesBucket[]>(`/api/metrics/timeseries?w=${windowMinutes}&bucket=${bucketSeconds}`),
   getMetricsDispositions: () => fetchJson<MetricsDispositions>('/api/metrics/dispositions'),
   getMetricsLoss: () => fetchJson<MetricsLoss>('/api/metrics/loss'),
   getMetricsRules: () => fetchJson<MetricsRule[]>('/api/metrics/rules'),
 
-  getReviewQueue: (status = 'NEW', limit = 100) =>
-    fetchJson<DecisionItem[]>(`/api/review/queue?status=${status}&limit=${limit}`),
+  getReviewQueue: (status = 'NEW', limit = 100, decision?: string) =>
+    fetchJson<DecisionItem[]>(
+      `/api/review/queue?status=${status}&limit=${limit}${decision ? `&decision=${decision}` : ''}`,
+    ),
+  getPolicy: () => fetchJson<PolicyInfo>('/api/policy'),
+  getBanditStatus: () => fetchJson<BanditStatus>('/api/bandit/status'),
   getReviewItem: (transactionId: string) =>
     fetchJson<DecisionItem>(`/api/review/${transactionId}`),
   getAuditReport: (transactionId: string) =>
@@ -83,7 +91,7 @@ export const api = {
   predictBatch: async (file: File) => {
     const formData = new FormData();
     formData.append('file', file);
-    const res = await fetch('/api/predict/batch', {
+    const res = await fetch(`${BASE_URL}/api/predict/batch`, {
       method: 'POST',
       body: formData,
     });

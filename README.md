@@ -353,6 +353,22 @@ live in [`data/metadata/evaluation.json`](data/metadata/evaluation.json) and
 | Precision @ top 1% riskiest | 0.899 | 0.987 |
 | Precision @ top 5% riskiest | 0.414 | 0.543 |
 
+### From risk to money (decision economics)
+
+A score only matters once it becomes a decision with a price. The service ships
+a per-transaction cost model (analyst time, chargeback fee, margin lost on a
+wrong decline, fraud liability) and can decide by expected cost instead of
+fixed thresholds — see [docs/ECONOMICS.md](docs/ECONOMICS.md) and
+[src/fraud_detect/economics.py](src/fraud_detect/economics.py).
+
+On a 100k labelled sample, under the same 5% review capacity, cost-based
+decisioning cut net cost from 144.8k to 100.4k (**~0.44 per transaction**)
+versus the shipped thresholds; the backtest
+([data/metadata/policy_backtest.json](data/metadata/policy_backtest.json))
+publishes its assumptions and caveats instead of presenting the number as fact,
+and `GET /api/metrics/economics` reports realised vs counterfactual economics
+live.
+
 ### Calibration caveat
 
 The model is only roughly calibrated (Brier 0.021). In the top probability

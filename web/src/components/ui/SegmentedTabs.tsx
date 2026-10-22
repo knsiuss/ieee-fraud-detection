@@ -22,7 +22,7 @@ export function SegmentedTabs<T extends string = string>({
   size = 'md',
 }: SegmentedTabsProps<T>) {
   return (
-    <div className="inline-flex items-center gap-1 bg-surface-2/80 backdrop-blur-xl p-1 rounded-full border border-border-subtle shadow-inner">
+    <div className="inline-flex items-center gap-1 bg-surface-2 p-1 rounded-full border border-border-subtle">
       {tabs.map((tab) => {
         const isActive = activeTab === tab.id;
         const paddingClass = size === 'sm' ? 'px-3 py-1 text-xs' : 'px-4 py-1.5 text-xs';
@@ -33,7 +33,7 @@ export function SegmentedTabs<T extends string = string>({
             onClick={() => onChange(tab.id)}
             className={`btn-interactive relative flex items-center gap-2 rounded-full font-medium transition-all duration-200 ${paddingClass} ${
               isActive
-                ? 'bg-surface-1 text-text-primary shadow-sm border border-border-highlight font-semibold scale-[1.02]'
+                ? 'bg-surface-1 text-text-primary border border-border-highlight font-semibold scale-[1.02]'
                 : 'text-text-secondary hover:text-text-primary hover:bg-surface-hover/50'
             }`}
           >
@@ -45,7 +45,7 @@ export function SegmentedTabs<T extends string = string>({
                 className={`font-mono text-[10px] px-2 py-0.5 rounded-full font-semibold transition-colors ${
                   isActive
                     ? 'bg-surface-2 text-text-primary border border-border-subtle'
-                    : 'bg-surface-1/60 text-text-muted'
+                    : 'bg-surface-160 text-text-muted'
                 }`}
               >
                 {tab.count}

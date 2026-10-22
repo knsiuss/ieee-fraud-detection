@@ -15,7 +15,7 @@ export const AIDisclaimer: React.FC<AIDisclaimerProps> = ({
   const isLLM = source === 'llm';
 
   return (
-    <div className={`border border-border-subtle rounded-2xl bg-surface-2/60 backdrop-blur-xl p-4 space-y-3 shadow-sm ${className}`}>
+    <div className={`border border-border-subtle rounded-xl bg-surface-2 p-4 space-y-3 ${className}`}>
       <div className="flex items-center justify-between border-b border-border-subtle/60 pb-2 text-xs font-sans">
         <div className="flex items-center gap-2 text-text-secondary">
           {isLLM ? (

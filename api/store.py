@@ -25,7 +25,7 @@ import pandas as pd
 from sklearn.metrics import roc_auc_score
 from sklearn.model_selection import train_test_split
 
-from fraud_detect import config, tuning
+from fraud_detect import config, economics, tuning
 from fraud_detect.models import ModelBackend, select_feature_columns, train_model
 from fraud_detect.serving import (
     ModelArtefact,
@@ -45,6 +45,14 @@ FEEDBACK_FILE: Path = config.DATA_ROOT / "feedback" / "feedback.jsonl"
 GATE_MIN_IMPROVEMENT: float = 0.0  # >= current wins
 HOLD_OUT_SIZE: float = 0.2
 HOLD_OUT_SEED: int = 42
+
+#: Latency percentiles only look at decisions this recent, so a slow pre-fix
+#: sample cannot keep the live KPI inflated forever.
+_LATENCY_WINDOW_SECONDS = 900.0
+
+#: Minimum number of labelled-APPROVE decisions before a chargeback rate is
+#: reported at all; one fraud in ten approvals is noise, not a 10 000 bps rate.
+_MIN_LABELLED_APPROVED = 20
 
 
 def json_safe(value: Any) -> Any:
@@ -355,6 +363,7 @@ CREATE TABLE IF NOT EXISTS decisions (
     reason_codes     TEXT,
     feature_report   TEXT,
     input_features   TEXT,
+    latency_ms       REAL,
     status           TEXT NOT NULL DEFAULT 'NEW',
     reviewer_outcome TEXT,
     feedback_note    TEXT
@@ -400,7 +409,9 @@ def _decision_conn() -> sqlite3.Connection:
     }
     if "action" not in decision_columns:
         conn.execute("ALTER TABLE decisions ADD COLUMN action TEXT")
-        conn.commit()
+    if "latency_ms" not in decision_columns:
+        conn.execute("ALTER TABLE decisions ADD COLUMN latency_ms REAL")
+    conn.commit()
     return conn
 
 
@@ -417,6 +428,7 @@ def record_decision(  # noqa: PLR0913
     reason_codes: list[dict] | None,
     feature_report: dict,
     input_features: dict[str, float],
+    latency_ms: float | None = None,
 ) -> dict:
     """Persist a decision; idempotent on ``transaction_id`` (first wins)."""
     conn = _decision_conn()
@@ -426,8 +438,8 @@ def record_decision(  # noqa: PLR0913
             INSERT OR IGNORE INTO decisions (
                 transaction_id, timestamp, model_version, contract_version,
                 score, decision, action, policy_version, thresholds, reason_codes,
-                feature_report, input_features, status
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'NEW')
+                feature_report, input_features, latency_ms, status
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'NEW')
             """,
             (
                 transaction_id,
@@ -442,6 +454,7 @@ def record_decision(  # noqa: PLR0913
                 json.dumps(json_safe(reason_codes)) if reason_codes is not None else None,
                 json.dumps(json_safe(feature_report)),
                 json.dumps(json_safe(input_features)),
+                latency_ms,
             ),
         )
         conn.commit()
@@ -566,6 +579,173 @@ def _sla_compliance_pct(conn: sqlite3.Connection) -> float | None:
     return round(compliant / total * 100.0, 1) if total > 0 else None
 
 
+def _decision_rows(conn: sqlite3.Connection) -> list[dict[str, Any]]:
+    """Decision, amount, and reviewer outcome for every stored decision.
+
+    No amount is fabricated: a decision whose payload carried no
+    ``TransactionAmt`` contributes ``0.0`` and is counted in ``missing_amounts``
+    by the callers, so a total is never padded with an invented average.
+    """
+    rows = conn.execute(
+        "SELECT decision, reviewer_outcome, input_features FROM decisions"
+    ).fetchall()
+    out: list[dict[str, Any]] = []
+    for r in rows:
+        amount = 0.0
+        if r["input_features"]:
+            with contextlib.suppress(Exception):
+                amount = float(json.loads(r["input_features"]).get("TransactionAmt", 0.0) or 0.0)
+        out.append(
+            {
+                "decision": r["decision"] or "",
+                "amount": max(amount, 0.0),
+                "outcome": r["reviewer_outcome"],
+            }
+        )
+    return out
+
+
+def _trailing_tps(conn: sqlite3.Connection, window_seconds: int = 300) -> float:
+    """Real throughput: decisions persisted in the trailing window / seconds."""
+    cutoff = datetime.now(timezone.utc).timestamp() - window_seconds
+    recent = 0
+    for r in conn.execute("SELECT timestamp FROM decisions").fetchall():
+        with contextlib.suppress(Exception):
+            ts = datetime.fromisoformat(str(r["timestamp"]).replace("Z", "+00:00"))
+            if ts.timestamp() >= cutoff:
+                recent += 1
+    return round(recent / window_seconds, 4)
+
+
+def _percentile(values: list[float], p: float) -> float | None:
+    if not values:
+        return None
+    ordered = sorted(values)
+    idx = min(max(int(round(p / 100.0 * (len(ordered) - 1))), 0), len(ordered) - 1)
+    return round(ordered[idx], 2)
+
+
+def _latency(conn: sqlite3.Connection) -> dict[str, Any]:
+    """Latency percentiles over the recent window of recorded decisions.
+
+    Only samples inside ``_LATENCY_WINDOW_SECONDS`` are aggregated: latency is a
+    live-operations KPI, and keeping forever-old samples would hide a regression
+    (or keep a fixed regression visible long after the fix). ``samples`` is how
+    many decisions in the window carry a measurement; ``window_seconds`` says
+    which window produced the numbers.
+    """
+    cutoff = datetime.now(timezone.utc).timestamp() - _LATENCY_WINDOW_SECONDS
+    values: list[float] = []
+    rows = conn.execute(
+        "SELECT timestamp, latency_ms FROM decisions WHERE latency_ms IS NOT NULL"
+    ).fetchall()
+    for r in rows:
+        try:
+            ts = datetime.fromisoformat(str(r["timestamp"]).replace("Z", "+00:00"))
+        except ValueError:
+            continue
+        if ts.timestamp() >= cutoff:
+            values.append(float(r["latency_ms"]))
+    return {
+        "p50_ms": _percentile(values, 50),
+        "p95_ms": _percentile(values, 95),
+        "p99_ms": _percentile(values, 99),
+        "samples": len(values),
+        "window_seconds": int(_LATENCY_WINDOW_SECONDS),
+    }
+
+
+def _psi() -> dict[str, Any]:
+    """PSI summary from the offline drift-report artefact (never hardcoded)."""
+    path = config.DATA_ROOT / "metadata" / "drift_report.json"
+    missing = {
+        "psi_drift": None,
+        "psi_drifted_features": None,
+        "psi_source": None,
+        "psi_alert": None,
+    }
+    if not path.exists():
+        return missing
+    with contextlib.suppress(Exception):
+        report = json.loads(path.read_text(encoding="utf-8"))
+        top = report.get("top_drift") or []
+        values = [float(f["psi"]) for f in top if isinstance(f.get("psi"), (int, float))]
+        if not values:
+            return missing
+        max_psi = round(max(values), 4)
+        sample_rows = (report.get("data_quality") or {}).get("n_rows")
+        return {
+            "psi_drift": max_psi,
+            "psi_drifted_features": report.get("drifted_features"),
+            "psi_source": "data/metadata/drift_report.json",
+            "psi_alert": bool(max_psi > 0.2),
+            "psi_sample_rows": sample_rows,
+            "psi_note": (
+                "PSI from the drift artefact; a large value on a tiny recent "
+                "sample is noise, not proof of drift."
+            )
+            if isinstance(sample_rows, int) and sample_rows < 100
+            else None,
+        }
+    return missing
+
+
+def model_drift() -> dict[str, Any]:
+    """Full drift artefact for the MLOps view (never hardcoded).
+
+    Returns ``available: False`` when the offline drift report has not been
+    generated, so the UI can show an honest empty state instead of numbers
+    nobody measured.
+    """
+    path = config.DATA_ROOT / "metadata" / "drift_report.json"
+    empty: dict[str, Any] = {
+        "available": False,
+        "generated_at": None,
+        "drifted_features": None,
+        "top_drift": [],
+        "thresholds": None,
+        "data_quality": None,
+    }
+    if not path.exists():
+        return empty
+    with contextlib.suppress(Exception):
+        report = json.loads(path.read_text(encoding="utf-8"))
+        return {
+            "available": True,
+            "generated_at": report.get("generated_at"),
+            "drifted_features": report.get("drifted_features"),
+            "top_drift": [
+                {
+                    "feature": f.get("feature"),
+                    "psi": f.get("psi"),
+                    "status": f.get("status"),
+                }
+                for f in (report.get("top_drift") or [])
+                if isinstance(f, dict)
+            ],
+            "thresholds": report.get("thresholds"),
+            "data_quality": report.get("data_quality"),
+        }
+    return empty
+
+
+def _chargeback_bps(rows: list[dict[str, Any]]) -> float | None:
+    """Fraud loss passed through APPROVE, in bps of approved labelled volume.
+
+    Only labelled decisions are used: an unlabelled APPROVE is unknown, not
+    safe, and counting it as safe would understate the rate. ``None`` means
+    "not enough labels", never a fabricated number.
+    """
+    approved = [r for r in rows if r["decision"] == "APPROVE" and r["outcome"] in ("safe", "fraud")]
+    if len(approved) < _MIN_LABELLED_APPROVED:
+        return None
+    volume = sum(r["amount"] for r in approved)
+    if volume <= 0:
+        return None
+    fraud = sum(r["amount"] for r in approved if r["outcome"] == "fraud")
+    return round(fraud / volume * 10_000.0, 1)
+
+
 def metrics_summary() -> dict[str, Any]:
     """Summary metrics: volume, split, TPS, latencies, loss prevented."""
     conn = _decision_conn()
@@ -588,25 +768,22 @@ def metrics_summary() -> dict[str, Any]:
         reviewed_pct = (reviewed / total * 100.0) if total > 0 else 0.0
         declined_pct = (declined / total * 100.0) if total > 0 else 0.0
 
-        rows = conn.execute("SELECT decision, input_features FROM decisions").fetchall()
-        gmv_total = 0.0
-        loss_prevented = 0.0
-        loss_under_review = 0.0
-        for r in rows:
-            amt = 0.0
-            if r["input_features"]:
-                with contextlib.suppress(Exception):
-                    feats = json.loads(r["input_features"])
-                    amt = float(feats.get("TransactionAmt", 0.0) or 0.0)
-            if amt == 0.0:
-                amt = 145.0
-            gmv_total += amt
-            if r["decision"] == "DECLINE":
-                loss_prevented += amt
-            elif r["decision"] == "MANUAL_REVIEW":
-                loss_under_review += amt
-
-        tps = 14.8 if total > 0 else 0.0
+        rows = _decision_rows(conn)
+        gmv_total = sum(r["amount"] for r in rows)
+        missing_amounts = sum(1 for r in rows if r["amount"] == 0.0)
+        labelled = [r for r in rows if r["outcome"] in ("safe", "fraud")]
+        label_coverage_pct = (len(labelled) / total * 100.0) if total else 0.0
+        loss_under_review = sum(r["amount"] for r in rows if r["decision"] == "MANUAL_REVIEW")
+        loss_prevented_estimated = sum(r["amount"] for r in rows if r["decision"] == "DECLINE")
+        loss_prevented_confirmed = sum(
+            r["amount"] for r in labelled if r["decision"] == "DECLINE" and r["outcome"] == "fraud"
+        )
+        loss_prevented_basis = "confirmed_labels" if labelled else "estimated_all_declines"
+        loss_prevented = loss_prevented_confirmed if labelled else loss_prevented_estimated
+        tps = _trailing_tps(conn)
+        latency = _latency(conn)
+        psi = _psi()
+        chargeback_bps = _chargeback_bps(rows)
 
         sla_rows = conn.execute(
             "SELECT timestamp, status FROM decisions "
@@ -648,13 +825,18 @@ def metrics_summary() -> dict[str, Any]:
             "loss_prevented": round(loss_prevented, 2),
             "loss_under_review": round(loss_under_review, 2),
             "tps": tps,
-            "latency": {
-                "p50_ms": 7.8,
-                "p95_ms": 14.2,
-                "p99_ms": 23.5,
-            },
-            "psi_drift": 0.018,
-            "chargeback_bps": round((declined / max(total, 1)) * 42.0, 1),
+            "latency": latency,
+            "psi_drift": psi["psi_drift"],
+            "psi_drifted_features": psi["psi_drifted_features"],
+            "psi_source": psi["psi_source"],
+            "psi_alert": psi["psi_alert"],
+            "psi_note": psi.get("psi_note"),
+            "chargeback_bps": chargeback_bps,
+            "label_coverage_pct": round(label_coverage_pct, 2),
+            "loss_prevented_basis": loss_prevented_basis,
+            "loss_prevented_estimated": round(loss_prevented_estimated, 2),
+            "loss_prevented_confirmed": round(loss_prevented_confirmed, 2),
+            "missing_amounts": missing_amounts,
             "sla_bands": {
                 "under_1h": band_1h,
                 "under_4h": band_4h,
@@ -776,41 +958,176 @@ def metrics_dispositions() -> dict[str, Any]:
 
 
 def metrics_loss() -> dict[str, Any]:
-    """Loss prevention and monetary exposure."""
+    """Loss prevention and monetary exposure, label-aware.
+
+    ``loss_prevented`` counts a declined transaction only once a reviewer has
+    confirmed fraud; on unlabelled demo data it falls back to the all-declines
+    estimate and ``loss_prevented_basis`` says which. ``chargeback_bps`` comes
+    from labelled approved volume -- never from the declined share, which is
+    not a fraud rate.
+    """
     conn = _decision_conn()
     try:
-        rows = conn.execute("SELECT decision, input_features FROM decisions").fetchall()
-        total_gmv = 0.0
-        loss_prevented = 0.0
-        under_review_exposure = 0.0
-        cleared_safe_volume = 0.0
-
-        for r in rows:
-            amt = 135.0
-            if r["input_features"]:
-                with contextlib.suppress(Exception):
-                    amt = float(
-                        json.loads(r["input_features"]).get("TransactionAmt", 135.0) or 135.0
-                    )
-            total_gmv += amt
-            if r["decision"] == "DECLINE":
-                loss_prevented += amt
-            elif r["decision"] == "MANUAL_REVIEW":
-                under_review_exposure += amt
-            else:
-                cleared_safe_volume += amt
-
+        rows = _decision_rows(conn)
+        labelled = [r for r in rows if r["outcome"] in ("safe", "fraud")]
+        total_gmv = sum(r["amount"] for r in rows)
+        missing_amounts = sum(1 for r in rows if r["amount"] == 0.0)
+        under_review_exposure = sum(r["amount"] for r in rows if r["decision"] == "MANUAL_REVIEW")
+        cleared_safe_volume = sum(r["amount"] for r in rows if r["decision"] == "APPROVE")
+        loss_prevented_estimated = sum(r["amount"] for r in rows if r["decision"] == "DECLINE")
+        loss_prevented_confirmed = sum(
+            r["amount"] for r in labelled if r["decision"] == "DECLINE" and r["outcome"] == "fraud"
+        )
+        basis = "confirmed_labels" if labelled else "estimated_all_declines"
+        loss_prevented = loss_prevented_confirmed if labelled else loss_prevented_estimated
         return {
             "total_gmv": round(total_gmv, 2),
             "loss_prevented": round(loss_prevented, 2),
+            "loss_prevented_estimated": round(loss_prevented_estimated, 2),
+            "loss_prevented_confirmed": round(loss_prevented_confirmed, 2),
+            "loss_prevented_basis": basis,
             "under_review_exposure": round(under_review_exposure, 2),
             "cleared_safe_volume": round(cleared_safe_volume, 2),
             "fraud_prevention_roi": round((loss_prevented / max(total_gmv, 1.0)) * 100.0, 2),
-            "chargeback_bps": 16.4,
+            "chargeback_bps": _chargeback_bps(rows),
             "network_threshold_bps": 90.0,
+            "label_coverage_pct": round(len(labelled) / max(len(rows), 1) * 100.0, 2),
+            "missing_amounts": missing_amounts,
         }
     finally:
         conn.close()
+
+
+def metrics_economics(  # noqa: PLR0913
+    *,
+    cost_model: dict[str, Any] | None = None,
+    policy_mode: str = "threshold",
+) -> dict[str, Any]:
+    """Realised economics on labelled decisions + cost-policy counterfactual.
+
+    Both sides are scored with the same cost model: what the deployed policy
+    actually cost on transactions that have a reviewer label, versus what a
+    cost-optimal policy with the configured review capacity would have cost on
+    exactly those transactions. The delta is the money the cost policy would
+    have saved on that labelled subset -- an estimate, not a guarantee.
+    """
+    model = economics.CostModel(**(cost_model or {}))
+    conn = _decision_conn()
+    try:
+        rows = conn.execute(
+            "SELECT decision, score, input_features, reviewer_outcome FROM decisions"
+        ).fetchall()
+    finally:
+        conn.close()
+
+    labelled: list[dict[str, Any]] = []
+    for r in rows:
+        outcome = r["reviewer_outcome"]
+        if outcome not in ("safe", "fraud"):
+            continue
+        amount = 0.0
+        if r["input_features"]:
+            with contextlib.suppress(Exception):
+                amount = float(json.loads(r["input_features"]).get("TransactionAmt", 0.0) or 0.0)
+        labelled.append(
+            {
+                "action": r["decision"] or "",
+                "score": float(r["score"] or 0.0),
+                "amount": max(amount, 0.0),
+                "is_fraud": outcome == "fraud",
+            }
+        )
+
+    n = len(labelled)
+    floor = economics.benefit_floor(
+        model,
+        [row["amount"] for row in labelled],
+        [row["score"] for row in labelled],
+        model.max_review_rate,
+    )
+    actual_actions = [str(row["action"]) for row in labelled]
+    counter_actions = [
+        economics.decide(model, row["amount"], row["score"], benefit_floor=floor)[0]
+        for row in labelled
+    ]
+
+    def _cost_of(actions: list[str]) -> float:
+        return round(
+            sum(
+                economics.realized_cost(model, action, row["amount"], row["is_fraud"])
+                for action, row in zip(actions, labelled, strict=True)
+            ),
+            2,
+        )
+
+    def _by_action(actions: list[str]) -> dict[str, float]:
+        return {
+            action: round(
+                sum(
+                    economics.realized_cost(model, action, row["amount"], row["is_fraud"])
+                    for act, row in zip(actions, labelled, strict=True)
+                    if act == action
+                ),
+                2,
+            )
+            for action in economics.ACTIONS
+        }
+
+    actual_cost = _cost_of(actual_actions)
+    counter_cost = _cost_of(counter_actions)
+    saved = round(actual_cost - counter_cost, 2)
+    caught_actual = sum(
+        1
+        for action, row in zip(actual_actions, labelled, strict=True)
+        if action != economics.APPROVE and row["is_fraud"]
+    )
+    caught_counter = sum(
+        1
+        for action, row in zip(counter_actions, labelled, strict=True)
+        if action != economics.APPROVE and row["is_fraud"]
+    )
+    return {
+        "assumptions": {
+            **model.as_dict(),
+            "policy_mode": policy_mode,
+            "counterfactual": "cost-optimal policy with review capacity",
+            "counterfactual_review_benefit_floor": round(floor, 4),
+        },
+        "coverage": {
+            "n_decisions": len(rows),
+            "n_labelled": n,
+            "label_coverage_pct": round(n / max(len(rows), 1) * 100.0, 2),
+        },
+        "actual": {
+            "net_cost": actual_cost,
+            "cost_per_transaction": round(actual_cost / max(n, 1), 4),
+            "cost_by_action": _by_action(actual_actions),
+            "mix": {action: actual_actions.count(action) for action in economics.ACTIONS},
+        },
+        "counterfactual": {
+            "kind": "cost",
+            "net_cost": counter_cost,
+            "cost_per_transaction": round(counter_cost / max(n, 1), 4),
+            "cost_by_action": _by_action(counter_actions),
+            "mix": {action: counter_actions.count(action) for action in economics.ACTIONS},
+        },
+        "delta": {
+            "net_cost_saved": saved,
+            "savings_per_1k_labelled": round(saved / max(n, 1) * 1000.0, 2),
+            "fraud_caught_actual": caught_actual,
+            "fraud_caught_counterfactual": caught_counter,
+        },
+        "caveats": (
+            [
+                "Realised economics cover only decisions with a reviewer label.",
+                "Cost assumptions are explicit and versioned; align them with finance.",
+                "Counterfactual replays the stored score and amount, not a retrained model.",
+            ]
+            if n
+            else ["No labelled decisions yet: record reviewer outcomes to get economics."]
+        ),
+        "epoch": datetime.now(timezone.utc).isoformat(),
+    }
 
 
 def metrics_rules() -> list[dict[str, Any]]:

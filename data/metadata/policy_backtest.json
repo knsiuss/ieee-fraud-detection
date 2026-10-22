@@ -1,0 +1,136 @@
+{
+  "generated_at": "2026-10-22T19:20:33.825487+00:00",
+  "dataset": {
+    "path": "C:\\project\\ieee-fraud-detection\\data\\interim\\train_merged.parquet",
+    "rows": 100000,
+    "fraud_rate_pct": 3.576,
+    "total_amount": 13472916.55,
+    "avg_amount": 134.73
+  },
+  "model": {
+    "version": null,
+    "features": 400
+  },
+  "cost_model": {
+    "margin_rate": 0.3,
+    "review_cost": 2.0,
+    "chargeback_fee": 25.0,
+    "friction_cost": 1.5,
+    "liability_rate": 1.0,
+    "review_catch_rate": 0.85,
+    "max_review_rate": 0.05,
+    "version": "cost-v1"
+  },
+  "capacity": {
+    "max_review_rate_pct": 5.0,
+    "review_benefit_floor": 7.4781,
+    "recommended_env": {
+      "DECISION_POLICY": "cost",
+      "DECISION_REVIEW_BENEFIT_FLOOR": 7.4781
+    }
+  },
+  "policies": {
+    "threshold_v1": {
+      "n": 100000,
+      "actions": {
+        "APPROVE": 96234,
+        "MANUAL_REVIEW": 1478,
+        "DECLINE": 2288
+      },
+      "fraud_caught": 2953,
+      "fraud_missed": 623,
+      "net_cost": 144849.53,
+      "costs": {
+        "APPROVE": 120205.35,
+        "MANUAL_REVIEW": 22826.64,
+        "DECLINE": 1817.54
+      },
+      "cost_per_transaction": 1.4485,
+      "review_burden_pct": 1.48,
+      "kind": "threshold",
+      "review_above": 0.15,
+      "decline_above": 0.5,
+      "policy_version": "v1"
+    },
+    "threshold_best_fixed": {
+      "n": 100000,
+      "actions": {
+        "APPROVE": 81604,
+        "MANUAL_REVIEW": 15544,
+        "DECLINE": 2852
+      },
+      "fraud_caught": 3408,
+      "fraud_missed": 168,
+      "net_cost": 90199.88,
+      "costs": {
+        "APPROVE": 30163.68,
+        "MANUAL_REVIEW": 52527.59,
+        "DECLINE": 7508.61
+      },
+      "cost_per_transaction": 0.902,
+      "review_burden_pct": 15.54,
+      "kind": "threshold",
+      "review_above": 0.02,
+      "decline_above": 0.3,
+      "baseline_net_cost": 144849.53,
+      "savings": 54649.65,
+      "savings_per_1k": 546.5,
+      "savings_vs_v1": 54649.65
+    },
+    "threshold_best_within_capacity": {
+      "n": 100000,
+      "actions": {
+        "APPROVE": 93748,
+        "MANUAL_REVIEW": 3400,
+        "DECLINE": 2852
+      },
+      "fraud_caught": 3175,
+      "fraud_missed": 401,
+      "net_cost": 108626.28,
+      "costs": {
+        "APPROVE": 80415.92,
+        "MANUAL_REVIEW": 20701.75,
+        "DECLINE": 7508.61
+      },
+      "cost_per_transaction": 1.0863,
+      "review_burden_pct": 3.4,
+      "kind": "threshold",
+      "review_above": 0.07,
+      "decline_above": 0.3,
+      "baseline_net_cost": 144849.53,
+      "savings": 36223.25,
+      "savings_per_1k": 362.23,
+      "savings_vs_v1": 36223.25
+    },
+    "cost_optimal": {
+      "n": 100000,
+      "actions": {
+        "APPROVE": 92133,
+        "MANUAL_REVIEW": 5000,
+        "DECLINE": 2867
+      },
+      "fraud_caught": 3128,
+      "fraud_missed": 448,
+      "net_cost": 100435.0,
+      "costs": {
+        "APPROVE": 56311.85,
+        "MANUAL_REVIEW": 39935.71,
+        "DECLINE": 4187.44
+      },
+      "cost_per_transaction": 1.0044,
+      "review_burden_pct": 5.0,
+      "kind": "cost",
+      "policy_version": "cost-v1",
+      "review_benefit_floor": 7.4781,
+      "savings_vs_v1": 44414.53,
+      "savings_per_1k": 444.15
+    }
+  },
+  "caveats": [
+    "Net cost is defined by the stated cost model, not by accounting data.",
+    "The best fixed threshold is an in-sample upper bound for threshold policies.",
+    "The cost policy is scored on the stored scores of the same model.",
+    "threshold_best_within_capacity is the fair baseline: same review capacity, best fixed thresholds.",
+    "Fraud losses apply liability_rate; margin uses gross margin on the sale."
+  ]
+}

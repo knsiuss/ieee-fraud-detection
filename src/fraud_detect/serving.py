@@ -288,12 +288,33 @@ FEATURE_LABELS: dict[str, str] = {
 }
 
 
-def _shap_values(model: Any, features: pd.DataFrame) -> np.ndarray:
-    """SHAP log-odds contributions for the first row, aligned to ``features``."""
+_EXPLAINER_CACHE: dict[int, tuple[Any, Any]] = {}
+
+
+def _explainer(model: Any) -> Any:
+    """Return a cached ``shap.TreeExplainer`` for ``model``.
+
+    Building a TreeExplainer walks the whole booster (~2 s for the served
+    model), so constructing one per decision made the honest latency metric
+    report ~1.9 s per request. The explainer is model-scoped and deterministic;
+    caching it keeps the metric small while holding a strong reference so the
+    ``id`` key cannot be reused.
+    """
+    key = id(model)
+    cached = _EXPLAINER_CACHE.get(key)
+    if cached is not None and cached[0] is model:
+        return cached[1]
     import shap  # noqa: PLC0415
 
     explainer = shap.TreeExplainer(model)
-    raw = explainer.shap_values(features.iloc[:1].to_numpy())
+    _EXPLAINER_CACHE.clear()
+    _EXPLAINER_CACHE[key] = (model, explainer)
+    return explainer
+
+
+def _shap_values(model: Any, features: pd.DataFrame) -> np.ndarray:
+    """SHAP log-odds contributions for the first row, aligned to ``features``."""
+    raw = _explainer(model).shap_values(features.iloc[:1].to_numpy())
     # Binary LightGBM returns [neg_class, pos_class]; keep the pos-class row.
     values = np.asarray(raw[-1]) if isinstance(raw, list) else np.asarray(raw)
     return np.ravel(values)
