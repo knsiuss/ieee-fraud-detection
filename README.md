@@ -110,6 +110,10 @@ The objective is to predict the probability that an online payment transaction i
 
 ---
 
+## Operations
+
+Day-2 runbook (scheduled jobs, drift-guard exit codes, readiness checks, rollback): [docs/OPERATIONS.md](docs/OPERATIONS.md).
+
 ## Architecture
 
 ```mermaid
@@ -587,6 +591,8 @@ python scripts/evaluate_model.py        # -> data/metadata/evaluation.json
 
 # 3. Drift / data-quality report against a recent transactions file
 python scripts/drift_report.py          # -> data/metadata/drift_report.json
+python scripts/drift_guard.py           # -> drift_alert.json, exit 0/2/3 for cron
+python scripts/calibrate_model.py       # -> calibration.json (ECE/Brier report)
 
 # 4. Tests (no dataset required)
 make lint && make test

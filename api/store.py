@@ -347,6 +347,9 @@ def retrain_and_swap(data_df: pd.DataFrame | None = None) -> dict[str, Any]:
 # be reproduced and fed to the retraining pool. Features are stored in the DB
 # (audit), but never logged to stdout.
 
+#: A drift artefact older than this makes the service report degraded.
+READINESS_MAX_DRIFT_AGE_DAYS = 14
+
 DECISION_DB: Path = config.DATA_ROOT / "decisions" / "decisions.db"
 
 _SCHEMA = """
@@ -396,6 +399,35 @@ CREATE TABLE IF NOT EXISTS audit_reports (
     source           TEXT NOT NULL,
     generated_at     TEXT NOT NULL
 );
+
+-- The audit trail is append-only: a regenerated report may replace the
+-- current row, but the superseded version is archived first and rows can
+-- never be deleted.
+DROP TRIGGER IF EXISTS audit_reports_no_update;
+
+CREATE TABLE IF NOT EXISTS audit_report_versions (
+    id             INTEGER PRIMARY KEY AUTOINCREMENT,
+    transaction_id TEXT NOT NULL,
+    report         TEXT NOT NULL,
+    source         TEXT NOT NULL,
+    generated_at   TEXT NOT NULL,
+    replaced_at    TEXT NOT NULL
+);
+
+CREATE TRIGGER IF NOT EXISTS audit_reports_keep_versions
+BEFORE UPDATE ON audit_reports
+BEGIN
+    INSERT INTO audit_report_versions
+        (transaction_id, report, source, generated_at, replaced_at)
+    VALUES (OLD.transaction_id, OLD.report, OLD.source, OLD.generated_at,
+            strftime('%Y-%m-%dT%H:%M:%fZ', 'now'));
+END;
+
+CREATE TRIGGER IF NOT EXISTS audit_reports_no_delete
+BEFORE DELETE ON audit_reports
+BEGIN
+    SELECT RAISE(ABORT, 'audit_reports is append-only');
+END;
 """
 
 
@@ -411,6 +443,13 @@ def _decision_conn() -> sqlite3.Connection:
         conn.execute("ALTER TABLE decisions ADD COLUMN action TEXT")
     if "latency_ms" not in decision_columns:
         conn.execute("ALTER TABLE decisions ADD COLUMN latency_ms REAL")
+    for statement in (
+        "CREATE INDEX IF NOT EXISTS idx_decisions_status ON decisions(status)",
+        "CREATE INDEX IF NOT EXISTS idx_decisions_ts ON decisions(timestamp)",
+        "CREATE INDEX IF NOT EXISTS idx_feedback_reviewed ON feedback(reviewed_at)",
+        "CREATE INDEX IF NOT EXISTS idx_bandit_updated ON bandit_events(updated_at)",
+    ):
+        conn.execute(statement)
     conn.commit()
     return conn
 
@@ -534,6 +573,48 @@ def update_outcome(transaction_id: str, verdict: str, note: str | None) -> dict 
         apply_bandit_reward(transaction_id, str(row["decision"]), verdict)
 
     return get_decision(transaction_id)
+
+
+def replay_transaction_ids(prefix: str = "replay-") -> set[str]:
+    """Ids already produced by the labelled replay backfill."""
+    conn = _decision_conn()
+    try:
+        rows = conn.execute(
+            "SELECT transaction_id FROM decisions WHERE transaction_id LIKE ?",
+            (prefix + "%",),
+        ).fetchall()
+        return {r["transaction_id"] for r in rows}
+    finally:
+        conn.close()
+
+
+def bulk_label(labels: list[tuple[str, str, str | None]]) -> int:
+    """Apply ground-truth labels to many decisions in one transaction.
+
+    Used by corpus backfills (``scripts/labelled_replay.py``). Unlike
+    :func:`update_outcome` this does **not** write the retraining/feedback
+    pool: that pool is reserved for human reviewer verdicts, not replayed
+    historical labels. Returns the number of rows actually updated.
+    """
+    normalized: list[tuple[str, str, str | None]] = []
+    for transaction_id, verdict, note in labels:
+        if verdict not in ("safe", "fraud"):
+            raise ValueError(f"verdict must be 'safe' or 'fraud', got {verdict!r}")
+        normalized.append((verdict, note, transaction_id))
+    if not normalized:
+        return 0
+    conn = _decision_conn()
+    try:
+        before = conn.total_changes
+        conn.executemany(
+            "UPDATE decisions SET status='REVIEWED', reviewer_outcome=?, feedback_note=?"
+            " WHERE transaction_id=?",
+            normalized,
+        )
+        conn.commit()
+        return conn.total_changes - before
+    finally:
+        conn.close()
 
 
 def decision_stats() -> dict:
@@ -688,6 +769,34 @@ def _psi() -> dict[str, Any]:
             else None,
         }
     return missing
+
+
+def readiness() -> dict[str, Any]:
+    """Readiness checks an orchestrator can poll (DB + drift freshness)."""
+    checks: dict[str, Any] = {}
+    try:
+        with _decision_conn() as conn:
+            conn.execute("SELECT 1").fetchone()
+            conn.execute("PRAGMA quick_check").fetchone()
+        checks["ledger"] = True
+    except Exception:  # noqa: BLE001 - readiness must never raise
+        checks["ledger"] = False
+
+    drift = model_drift()
+    age: int | None = None
+    if drift.get("available") and drift.get("generated_at"):
+        try:
+            stamp = datetime.fromisoformat(str(drift["generated_at"]).replace("Z", "+00:00"))
+            if stamp.tzinfo is None:
+                stamp = stamp.replace(tzinfo=timezone.utc)
+            age = max(0, (datetime.now(timezone.utc) - stamp).days)
+        except ValueError:
+            age = None
+    checks["drift_artefact"] = bool(drift.get("available")) and (
+        age is None or age <= READINESS_MAX_DRIFT_AGE_DAYS
+    )
+    checks["drift_age_days"] = age
+    return checks
 
 
 def model_drift() -> dict[str, Any]:

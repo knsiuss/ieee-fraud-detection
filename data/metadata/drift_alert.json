@@ -1,0 +1,13 @@
+{
+  "evaluated_at": "2026-10-23T10:23:52+00:00",
+  "report": "C:\\project\\ieee-fraud-detection\\data\\metadata\\drift_report.json",
+  "status": "alert",
+  "reasons": [
+    "PSI 6.201 >= 0.25 on card1",
+    "24 features drifted >= 5"
+  ],
+  "max_psi": 6.201,
+  "drifted_features": 24,
+  "age_days": 0,
+  "action": "make retrain (candidate still must pass the validation gate)"
+}

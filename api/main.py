@@ -267,6 +267,8 @@ _RATE_LIMIT_PER_MIN = int(os.getenv("FRAUD_API_RATE_LIMIT", "300"))
 _RATE_WINDOW: collections.defaultdict[str, collections.deque] = collections.defaultdict(
     collections.deque
 )
+_RATE_SWEEP_SECONDS = 300.0
+_RATE_LAST_SWEEP = [0.0]
 
 
 @app.middleware("http")
@@ -279,6 +281,13 @@ async def rate_limit(request: Request, call_next):
     if len(window) >= _RATE_LIMIT_PER_MIN:
         return JSONResponse({"detail": "Rate limit exceeded. Try again shortly."}, status_code=429)
     window.append(now)
+    # Bound memory: drop idle clients every few minutes so a long-lived
+    # process cannot grow one deque per IP forever.
+    if now - _RATE_LAST_SWEEP[0] > _RATE_SWEEP_SECONDS:
+        _RATE_LAST_SWEEP[0] = now
+        for key, hits in list(_RATE_WINDOW.items()):
+            if not hits or hits[-1] < now - 120:
+                _RATE_WINDOW.pop(key, None)
     return await call_next(request)
 
 
@@ -574,6 +583,22 @@ def health() -> schemas.HealthResponse:
         )
     except Exception:
         return schemas.HealthResponse(status="ok", model_present=False)
+
+
+@app.api_route("/api/health/ready", methods=["GET", "HEAD"])
+def readiness() -> JSONResponse:
+    """Orchestrator readiness: model loaded, ledger writable, drift fresh."""
+    checks = store.readiness()
+    try:
+        _current()
+        checks["model"] = True
+    except Exception:  # noqa: BLE001 - readiness must never raise
+        checks["model"] = False
+    ok = all(bool(checks[key]) for key in ("model", "ledger", "drift_artefact"))
+    return JSONResponse(
+        {"status": "ready" if ok else "degraded", "checks": checks},
+        status_code=200 if ok else 503,
+    )
 
 
 @app.get("/api/model")

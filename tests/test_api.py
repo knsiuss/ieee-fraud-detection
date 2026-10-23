@@ -138,6 +138,13 @@ class TestReadEndpoints:
         res = client.get("/api/review/queue?status=ALL&limit=10")
         assert res.status_code == 200
 
+    def test_health_ready(self, client):
+        res = client.get("/api/health/ready")
+        assert res.status_code in {200, 503}
+        body = res.json()
+        assert body["checks"]["model"] is True
+        assert "ledger" in body["checks"]
+
     def test_model_drift(self, client):
         body = client.get("/api/model/drift").json()
         assert "available" in body

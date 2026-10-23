@@ -1,7 +1,7 @@
 {
-  "generated_at": "2026-08-17T11:33:50.774272+00:00",
-  "reference": "C:\\fraud\\ieee-fraud-detection\\data\\interim\\train_merged.parquet",
-  "recent": "C:\\fraud\\ieee-fraud-detection\\web\\sample_transactions.csv",
+  "generated_at": "2026-10-23T10:23:26.087595+00:00",
+  "reference": "C:\\project\\ieee-fraud-detection\\data\\interim\\train_merged.parquet",
+  "recent": "C:\\project\\ieee-fraud-detection\\web\\sample_transactions.csv",
   "n_features": 400,
   "drifted_features": 24,
   "top_drift": [

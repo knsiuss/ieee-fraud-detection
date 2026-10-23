@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import sqlite3
 import sys
+import uuid
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -55,6 +56,31 @@ def _isolated(tmp_path, monkeypatch):
     monkeypatch.setattr(config, "LGBM_NUM_BOOST_ROUND", 20)
     monkeypatch.setattr(config, "LGBM_EARLY_STOPPING_ROUNDS", 5)
     return tmp_path
+
+
+class TestAuditAppendOnly:
+    def test_update_archives_previous_version(self):
+        tx = f"audit-lock-{uuid.uuid4().hex[:8]}"
+        store.save_audit_report(tx, {"summary": "first"}, source="template")
+        store.save_audit_report(tx, {"summary": "second"}, source="template")
+        with store._decision_conn() as conn:
+            versions = conn.execute(
+                "SELECT report FROM audit_report_versions WHERE transaction_id = ?",
+                (tx,),
+            ).fetchall()
+            current = conn.execute(
+                "SELECT report FROM audit_reports WHERE transaction_id = ?",
+                (tx,),
+            ).fetchone()
+        assert len(versions) == 1
+        assert json.loads(versions[0]["report"]) == {"summary": "first"}
+        assert json.loads(current["report"]) == {"summary": "second"}
+
+    def test_delete_is_rejected(self):
+        tx = f"audit-lock-{uuid.uuid4().hex[:8]}"
+        store.save_audit_report(tx, {"summary": "second"}, source="template")
+        with pytest.raises(sqlite3.IntegrityError), store._decision_conn() as conn:
+            conn.execute("DELETE FROM audit_reports WHERE transaction_id = ?", (tx,))
 
 
 class TestJsonSafe:
@@ -208,3 +234,45 @@ class TestHonestMetrics:
             conn.close()
         assert out["samples"] == 0
         assert out["p50_ms"] is None
+
+
+class TestBulkLabel:
+    """Corpus backfills label decisions in bulk without the human pool."""
+
+    def _record(self, tx: str) -> None:
+        store.record_decision(
+            transaction_id=tx,
+            model_version="test-current",
+            contract_version="v1",
+            score=0.2,
+            decision="APPROVE",
+            action=None,
+            policy_version="v1",
+            thresholds={"review_above": 0.15, "decline_above": 0.5},
+            reason_codes=[],
+            feature_report={},
+            input_features={"TransactionAmt": 10.0},
+        )
+
+    def test_labels_many_decisions_in_one_pass(self, _isolated):
+        for tx in ("replay-1", "replay-2"):
+            self._record(tx)
+        updated = store.bulk_label(
+            [
+                ("replay-1", "safe", "backfill"),
+                ("replay-2", "fraud", None),
+                ("missing", "safe", None),
+            ]
+        )
+        assert updated == 2
+        assert store.get_decision("replay-1")["reviewer_outcome"] == "safe"
+        assert store.get_decision("replay-2")["reviewer_outcome"] == "fraud"
+        assert store.get_decision("replay-2")["status"] == "REVIEWED"
+        assert store.replay_transaction_ids() == {"replay-1", "replay-2"}
+
+    def test_rejects_unknown_verdict(self, _isolated):
+        with pytest.raises(ValueError, match="verdict must be"):
+            store.bulk_label([("x", "maybe", None)])
+
+    def test_empty_labels_is_noop(self, _isolated):
+        assert store.bulk_label([]) == 0

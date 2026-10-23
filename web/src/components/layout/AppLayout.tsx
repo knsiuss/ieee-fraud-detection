@@ -14,7 +14,6 @@ import {
   FileSpreadsheet,
   Network,
   History,
-  Cpu,
   Sun,
   Moon,
   ChevronRight,
@@ -50,10 +49,6 @@ const NAV_GROUPS: Array<{ label: string; items: NavItem[] }> = [
       { path: '/policy', label: 'Policy & Graph', icon: Network },
     ],
   },
-  {
-    label: 'Platform',
-    items: [{ path: '/model', label: 'Model Operations', icon: Cpu }],
-  },
 ];
 
 const PAGE_META: Record<string, { title: string; subtitle: string }> = {
@@ -64,7 +59,6 @@ const PAGE_META: Record<string, { title: string; subtitle: string }> = {
   '/batch': { title: 'Batch Scanner', subtitle: 'Score transaction files at throughput' },
   '/policy': { title: 'Policy & Decision Graph', subtitle: 'Decision policy, adaptive layer and network topology' },
   '/audit': { title: 'Forensic Audit', subtitle: 'Decision ledger, appeals and compliance trail' },
-  '/model': { title: 'Model Operations', subtitle: 'Served model, drift monitoring and retraining' },
 };
 
 const StreamStatus: React.FC<{ isConnected: boolean; latencyMs: number }> = ({

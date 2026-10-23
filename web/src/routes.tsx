@@ -24,10 +24,6 @@ const PolicyGraph = lazy(() =>
 const ForensicAudit = lazy(() =>
   import('./features/m7-forensic-audit/ForensicAudit').then((m) => ({ default: m.ForensicAudit }))
 );
-const ModelMlops = lazy(() =>
-  import('./features/m8-model-mlops/ModelMlops').then((m) => ({ default: m.ModelMlops }))
-);
-
 const LoadingFallback = () => (
   <div className="p-6 space-y-4">
     <Skeleton className="h-8 w-48" />
@@ -99,14 +95,6 @@ export const router = createHashRouter([
         element: (
           <Suspense fallback={<LoadingFallback />}>
             <ForensicAudit />
-          </Suspense>
-        ),
-      },
-      {
-        path: 'model',
-        element: (
-          <Suspense fallback={<LoadingFallback />}>
-            <ModelMlops />
           </Suspense>
         ),
       },
