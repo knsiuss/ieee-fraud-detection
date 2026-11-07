@@ -307,6 +307,7 @@ def retrain_and_swap(data_df: pd.DataFrame | None = None) -> dict[str, Any]:
     )
 
     swapped = new_auc >= old_auc + GATE_MIN_IMPROVEMENT
+    old_version = model_info().get("version")
     if swapped:
         profiles = {
             "nonfraud": median_baseline(features, df.loc[df[config.TARGET_COLUMN] == 0]),
@@ -332,7 +333,7 @@ def retrain_and_swap(data_df: pd.DataFrame | None = None) -> dict[str, Any]:
         "swapped": bool(swapped),
         "old_auc": old_auc,
         "new_auc": new_auc,
-        "old_version": model_info().get("version"),
+        "old_version": old_version,
         "feedback_rows": int(len(feedback)),
         "reason": (
             "New model beats the served model on validation; swapped."
@@ -434,23 +435,15 @@ END;
 def _decision_conn() -> sqlite3.Connection:
     DECISION_DB.parent.mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(str(DECISION_DB))
+    conn.execute("PRAGMA journal_mode=WAL")
+    conn.execute("PRAGMA busy_timeout=5000")
     conn.row_factory = sqlite3.Row
-    conn.executescript(_SCHEMA)
-    decision_columns = {
-        row["name"] for row in conn.execute("PRAGMA table_info(decisions)").fetchall()
-    }
-    if "action" not in decision_columns:
-        conn.execute("ALTER TABLE decisions ADD COLUMN action TEXT")
-    if "latency_ms" not in decision_columns:
-        conn.execute("ALTER TABLE decisions ADD COLUMN latency_ms REAL")
-    for statement in (
-        "CREATE INDEX IF NOT EXISTS idx_decisions_status ON decisions(status)",
-        "CREATE INDEX IF NOT EXISTS idx_decisions_ts ON decisions(timestamp)",
-        "CREATE INDEX IF NOT EXISTS idx_feedback_reviewed ON feedback(reviewed_at)",
-        "CREATE INDEX IF NOT EXISTS idx_bandit_updated ON bandit_events(updated_at)",
-    ):
-        conn.execute(statement)
-    conn.commit()
+    db_key = str(DECISION_DB.resolve())
+    migrated = getattr(_decision_conn, "_migrated", set())
+    if db_key not in migrated:
+        conn.executescript(_SCHEMA)
+        migrated.add(db_key)
+        _decision_conn._migrated = migrated  # type: ignore[attr-defined]
     return conn
 
 
@@ -775,9 +768,12 @@ def readiness() -> dict[str, Any]:
     """Readiness checks an orchestrator can poll (DB + drift freshness)."""
     checks: dict[str, Any] = {}
     try:
-        with _decision_conn() as conn:
+        conn = _decision_conn()
+        try:
             conn.execute("SELECT 1").fetchone()
             conn.execute("PRAGMA quick_check").fetchone()
+        finally:
+            conn.close()
         checks["ledger"] = True
     except Exception:  # noqa: BLE001 - readiness must never raise
         checks["ledger"] = False
@@ -791,10 +787,8 @@ def readiness() -> dict[str, Any]:
                 stamp = stamp.replace(tzinfo=timezone.utc)
             age = max(0, (datetime.now(timezone.utc) - stamp).days)
         except ValueError:
-            age = None
-    checks["drift_artefact"] = bool(drift.get("available")) and (
-        age is None or age <= READINESS_MAX_DRIFT_AGE_DAYS
-    )
+            age = 999
+    checks["drift_artefact"] = bool(drift.get("available")) and age is not None and age <= READINESS_MAX_DRIFT_AGE_DAYS
     checks["drift_age_days"] = age
     return checks
 
@@ -1000,13 +994,14 @@ def metrics_timeseries(window_minutes: int = 60, bucket_seconds: int = 60) -> li
                         b["reviewed"] += 1
                     elif dec == "DECLINE":
                         b["declined"] += 1
-                    amt = 120.0
+                    amt = 0.0
                     if r["input_features"]:
                         with contextlib.suppress(Exception):
-                            amt = float(
-                                json.loads(r["input_features"]).get("TransactionAmt", 120.0)
-                                or 120.0
-                            )
+                            raw_amt = json.loads(r["input_features"]).get("TransactionAmt")
+                            if raw_amt is not None:
+                                f_amt = float(raw_amt)
+                                if f_amt == f_amt and abs(f_amt) != float("inf"):
+                                    amt = f_amt
                     b["amount_sum"] = round(b["amount_sum"] + amt, 2)
                     b["_score_sum"] += float(r["score"] or 0.0)
             except Exception:
@@ -1261,12 +1256,14 @@ def metrics_rules() -> list[dict[str, Any]]:
             if not codes:
                 continue
 
-            amt = 145.0
+            amt = 0.0
             if r["input_features"]:
                 with contextlib.suppress(Exception):
-                    amt = float(
-                        json.loads(r["input_features"]).get("TransactionAmt", 145.0) or 145.0
-                    )
+                    raw_amt = json.loads(r["input_features"]).get("TransactionAmt")
+                    if raw_amt is not None:
+                        f_amt = float(raw_amt)
+                        if f_amt == f_amt and abs(f_amt) != float("inf"):
+                            amt = f_amt
             is_block = r["decision"] == "DECLINE"
             score = float(r["score"] or 0.0)
 

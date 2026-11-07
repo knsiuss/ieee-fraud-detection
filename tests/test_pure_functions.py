@@ -97,7 +97,8 @@ def test_add_time_features_vectorised_and_idempotent():
     out = features.add_time_features(df)
     # hour 0, 1, 0 (86400s = exactly one day, wraps back to 00:00).
     assert out["hour"].tolist() == [0, 1, 0]
-    assert out["day_of_week"].tolist() == [0, 0, 1]
+    # 2017-11-30 (Thu) -> dayofweek 3; +86400s -> Fri (4).
+    assert out["day_of_week"].tolist() == [3, 3, 4]
     # All three fall in the night window (hour 0 and 1 are both <= 5).
     assert out["is_night"].tolist() == [1, 1, 1]
     # Re-running does not duplicate or corrupt columns.

@@ -47,6 +47,13 @@ class DecisionPolicy:
         }
     )
 
+    def __post_init__(self) -> None:
+        if not (0.0 <= self.review_above <= self.decline_above <= 1.0):
+            raise ValueError(
+                f"Thresholds must satisfy 0 <= review_above <= decline_above <= 1, "
+                f"got review_above={self.review_above!r}, decline_above={self.decline_above!r}"
+            )
+
     def apply(self, probability: float) -> tuple[Decision, str]:
         """Map a fraud probability to a (decision, action) pair."""
         if probability >= self.decline_above:

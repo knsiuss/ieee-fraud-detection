@@ -123,7 +123,7 @@ def get_imputation_strategy(
     * ``>75%`` missing → keep only a missing-indicator.
     * ``>10%`` missing → impute (median for numeric, mode for categorical)
       *and* add a missing-indicator.
-    * ``<=10%`` missing → impute without an indicator.
+    * ``<=10%`` missing → impute (median for numeric without indicator; mode for categorical with indicator).
     * ``0%`` missing → no action.
     """
     if missing_pct == 0:
@@ -136,7 +136,7 @@ def get_imputation_strategy(
     is_numeric = pd.api.types.is_numeric_dtype(dtype)
     if missing_pct > config.MODERATE_THRESHOLD * 100:
         return "Median + Indicator" if is_numeric else "Mode + Indicator"
-    return "Median" if is_numeric else "Mode + Indicator"
+    return "Median" if is_numeric else "Mode+Indicator"
 
 
 def compute_missing_report(df: pd.DataFrame) -> pd.DataFrame:

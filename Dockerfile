@@ -30,7 +30,8 @@ COPY web/sample_transactions.csv ./web/sample_transactions.csv
 COPY --from=frontend-build /web/dist ./web/dist
 
 # Bootstrap model from the committed sample (skips cleanly if a model is baked).
-RUN python scripts/train_model.py || echo "bootstrap model not built (using baked artefact)"
+# Fails loudly when neither baked artefact nor sample data can produce a model.
+RUN python scripts/train_model.py || python -c "from pathlib import Path; raise SystemExit(0 if list(Path('data/models').glob('*.joblib')) else 1)"
 
 EXPOSE 7860
 CMD ["sh", "-c", "uvicorn api.main:app --host 0.0.0.0 --port ${PORT:-7860}"]

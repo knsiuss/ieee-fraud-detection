@@ -63,6 +63,7 @@ def bandit_client(tmp_path, monkeypatch):
     monkeypatch.setattr(main, "_BANDIT_ENABLED", True)
     monkeypatch.setattr(main, "_BANDIT_MIN_REWARDS", 0)
     monkeypatch.setattr(main, "_BANDIT_STATE", BanditState())
+    monkeypatch.setattr(main, "_ADMIN_KEY", "sekret")
     main._clear_cache()
     return TestClient(main.app)
 
@@ -216,7 +217,11 @@ class TestAuditReportEndpoint:
 class TestAppealEndpoint:
     def test_appeal_overturns_decline(self, bandit_client):
         _record_decline("app-1")
-        resp = bandit_client.post("/api/review/app-1/appeal", json={"note": "customer called in"})
+        resp = bandit_client.post(
+            "/api/review/app-1/appeal",
+            json={"note": "customer called in"},
+            headers={"X-Admin-Key": "sekret"},
+        )
         assert resp.status_code == 200
         body = resp.json()
         assert body["reviewer_outcome"] == "safe"
@@ -226,18 +231,22 @@ class TestAppealEndpoint:
 
     def test_appeal_no_body_uses_default_note(self, bandit_client):
         _record_decline("app-1b")
-        resp = bandit_client.post("/api/review/app-1b/appeal")
+        resp = bandit_client.post("/api/review/app-1b/appeal", headers={"X-Admin-Key": "sekret"})
         assert resp.status_code == 200
         assert resp.json()["reviewer_outcome"] == "safe"
 
     def test_appeal_missing_decision_404(self, bandit_client):
-        resp = bandit_client.post("/api/review/never/appeal", json={})
+        resp = bandit_client.post(
+            "/api/review/never/appeal", json={}, headers={"X-Admin-Key": "sekret"}
+        )
         assert resp.status_code == 404
 
     def test_appeal_confirmed_fraud_422(self, bandit_client):
         _record_decline("app-2")
         store.update_outcome("app-2", "fraud", "reviewed")
-        resp = bandit_client.post("/api/review/app-2/appeal", json={})
+        resp = bandit_client.post(
+            "/api/review/app-2/appeal", json={}, headers={"X-Admin-Key": "sekret"}
+        )
         assert resp.status_code == 422
 
     def test_appeal_fans_reward_into_checkpoint(self, bandit_client):
@@ -253,7 +262,11 @@ class TestAppealEndpoint:
             context=[0.91, 0.1, 0, 0, 0, 0, 1.0],
         )
         _record_decline("app-3")
-        resp = bandit_client.post("/api/review/app-3/appeal", json={"note": "oops"})
+        resp = bandit_client.post(
+            "/api/review/app-3/appeal",
+            json={"note": "oops"},
+            headers={"X-Admin-Key": "sekret"},
+        )
         assert resp.status_code == 200
         event = store.get_bandit_event("app-3")
         assert event["reward"] == -2.5  # overturned decline: large penalty

@@ -43,7 +43,8 @@ def plot_target_distribution(
     configure_style()
     counts = y.value_counts().sort_index()
     fig, ax = plt.subplots(figsize=(6, 4)) if ax is None else (ax.figure, ax)
-    bars = ax.bar(["Not Fraud (0)", "Fraud (1)"], counts.values, color=["#4c72b0", "#c44e52"])
+    labels = ["Fraud (1)" if k == 1 else "Not Fraud (0)" if k == 0 else str(k) for k in counts.index]
+    bars = ax.bar(labels, counts.values, color=["#4c72b0", "#c44e52"][: len(counts)])
     for bar, count in zip(bars, counts.values, strict=True):
         ax.text(
             bar.get_x() + bar.get_width() / 2,

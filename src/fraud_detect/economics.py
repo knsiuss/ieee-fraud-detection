@@ -124,10 +124,13 @@ def benefit_floor(
     """
     amount_arr, prob_arr, _ = _as_arrays(amounts, probs, probs)
     n = int(amount_arr.size)
+    if not np.isfinite(float(max_review_rate)):
+        raise ValueError(f"max_review_rate must be finite, got {max_review_rate!r}")
     rate = min(max(float(max_review_rate), 0.0), 1.0)
     if n == 0:
         return 0.0
-    k = int(round(n * rate))
+    import math
+    k = int(math.floor(n * rate))
     if k <= 0:
         return float("inf")
     if k >= n:
@@ -314,7 +317,12 @@ def evaluate_cost_policy(  # noqa: PLR0913
     key = "review_benefit_floor"
     if amount_arr.size == 0:
         empty = _summarise(np.asarray([]), costs, label_arr)
-        return {**empty, "kind": "cost", key: round(float(benefit_floor), 4)}
+        return {
+            **empty,
+            "kind": "cost",
+            "policy_version": model.version,
+            key: round(float(benefit_floor), 4),
+        }
     ev = _cost_vectors(model, amount_arr, prob_arr)
     benefits = _review_benefit_vector(model, amount_arr, prob_arr)
     # Candidates: APPROVE/DECLINE always, MANUAL_REVIEW only above the floor.

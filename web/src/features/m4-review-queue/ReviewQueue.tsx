@@ -60,11 +60,16 @@ export const ReviewQueue: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['review-queue'] });
       queryClient.invalidateQueries({ queryKey: ['metrics-summary'] });
       queryClient.invalidateQueries({ queryKey: ['metrics-dispositions'] });
+      setOutcomeError(null);
     },
   });
+  const [outcomeError, setOutcomeError] = useState<string | null>(null);
 
   const handleAction = (id: string, verdict: 'safe' | 'fraud') => {
-    outcomeMutation.mutate({ id, verdict, note: feedbackNote || `Analyst verdict: ${verdict}` });
+    outcomeMutation.mutate(
+      { id, verdict, note: feedbackNote || `Analyst verdict: ${verdict}` },
+      { onError: (err: any) => setOutcomeError(err?.message || 'Submission failed') }
+    );
   };
 
   const columns: ColumnDef<DecisionItem, any>[] = [
@@ -102,11 +107,10 @@ export const ReviewQueue: React.FC = () => {
       accessorKey: 'timestamp',
       header: 'Queued At (UTC)',
       cell: ({ row }) => {
-        try {
-          return new Date(row.original.timestamp).toLocaleString();
-        } catch {
-          return row.original.timestamp;
-        }
+        const d = new Date(row.original.timestamp);
+        return Number.isNaN(d.getTime())
+          ? row.original.timestamp
+          : d.toLocaleString('en-GB', { timeZone: 'UTC', hour12: false });
       },
     },
     {
@@ -143,6 +147,11 @@ export const ReviewQueue: React.FC = () => {
 
   return (
     <div className="space-y-5">
+      {outcomeError && (
+        <div className="panel p-4 rounded-xl border border-status-decline/30 text-sm text-status-decline">
+          Submission failed: {outcomeError}
+        </div>
+      )}
       {/* Header & SLA Badges */}
       <div className="flex flex-wrap items-center justify-between gap-3 panel p-5 rounded-xl">
         <div>

@@ -37,6 +37,8 @@ from __future__ import annotations
 import asyncio
 import collections
 import io
+import hashlib
+import hmac
 import json
 import os
 import re
@@ -232,8 +234,9 @@ def _seed_initial_decisions():
     except Exception as e:
         print("Startup seed skipped:", e)
 
-    # Launch continuous live traffic generator in background
-    asyncio.create_task(_background_traffic_loop())
+    # Launch continuous live traffic generator in background (demo only).
+    if os.getenv("FRAUD_DEMO_TRAFFIC", "0").strip() == "1":
+        app.state.radar_task = asyncio.create_task(_background_traffic_loop())
 
 
 @app.exception_handler(MissingArtefactError)
@@ -274,6 +277,10 @@ _RATE_LAST_SWEEP = [0.0]
 @app.middleware("http")
 async def rate_limit(request: Request, call_next):
     ip = request.client.host if request.client else "unknown"
+    if os.getenv("TRUST_PROXY", "0").strip() == "1":
+        xff = request.headers.get("x-forwarded-for")
+        if xff:
+            ip = xff.split(",")[0].strip() or ip
     now = time.monotonic()
     window = _RATE_WINDOW[ip]
     while window and window[0] < now - 60:
@@ -568,7 +575,7 @@ def _require_admin(admin_key: str | None, operation: str) -> None:
             status_code=503,
             detail=f"{operation} is disabled: FRAUD_API_ADMIN_KEY is not configured.",
         )
-    if admin_key != _ADMIN_KEY:
+    if not hmac.compare_digest(admin_key or "", _ADMIN_KEY):
         raise HTTPException(status_code=403, detail="Invalid admin key.")
 
 
@@ -582,7 +589,7 @@ def health() -> schemas.HealthResponse:
             model_version=store.version(art),
         )
     except Exception:
-        return schemas.HealthResponse(status="ok", model_present=False)
+        return schemas.HealthResponse(status="degraded", model_present=False)
 
 
 @app.api_route("/api/health/ready", methods=["GET", "HEAD"])
@@ -752,8 +759,9 @@ async def predict_batch(  # noqa: PLR0915 - row loop carries the full decision p
     file: Annotated[UploadFile, File()],
     background: BackgroundTasks,
 ) -> schemas.BatchScoreResponse:
-    raw = await file.read()
-    if len(raw) > 50 * 1024 * 1024:
+    limit = 50 * 1024 * 1024 + 1
+    raw = await file.read(limit)
+    if len(raw) == limit:
         raise HTTPException(status_code=413, detail="File too large (limit 50 MB).")
     try:
         df = pd.read_csv(io.BytesIO(raw))
@@ -763,7 +771,12 @@ async def predict_batch(  # noqa: PLR0915 - row loop carries the full decision p
     art = _current()
     id_col = "TransactionID" if "TransactionID" in df.columns else None
     numeric_cols = [c for c in art.features if c in df.columns]
-    x = align_features(df, art.features)
+    try:
+        x = align_features(df, art.features)
+    except (ValueError, TypeError) as exc:
+        raise HTTPException(
+            status_code=422, detail=f"Unparsable batch: {exc}"
+        ) from exc
     probs = predict_proba(art.model, x)
 
     compute_reasons = len(df) <= 50
@@ -784,7 +797,7 @@ async def predict_batch(  # noqa: PLR0915 - row loop carries the full decision p
             has_id = not pd.isna(raw_id)
         except (TypeError, ValueError):
             has_id = True
-        tx = _batch_transaction_id(raw_id, i) if id_col is not None else f"row-{i}"
+        tx = _batch_transaction_id(raw_id, i) if id_col is not None else f"row-{hashlib.sha256(x.iloc[i].to_json().encode()).hexdigest()[:16]}"
         try:
             _validate_transaction_id(tx)
         except HTTPException as exc:
@@ -798,20 +811,7 @@ async def predict_batch(  # noqa: PLR0915 - row loop carries the full decision p
                 else None
             )
             input_features = {c: float(x.iloc[i][c]) for c in art.features}
-            decided = (
-                _decide_with_policy(prob, drivers or [], input_features)
-                if drivers is not None
-                else None
-            )
-            if decided is None:
-                decision, action = _POLICY.apply(prob)
-                decided = {
-                    "decision": decision.value,
-                    "action": action,
-                    "policy_version": _POLICY.version,
-                    "thresholds": _POLICY.as_dict(),
-                    "bandit_event": None,
-                }
+            decided = _decide_with_policy(prob, drivers or [], input_features)
             if decided["bandit_event"] is not None:
                 store.record_bandit_event(transaction_id=tx, **decided["bandit_event"])
             latency_ms = round((time.perf_counter() - row_started) * 1000.0, 2)
@@ -936,12 +936,14 @@ def review_detail(
     return record
 
 
-def _verify_admin_if_configured(admin_key: str | None) -> None:
-    if _ADMIN_KEY and admin_key != _ADMIN_KEY:
+def _require_admin_failclosed(admin_key: str | None, operation: str) -> None:
+    if not _ADMIN_KEY:
         raise HTTPException(
-            status_code=403,
-            detail="Forbidden: invalid or missing admin key.",
+            status_code=503,
+            detail=f"{operation} is disabled: FRAUD_API_ADMIN_KEY is not configured.",
         )
+    if not hmac.compare_digest(admin_key or "", _ADMIN_KEY):
+        raise HTTPException(status_code=403, detail="Invalid admin key.")
 
 
 @app.post("/api/review/{transaction_id}/outcome")
@@ -950,7 +952,7 @@ def review_outcome(
     req: schemas.ReviewOutcomeRequest,
     admin_key: str | None = Header(default=None, alias="X-Admin-Key"),
 ) -> dict:
-    _verify_admin_if_configured(admin_key)
+    _require_admin_failclosed(admin_key, "Review outcome")
     _validate_transaction_id(transaction_id)
     updated = store.update_outcome(transaction_id, req.verdict, req.note)
     if updated is None:
@@ -1165,7 +1167,7 @@ def audit_appeal(
     recorded as a normal reviewer outcome, so it audits and feeds the retrain
     pool like any other verdict.
     """
-    _verify_admin_if_configured(admin_key)
+    _require_admin_failclosed(admin_key, "Decision appeal")
     _validate_transaction_id(transaction_id)
     record = store.get_decision(transaction_id)
     if record is None:
@@ -1218,7 +1220,10 @@ if os.path.isdir(_DIST_DIR) and os.path.isfile(_INDEX_FILE):
         )
         if excluded:
             raise HTTPException(status_code=404, detail="Not Found")
-        file_path = os.path.join(_DIST_DIR, full_path)
-        if full_path and os.path.isfile(file_path):
+        dist_root = os.path.realpath(_DIST_DIR)
+        file_path = os.path.realpath(os.path.join(dist_root, full_path))
+        if not file_path.startswith(dist_root + os.sep) and file_path != os.path.join(dist_root, "index.html"):
+            raise HTTPException(status_code=404, detail="Not Found")
+        if full_path and file_path.startswith(dist_root + os.sep) and os.path.isfile(file_path):
             return FileResponse(file_path)
         return FileResponse(_INDEX_FILE)

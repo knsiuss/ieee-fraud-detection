@@ -29,8 +29,7 @@ export const ExecImpact: React.FC = () => {
 
   const totalGmv = loss?.total_gmv ?? summary?.gmv_total ?? null;
   const lossPrevented = loss?.loss_prevented ?? summary?.loss_prevented ?? null;
-  const safeVolume =
-    loss?.cleared_safe_volume ?? (totalGmv != null && lossPrevented != null ? totalGmv - lossPrevented : null);
+  const safeVolume = loss?.cleared_safe_volume ?? null;
   const underReviewExposure = loss?.under_review_exposure ?? null;
   const chargeback = loss?.chargeback_bps ?? null;
   const compliance =
@@ -139,7 +138,7 @@ export const ExecImpact: React.FC = () => {
               {/* Progress pill track */}
               <div className="w-full bg-surface-1 h-2.5 rounded-full overflow-hidden relative border border-border-subtle p-0.5">
                 <div
-                  className="bg-status-approve h-full rounded-full transition-all duration-300"
+                  className={`${(loss?.chargeback_bps ?? 0) >= 90 ? 'bg-status-block' : (loss?.chargeback_bps ?? 0) >= 50 ? 'bg-status-review' : 'bg-status-approve'} h-full rounded-full transition-all duration-300`}
                   style={{ width: `${Math.min(((loss?.chargeback_bps ?? 0) / 90) * 100, 100)}%` }}
                 />
               </div>

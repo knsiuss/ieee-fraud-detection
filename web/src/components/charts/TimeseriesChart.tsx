@@ -73,7 +73,7 @@ export const TimeseriesChart: React.FC<TimeseriesChartProps> = ({
           </div>
           <div class="flex justify-between gap-6 pt-1 border-t border-border-subtle">
             <span>Evaluated GMV:</span>
-            <b>$${bucket.amount_sum.toLocaleString()}</b>
+            <b>$${Number(bucket.amount_sum ?? 0).toLocaleString()}</b>
           </div>
         </div>`;
       },

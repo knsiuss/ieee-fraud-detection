@@ -479,8 +479,8 @@ def train_model(
         "xgboost": (config.XGB_NUM_BOOST_ROUND, config.XGB_EARLY_STOPPING_ROUNDS),
         "catboost": (config.CB_NUM_BOOST_ROUND, config.CB_EARLY_STOPPING_ROUNDS),
     }
-    _num_boost = num_boost_round or _boost_map[backend.value][0]
-    _early_stop = early_stopping_rounds or _boost_map[backend.value][1]
+    _num_boost = num_boost_round if num_boost_round is not None else _boost_map[backend.value][0]
+    _early_stop = early_stopping_rounds if early_stopping_rounds is not None else _boost_map[backend.value][1]
 
     split = make_train_val_split(df)
     fit_fn = _BACKEND_FIT_MAP[backend]

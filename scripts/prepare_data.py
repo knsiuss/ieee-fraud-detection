@@ -119,20 +119,25 @@ def main(argv: list[str] | None = None) -> int:
 
     records: list[dict[str, float | int | str]] = []
     total_start = time.time()
+    failures = 0
     for name, csv_path in CSV_TO_PARQUET.items():
         if not csv_path.exists():
             logger.warning("CSV not found, skipping: %s", csv_path)
+            failures += 1
             continue
         try:
             records.append(convert_one(name, csv_path))
         except Exception as exc:  # noqa: BLE001 — surface every failure without aborting
             logger.error("conversion failed for %s: %s", name, exc)
+            failures += 1
 
     if records:
         summary = pd.DataFrame(records)
         logger.info("=== Conversion summary ===\n%s", summary.to_string(index=False))
 
     logger.info("Total elapsed: %.1fs", time.time() - total_start)
+    if not records or failures:
+        return 1
     return 0
 
 

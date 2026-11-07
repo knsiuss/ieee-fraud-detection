@@ -51,13 +51,20 @@ export function useSSE() {
         setError(null);
         reconnectAttemptsRef.current = 0;
         const ping = Math.round(performance.now() - startTime);
-        if (ping > 0) setLatencyMs(Math.min(ping, 45));
+        if (ping > 0) setLatencyMs(ping);
       };
 
       es.addEventListener('decision', (event: MessageEvent) => {
         try {
-          const item: DecisionItem = JSON.parse(event.data);
-          bufferRef.current.push(item);
+          const item: any = JSON.parse(event.data);
+          if (
+            typeof item?.transaction_id !== 'string' ||
+            typeof item?.score !== 'number' ||
+            !['APPROVE', 'MANUAL_REVIEW', 'DECLINE'].includes(item?.decision)
+          ) {
+            return;
+          }
+          bufferRef.current.push(item as DecisionItem);
           if (bufferRef.current.length > MAX_BUFFER) {
             bufferRef.current = bufferRef.current.slice(-MAX_BUFFER);
           }

@@ -63,6 +63,8 @@ class EnsembleConfig:
                 f"number of backends ({len(self.model_backends)})"
             )
             raise ValueError(msg)
+        if self.meta_learner != "logistic":
+            raise ValueError(f"Unsupported meta_learner: {self.meta_learner!r} (only 'logistic')")
 
 
 def _predict_from_models(
@@ -91,7 +93,12 @@ def _normalise_weights(weights: list[float] | None, n: int) -> np.ndarray:
     if weights is None:
         return np.full(n, 1.0 / n)
     w = np.asarray(weights, dtype=float)
-    return w / w.sum()
+    if not np.isfinite(w).all():
+        raise ValueError("Weights must be finite")
+    total = w.sum()
+    if total == 0:
+        raise ValueError("Weights must not sum to zero")
+    return w / total
 
 
 def build_voting_ensemble(
@@ -208,6 +215,10 @@ def build_stacking_ensemble(
     """
     from sklearn.linear_model import LogisticRegression
 
+    if getattr(config_obj.strategy, "value", config_obj.strategy) not in ("STACKING", "stacking"):
+        msg = f"Expected STACKING strategy, got {config_obj.strategy!r}"
+        raise ValueError(msg)
+
     for backend in config_obj.model_backends:
         if backend not in models_dict:
             msg = f"Missing backend {backend.value} in models_dict"
@@ -227,10 +238,6 @@ def build_stacking_ensemble(
         random_state=config_obj.random_state,
     )
     meta.fit(meta_features, y_val)
-
-    train_preds = _predict_from_models(models_dict, X_train)
-    train_meta = np.column_stack([train_preds[b.value] for b in config_obj.model_backends])
-    train_meta = np.nan_to_num(train_meta, nan=0.5)
 
     class _StackingEnsemble:
         """Internal stacking ensemble wrapper."""

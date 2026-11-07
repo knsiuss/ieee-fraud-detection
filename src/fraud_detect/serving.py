@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import json
 import math
+import os
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -176,9 +177,12 @@ def predict_proba(
     model was trained with early stopping, prediction uses its
     ``best_iteration`` so overfit trailing trees do not distort scores.
     """
-    kwargs: dict[str, int] = {"num_threads": n_threads}
+    is_lgb = type(model).__module__.startswith("lightgbm")
+    kwargs: dict[str, int] = {}
+    if is_lgb:
+        kwargs["num_threads"] = n_threads
     best = getattr(model, "best_iteration", None)
-    if best is not None:
+    if is_lgb and best is not None:
         kwargs["num_iteration"] = best
     probs = model.predict(features, **kwargs)
     return np.asarray(probs, dtype="float64")
@@ -200,15 +204,25 @@ def save_artefact(  # noqa: PLR0913
     """
     out = Path(artefact_dir)
     out.mkdir(parents=True, exist_ok=True)
-    joblib.dump(model, out / MODEL_FILE)
-    (out / FEATURES_FILE).write_text(json.dumps(features), encoding="utf-8")
-    baseline.to_json(out / BASELINE_FILE, orient="records")
-    (out / META_FILE).write_text(json.dumps(meta or {}, indent=2), encoding="utf-8")
-    for name, row in (profiles or {}).items():
-        (out / f"baseline_{name}.json").write_text(
-            row.reset_index(drop=True).to_json(orient="records"),
-            encoding="utf-8",
-        )
+    import tempfile
+    import shutil
+    tmp = Path(tempfile.mkdtemp(dir=out.parent))
+    try:
+        joblib.dump(model, tmp / MODEL_FILE)
+        (tmp / FEATURES_FILE).write_text(json.dumps(features), encoding="utf-8")
+        baseline.to_json(tmp / BASELINE_FILE, orient="records")
+        (tmp / META_FILE).write_text(json.dumps(meta or {}, indent=2), encoding="utf-8")
+        for name, row in (profiles or {}).items():
+            if not name.replace("_", "").replace("-", "").isalnum():
+                raise ValueError(f"Invalid profile name: {name!r}")
+            (tmp / f"baseline_{name}.json").write_text(
+                row.reset_index(drop=True).to_json(orient="records"),
+                encoding="utf-8",
+            )
+        for p in tmp.iterdir():
+            os.replace(p, out / p.name)
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
     return out
 
 

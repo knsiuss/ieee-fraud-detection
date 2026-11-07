@@ -61,15 +61,16 @@ const PAGE_META: Record<string, { title: string; subtitle: string }> = {
   '/audit': { title: 'Forensic Audit', subtitle: 'Decision ledger, appeals and compliance trail' },
 };
 
-const StreamStatus: React.FC<{ isConnected: boolean; latencyMs: number }> = ({
+const StreamStatus: React.FC<{ isConnected: boolean; latencyMs: number; error?: string | null }> = ({
   isConnected,
   latencyMs,
+  error,
 }) => (
   <span className="control h-8 gap-2">
     <span
       className={`h-1.5 w-1.5 rounded-full ${isConnected ? 'bg-status-approve' : 'bg-status-review'}`}
     />
-    <span className="text-[11.5px]">{isConnected ? 'Live' : 'Connecting'}</span>
+    <span className="text-[11.5px]">{isConnected ? 'Live' : error ? error : 'Connecting'}</span>
     <span className="border-l border-border-subtle pl-2 font-mono text-[11px] text-text-muted">
       {latencyMs}ms
     </span>
@@ -77,7 +78,7 @@ const StreamStatus: React.FC<{ isConnected: boolean; latencyMs: number }> = ({
 );
 
 export const AppLayout: React.FC = () => {
-  const { isConnected, latencyMs } = useSSE();
+  const { isConnected, latencyMs, error: sseError } = useSSE();
   const { theme, toggleTheme } = useThemeStore();
   const { selectedTx, isDrawerOpen, closeDrawer } = useSelectedTxStore();
   const location = useLocation();
@@ -185,7 +186,7 @@ export const AppLayout: React.FC = () => {
           </div>
 
           <div className="flex shrink-0 items-center gap-2">
-            <StreamStatus isConnected={isConnected} latencyMs={latencyMs} />
+            <StreamStatus isConnected={isConnected} latencyMs={latencyMs} error={sseError} />
             {themeButton}
           </div>
         </header>

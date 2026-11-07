@@ -133,15 +133,25 @@ def main() -> None:
             headers={"Content-Type": "application/json"},
         )
         try:
-            with urllib.request.urlopen(request) as response:
+            with urllib.request.urlopen(request, timeout=10) as response:
                 decision = json.loads(response.read())
         except urllib.error.HTTPError as exc:
             detail = exc.read().decode("utf-8", errors="replace")
             print(f"[{row['tx']}] rejected ({exc.code}): {detail}")
             time.sleep(interval)
             continue
+        except Exception as exc:
+            print(f"[{row['tx']}] error: {exc}")
+            time.sleep(interval)
+            continue
         score = decision.get("probability")
-        print(f"[{row['tx']}] score={decision['probability']:.3f} -> {decision['decision']}")
+        prob_val = decision.get("probability")
+        dec_val = decision.get("decision")
+        if prob_val is None or dec_val is None:
+            print(f"[{row['tx']}] bad response: {decision}")
+            time.sleep(interval)
+            continue
+        print(f"[{row['tx']}] score={prob_val:.3f} -> {dec_val}")
         sent += 1
         if row["label"] is not None and score is not None:
             labels.append(

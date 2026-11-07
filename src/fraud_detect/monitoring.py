@@ -28,6 +28,8 @@ def psi(reference: np.ndarray, current: np.ndarray, n_bins: int = 10) -> float:
     """
     ref = np.asarray(reference, dtype=float)
     cur = np.asarray(current, dtype=float)
+    ref = ref[np.isfinite(ref)]
+    cur = cur[np.isfinite(cur)]
     if ref.size < n_bins or cur.size == 0:
         return float("nan")
 
@@ -62,6 +64,8 @@ def feature_drift(
         ref = reference_df[col].to_numpy()
         cur = current_df[col].to_numpy()
         rows.append({"feature": col, "psi": psi(ref, cur, n_bins)})
+    if not rows:
+        return pd.DataFrame(columns=["feature", "psi", "status"])
     out = pd.DataFrame(rows).sort_values("psi", ascending=False).reset_index(drop=True)
     out["status"] = np.where(
         out["psi"].isna(),

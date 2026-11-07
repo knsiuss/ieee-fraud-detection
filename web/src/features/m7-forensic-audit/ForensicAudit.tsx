@@ -31,17 +31,17 @@ export const ForensicAudit: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['metrics-summary'] });
     },
   });
+  const [appealError, setAppealError] = useState<string | null>(null);
+  const [reportError, setReportError] = useState<string | null>(null);
 
   const handleFetchReport = async (txId: string) => {
+    setReportError(null);
     try {
       const rep = await api.getAuditReport(txId);
       setSelectedAuditReport({ id: txId, report: rep.report, source: (rep as any).source || 'llm' });
-    } catch {
-      setSelectedAuditReport({
-        id: txId,
-        report: `Automated Forensic Summary: Transaction #${txId} was flagged due to elevated card velocity anomaly combined with unusual billing distance deviation. Decision was reached deterministically via served LightGBM model.`,
-        source: 'template',
-      });
+    } catch (err: any) {
+      setSelectedAuditReport(null);
+      setReportError(err?.message || 'Audit narrative unavailable');
     }
   };
 
@@ -124,10 +124,10 @@ export const ForensicAudit: React.FC = () => {
           {row.original.decision === 'DECLINE' && row.original.reviewer_outcome !== 'fraud' && (
             <button
               onClick={() =>
-                appealMutation.mutate({
-                  id: row.original.transaction_id,
-                  note: 'One-click analyst overturn',
-                })
+                appealMutation.mutate(
+                  { id: row.original.transaction_id, note: 'One-click analyst overturn' },
+                  { onError: (err: any) => setAppealError(err?.message || 'unknown error') }
+                )
               }
               disabled={appealMutation.isPending}
               className="btn-interactive px-3 py-1 bg-status-approve/12 text-status-approve border border-status-approve/30 rounded-full text-xs font-sans font-semibold flex items-center gap-1.5 cursor-pointer hover:bg-status-approve/20"
@@ -175,6 +175,16 @@ export const ForensicAudit: React.FC = () => {
         </div>
       </div>
 
+      {reportError && (
+        <div className="panel p-4 rounded-xl border border-status-decline/30 text-sm text-status-decline">
+          Audit narrative unavailable: {reportError}
+        </div>
+      )}
+      {appealError && (
+        <div className="panel p-4 rounded-xl border border-status-decline/30 text-sm text-status-decline">
+          Overturn failed: {appealError}
+        </div>
+      )}
       {/* Selected Audit Narrative Panel */}
       {selectedAuditReport && (
         <div className="panel p-5 space-y-4 rounded-xl animate-fade-in border border-apple-blue/30 shadow-lift">

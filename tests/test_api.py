@@ -85,6 +85,7 @@ def dclient(tmp_path, monkeypatch):
     monkeypatch.setattr(store, "data_table", lambda: df)
     monkeypatch.setattr(config, "LGBM_NUM_BOOST_ROUND", 80)
     monkeypatch.setattr(config, "LGBM_EARLY_STOPPING_ROUNDS", 5)
+    monkeypatch.setattr(main, "_ADMIN_KEY", "test-admin")
     main._clear_cache()
     return TestClient(main.app)
 
@@ -271,7 +272,11 @@ class TestEconomics:
     def test_economics_joins_labelled_outcomes(self, dclient):
         values = {"TransactionAmt": 250.0, "card1": 5000, "C1": 25, "D1": 200, "x": 12.0}
         r = dclient.post("/api/predict", json={"transaction_id": "eco-1", "values": values}).json()
-        dclient.post(f"/api/review/{r['transaction_id']}/outcome", json={"verdict": "fraud"})
+        dclient.post(
+            f"/api/review/{r['transaction_id']}/outcome",
+            json={"verdict": "fraud"},
+            headers={"X-Admin-Key": "test-admin"},
+        )
         body = dclient.get("/api/metrics/economics").json()
         assert body["coverage"]["n_labelled"] >= 1
         assert body["actual"]["net_cost"] >= 0
@@ -452,7 +457,9 @@ class TestDecisioning:
         ).json()
         tx = r["transaction_id"]
         out = dclient.post(
-            f"/api/review/{tx}/outcome", json={"verdict": "fraud", "note": "n"}
+            f"/api/review/{tx}/outcome",
+            json={"verdict": "fraud", "note": "n"},
+            headers={"X-Admin-Key": "test-admin"},
         ).json()
         assert out["status"] == "REVIEWED"
         assert out["reviewer_outcome"] == "fraud"

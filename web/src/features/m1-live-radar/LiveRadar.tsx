@@ -30,17 +30,15 @@ export const LiveRadar: React.FC = () => {
   const [simSpeed, setSimSpeed] = useState<number>(1);
   const simIntervalRef = useRef<any>(null);
 
-  const {
-    decisions,
-    isPaused,
-    togglePause,
-    filterDecision,
-    setFilterDecision,
-    searchQuery,
-    setSearchQuery,
-    rollingTps,
-    counts,
-  } = useLiveStore();
+  const decisions = useLiveStore((s) => s.decisions);
+  const isPaused = useLiveStore((s) => s.isPaused);
+  const togglePause = useLiveStore((s) => s.togglePause);
+  const filterDecision = useLiveStore((s) => s.filterDecision);
+  const setFilterDecision = useLiveStore((s) => s.setFilterDecision);
+  const searchQuery = useLiveStore((s) => s.searchQuery);
+  const setSearchQuery = useLiveStore((s) => s.setSearchQuery);
+  const rollingTps = useLiveStore((s) => s.rollingTps);
+  const counts = useLiveStore((s) => s.counts);
 
   const openDrawer = useSelectedTxStore((s) => s.openDrawer);
 
@@ -56,11 +54,12 @@ export const LiveRadar: React.FC = () => {
     refetchInterval: 5000,
   });
 
-  // Clean up interval on unmount
+  // Clean up timer on unmount
   useEffect(() => {
     return () => {
       if (simIntervalRef.current) {
-        clearInterval(simIntervalRef.current);
+        clearTimeout(simIntervalRef.current);
+        simIntervalRef.current = null;
       }
     };
   }, []);
@@ -69,7 +68,7 @@ export const LiveRadar: React.FC = () => {
   const handleToggleSimulation = () => {
     if (isSimulating) {
       if (simIntervalRef.current) {
-        clearInterval(simIntervalRef.current);
+        clearTimeout(simIntervalRef.current);
         simIntervalRef.current = null;
       }
       setIsSimulating(false);
@@ -79,7 +78,7 @@ export const LiveRadar: React.FC = () => {
     setIsSimulating(true);
     const profiles: Array<'typical' | 'nonfraud' | 'fraud'> = ['typical', 'nonfraud', 'fraud', 'typical', 'typical', 'nonfraud'];
 
-    simIntervalRef.current = setInterval(async () => {
+    const tick = async () => {
       const profile = profiles[Math.floor(Math.random() * profiles.length)];
       const amount = profile === 'fraud' ? 850 + Math.random() * 1200 : 25 + Math.random() * 200;
       try {
@@ -95,7 +94,11 @@ export const LiveRadar: React.FC = () => {
       } catch {
         // ignore
       }
-    }, 1000 / simSpeed);
+      if (simIntervalRef.current !== null) {
+        simIntervalRef.current = window.setTimeout(tick, 1000 / simSpeed);
+      }
+    };
+    simIntervalRef.current = window.setTimeout(tick, 1000 / simSpeed);
   };
 
   // Filter decisions in memory
@@ -233,7 +236,8 @@ export const LiveRadar: React.FC = () => {
             <select
               value={simSpeed}
               onChange={(e) => setSimSpeed(Number(e.target.value))}
-              className="cursor-pointer bg-transparent pr-1 text-[12px] font-medium text-text-primary outline-none"
+              disabled={isSimulating}
+              className="cursor-pointer bg-transparent pr-1 text-[12px] font-medium text-text-primary outline-none disabled:cursor-not-allowed disabled:opacity-50"
             >
               <option value={1}>1 tx/s</option>
               <option value={3}>3 tx/s</option>

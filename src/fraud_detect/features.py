@@ -37,7 +37,7 @@ def add_time_features(
     base = pd.Timestamp(start)
     out["transaction_dt"] = base + pd.to_timedelta(out[dt_col], unit="s")
     out["hour"] = (out[dt_col] // 3600) % 24
-    out["day_of_week"] = (out[dt_col] // 86400) % 7
+    out["day_of_week"] = out["transaction_dt"].dt.dayofweek
     out["day_of_month"] = out["transaction_dt"].dt.day
     out["is_night"] = ((out["hour"] >= 22) | (out["hour"] <= 5)).astype(np.int8)
     out["is_weekend"] = out["day_of_week"].isin([5, 6]).astype(np.int8)
@@ -76,7 +76,8 @@ def add_amount_features(
     out = df.copy()
     eps = 1e-9
     out["amt_log"] = np.log1p(out[amt_col].clip(lower=eps))
-    out["amt_decimal"] = (out[amt_col] - out[amt_col].astype(int)).round(3)
+    amt_int = out[amt_col].fillna(0).astype(int)
+    out["amt_decimal"] = (out[amt_col] - amt_int).round(3)
     out["amt_is_round"] = (out["amt_decimal"] == 0).astype(np.int8)
     return out
 

@@ -103,6 +103,9 @@ def find_best_threshold(
 
     fpr, tpr, thresholds = roc_curve(y_true, y_pred_proba)
     youden = tpr - fpr
+    if thresholds.size > 1:
+        thresholds = thresholds[1:]
+        youden = youden[1:]
     best_idx = int(np.argmax(youden))
     return float(thresholds[best_idx]), float(youden[best_idx])
 
@@ -211,6 +214,10 @@ def compare_models(
         }
         for name, report in reports.items()
     ]
+    if not records:
+        return pd.DataFrame(
+            columns=["model", "auc", "avg_precision", "f1", "precision", "recall", "best_threshold"]
+        )
     return pd.DataFrame(records).sort_values("auc", ascending=False).reset_index(drop=True)
 
 
@@ -270,7 +277,7 @@ def mcnemar_test(
             "conclusion": "Models are identical",
         }
 
-    statistic = float((abs(n10 - n01) - 1) ** 2 / n_total)
+    statistic = float((max(abs(n10 - n01) - 1, 0)) ** 2 / n_total)
     p_value = float(1.0 - chi2.cdf(statistic, df=1))
     conclusion = (
         "Significant difference (p < 0.05)" if p_value < 0.05 else "No significant difference"

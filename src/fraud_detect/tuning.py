@@ -89,16 +89,23 @@ def _objective_wrapper(
     merged_params = {**(base_params or {}), **sampled_params}
 
     fit_fn = _BACKEND_FIT_MAP[backend]
+    if backend == ModelBackend.LIGHTGBM:
+        n_rounds = config.LGBM_NUM_BOOST_ROUND
+        es_rounds = config.LGBM_EARLY_STOPPING_ROUNDS
+    elif backend == ModelBackend.CATBOOST:
+        n_rounds = getattr(config, "CB_NUM_BOOST_ROUND", config.XGB_NUM_BOOST_ROUND)
+        es_rounds = getattr(config, "CB_EARLY_STOPPING_ROUNDS", config.LGBM_EARLY_STOPPING_ROUNDS)
+    else:
+        n_rounds = config.XGB_NUM_BOOST_ROUND
+        es_rounds = config.LGBM_EARLY_STOPPING_ROUNDS
     _, _, val_auc, _ = fit_fn(
         X_train,
         y_train,
         X_val,
         y_val,
         params=merged_params,
-        num_boost_round=config.LGBM_NUM_BOOST_ROUND
-        if backend == ModelBackend.LIGHTGBM
-        else config.XGB_NUM_BOOST_ROUND,
-        early_stopping_rounds=config.LGBM_EARLY_STOPPING_ROUNDS,
+        num_boost_round=n_rounds,
+        early_stopping_rounds=es_rounds,
     )
     return float(val_auc)
 

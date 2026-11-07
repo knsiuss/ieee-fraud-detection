@@ -31,12 +31,14 @@ export const EChartBase: React.FC<EChartBaseProps> = ({
   const borderColor = isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.10)';
   const splitLineColor = isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)';
 
+  const { tooltip: _t, grid: _g, ...restOption } = option as any;
   const mergedOption: EChartsOption = {
     backgroundColor: 'transparent',
     textStyle: {
       fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", sans-serif',
       color: textColor,
     },
+    ...restOption,
     tooltip: {
       backgroundColor: isDark ? 'rgba(30, 30, 38, 0.88)' : 'rgba(255, 255, 255, 0.92)',
       borderColor: borderColor,
@@ -50,7 +52,7 @@ export const EChartBase: React.FC<EChartBaseProps> = ({
         fontSize: 12,
         fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", monospace',
       },
-      ...option.tooltip,
+      ...(option.tooltip as any),
     },
     grid: {
       left: '3%',
@@ -61,7 +63,6 @@ export const EChartBase: React.FC<EChartBaseProps> = ({
       borderColor: splitLineColor,
       ...((option.grid as any) || {}),
     },
-    ...option,
   };
 
   return (

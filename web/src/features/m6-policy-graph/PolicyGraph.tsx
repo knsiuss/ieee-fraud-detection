@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../../lib/api';
 import { FraudRingGraph } from '../../components/charts/FraudRingGraph';
@@ -23,6 +23,9 @@ export const PolicyGraph: React.FC = () => {
   }, [policy]);
 
   const costMode = policy?.kind === 'cost';
+  const handleNodeClick = useCallback((id: string, type: string) => {
+    setSelectedNode({ id, type });
+  }, []);
 
   return (
     <div className="space-y-5">
@@ -62,7 +65,7 @@ export const PolicyGraph: React.FC = () => {
                   max="0.4"
                   step="0.01"
                   value={lowerThreshold}
-                  onChange={(e) => setLowerThreshold(Number(e.target.value))}
+                  onChange={(e) => setLowerThreshold(Math.min(Number(e.target.value), upperThreshold - 0.01))}
                   className="w-full cursor-pointer accent-status-approve"
                 />
                 <span className="mt-1 block text-[11px] text-text-muted">
@@ -83,7 +86,7 @@ export const PolicyGraph: React.FC = () => {
                   max="0.95"
                   step="0.01"
                   value={upperThreshold}
-                  onChange={(e) => setUpperThreshold(Number(e.target.value))}
+                  onChange={(e) => setUpperThreshold(Math.max(Number(e.target.value), lowerThreshold + 0.01))}
                   className="w-full cursor-pointer accent-status-block"
                 />
                 <span className="mt-1 block text-[11px] text-text-muted">
@@ -193,7 +196,7 @@ export const PolicyGraph: React.FC = () => {
 
             <FraudRingGraph
               height="440px"
-              onNodeClick={(id, type) => setSelectedNode({ id, type })}
+              onNodeClick={handleNodeClick}
             />
 
             {selectedNode && (

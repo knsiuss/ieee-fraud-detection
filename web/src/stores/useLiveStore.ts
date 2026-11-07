@@ -74,12 +74,12 @@ export const useLiveStore = create<LiveState>((set, get) => {
       if (uniqueNew.length === 0) return;
       eventsInInterval += uniqueNew.length;
 
-      // Prepend newest items first and slice buffer
+      // Prepend newest items first and slice buffer; bound dedup window
       const combined = [...uniqueNew.reverse(), ...state.decisions].slice(0, MAX_RING_BUFFER);
-
+      const seenIds = new Set(combined.map((d) => d.transaction_id));
       set({
         decisions: combined,
-        seenIds: seen,
+        seenIds,
         counts: updatedCounts,
       });
     },

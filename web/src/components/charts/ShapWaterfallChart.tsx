@@ -39,8 +39,9 @@ export const ShapWaterfallChart: React.FC<ShapWaterfallChartProps> = ({
         const val = item.value;
         const color = val >= 0 ? blockColor : approveColor;
         const dir = val >= 0 ? 'Increases Risk (Fraud Driver)' : 'Decreases Risk (Safe Signal)';
+        const safeName = String(item.name).replace(/[<>&"]/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;' }[c]!));
         return `<div class="font-mono text-xs">
-          <div class="font-bold mb-1 border-b border-border-subtle pb-1">${item.name}</div>
+          <div class="font-bold mb-1 border-b border-border-subtle pb-1">${safeName}</div>
           <div style="color: ${color}" class="font-bold">Contribution: ${val > 0 ? '+' : ''}${val}</div>
           <div class="text-[11px] text-text-muted mt-0.5">${dir}</div>
         </div>`;

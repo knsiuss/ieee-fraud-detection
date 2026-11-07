@@ -251,7 +251,8 @@ def feature_distribution_shift(
         if col not in df.columns:
             continue
         col_data = df[col].dropna()
-        error_mask = errors[col_data.index] == 1
+        error_s = pd.Series(errors, index=df.index)
+        error_mask = error_s.loc[col_data.index].to_numpy(dtype=bool) == 1
         correct_mask = ~error_mask
 
         error_vals = col_data[error_mask]

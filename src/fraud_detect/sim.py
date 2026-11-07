@@ -101,10 +101,14 @@ PROFILES: list[str] = ["typical", "nonfraud", "fraud"]
 
 def map_friendly(inputs: dict[str, Any]) -> dict[str, float]:
     """Map friendly inputs to model feature values (numeric fields + brand)."""
+    import math
     out: dict[str, float] = {}
     for field, feature in FIELD_FEATURE_MAP.items():
         if inputs.get(field) is not None:
-            out[feature] = float(inputs[field])
+            val = float(inputs[field])
+            if not math.isfinite(val):
+                raise ValueError(f"Non-finite value for {field}: {val}")
+            out[feature] = val
     brand = inputs.get("card_brand")
     if brand in CARD_BRANDS:
         out.update(CARD_BRANDS[brand])
@@ -131,7 +135,11 @@ def build_row(
     for feature, value in map_friendly(inputs).items():
         if feature in row.columns:
             row.loc[0, feature] = value
+    import math
     for feature, value in inputs.items():
         if feature in row.columns:
-            row.loc[0, feature] = float(value)
+            fval = float(value)
+            if not math.isfinite(fval):
+                raise ValueError(f"Non-finite value for {feature}")
+            row.loc[0, feature] = fval
     return align_features(row, features)

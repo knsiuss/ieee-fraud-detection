@@ -4,10 +4,14 @@ from __future__ import annotations
 
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
-class RiskResponse(BaseModel):
+class StrictBaseModel(BaseModel):
+    model_config = ConfigDict(allow_inf_nan=False)
+
+
+class RiskResponse(StrictBaseModel):
     probability: float
     risk_tier: str
     action: str

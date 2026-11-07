@@ -23,13 +23,22 @@ export const BASE_URL =
     : 'https://p-quincy-fraud-detection-dashboard-simulation.hf.space');
 
 async function fetchJson<T>(url: string, options?: RequestInit): Promise<T> {
-  const res = await fetch(`${BASE_URL}${url}`, {
-    headers: {
-      'Content-Type': 'application/json',
-      ...options?.headers,
-    },
-    ...options,
-  });
+  const timeoutMs = 15000;
+  const controller = new AbortController();
+  const timeoutId = window.setTimeout(() => controller.abort(), timeoutMs);
+  let res: Response;
+  try {
+    res = await fetch(`${BASE_URL}${url}`, {
+      headers: {
+        'Content-Type': 'application/json',
+        ...options?.headers,
+      },
+      ...options,
+      signal: controller.signal,
+    });
+  } finally {
+    window.clearTimeout(timeoutId);
+  }
   if (!res.ok) {
     let errorDetail = `HTTP ${res.status}: ${res.statusText}`;
     try {
@@ -58,22 +67,22 @@ export const api = {
 
   getReviewQueue: (status = 'NEW', limit = 100, decision?: string) =>
     fetchJson<DecisionItem[]>(
-      `/api/review/queue?status=${status}&limit=${limit}${decision ? `&decision=${decision}` : ''}`,
+      `/api/review/queue?status=${encodeURIComponent(status)}&limit=${encodeURIComponent(String(limit))}${decision ? `&decision=${encodeURIComponent(decision)}` : ''}`,
     ),
   getPolicy: () => fetchJson<PolicyInfo>('/api/policy'),
   getBanditStatus: () => fetchJson<BanditStatus>('/api/bandit/status'),
   getReviewItem: (transactionId: string) =>
-    fetchJson<DecisionItem>(`/api/review/${transactionId}`),
+    fetchJson<DecisionItem>(`/api/review/${encodeURIComponent(transactionId)}`),
   getAuditReport: (transactionId: string) =>
-    fetchJson<{ transaction_id: string; report: string; source: string; generated_at: string }>(`/api/review/${transactionId}/report`),
+    fetchJson<{ transaction_id: string; report: string; source: string; generated_at: string }>(`/api/review/${encodeURIComponent(transactionId)}/report`),
   
   submitReviewOutcome: (transactionId: string, verdict: 'safe' | 'fraud', note?: string) =>
-    fetchJson<DecisionItem>(`/api/review/${transactionId}/outcome`, {
+    fetchJson<DecisionItem>(`/api/review/${encodeURIComponent(transactionId)}/outcome`, {
       method: 'POST',
       body: JSON.stringify({ verdict, note }),
     }),
   appealDecision: (transactionId: string, note?: string) =>
-    fetchJson<DecisionItem>(`/api/review/${transactionId}/appeal`, {
+    fetchJson<DecisionItem>(`/api/review/${encodeURIComponent(transactionId)}/appeal`, {
       method: 'POST',
       body: JSON.stringify({ note }),
     }),
@@ -91,12 +100,25 @@ export const api = {
   predictBatch: async (file: File) => {
     const formData = new FormData();
     formData.append('file', file);
-    const res = await fetch(`${BASE_URL}/api/predict/batch`, {
-      method: 'POST',
-      body: formData,
-    });
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => controller.abort(), 60000);
+    let res: Response;
+    try {
+      res = await fetch(`${BASE_URL}/api/predict/batch`, {
+        method: 'POST',
+        body: formData,
+        signal: controller.signal,
+      });
+    } finally {
+      window.clearTimeout(timeoutId);
+    }
     if (!res.ok) {
-      throw new Error(`Batch upload failed: ${res.statusText}`);
+      let errorDetail = `Batch upload failed: ${res.statusText}`;
+      try {
+        const err = await res.json();
+        if (err.detail) errorDetail = typeof err.detail === 'string' ? err.detail : JSON.stringify(err.detail);
+      } catch { /* ignore */ }
+      throw new Error(errorDetail);
     }
     return res.json() as Promise<BatchScoreResponse>;
   },

@@ -28,9 +28,10 @@ export const ScoreBar: React.FC<ScoreBarProps> = ({
   showPercentage = false,
   className = '',
 }) => {
-  const clampProb = Math.max(0, Math.min(1, probability));
-  const pct = (clampProb * 100).toFixed(1);
-  const rawNum = clampProb.toFixed(3);
+  const isFiniteProb = Number.isFinite(probability);
+  const clampProb = isFiniteProb ? Math.max(0, Math.min(1, probability)) : 0;
+  const pct = isFiniteProb ? (clampProb * 100).toFixed(1) : '—';
+  const rawNum = isFiniteProb ? clampProb.toFixed(3) : '—';
 
   const revThresh = thresholds.review_above ?? 0.2;
   const decThresh = thresholds.decline_above ?? 0.8;

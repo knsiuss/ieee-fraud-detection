@@ -78,7 +78,18 @@ def evaluate(
         )
 
     top = [row for row in (report.get("top_drift") or []) if isinstance(row, dict)]
-    psis = [float(row["psi"]) for row in top if row.get("psi") is not None]
+    psis = []
+    for row in top:
+        try:
+            value = row.get("psi")
+            if value is None:
+                continue
+            fvalue = float(value)
+        except (TypeError, ValueError):
+            continue
+        if fvalue != fvalue:
+            continue
+        psis.append(fvalue)
     max_psi = max(psis) if psis else None
     drifted = report.get("drifted_features")
     drifted = int(drifted) if drifted is not None else None
@@ -88,7 +99,10 @@ def evaluate(
     status = "ok"
 
     if max_psi is not None and max_psi >= critical_psi:
-        top_feature = max(top, key=lambda row: float(row.get("psi") or 0.0)).get("feature")
+        try:
+            top_feature = max(top, key=lambda row: float(row.get("psi") or 0.0)).get("feature")
+        except (TypeError, ValueError):
+            top_feature = None
         reasons.append(f"PSI {max_psi:.3f} >= {critical_psi:.2f} on {top_feature}")
         status = "alert"
     if drifted is not None and drifted >= max_drift_count:

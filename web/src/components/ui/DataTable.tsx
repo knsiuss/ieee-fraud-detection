@@ -38,6 +38,7 @@ export function DataTable<TData>({
     onSortingChange: setSorting,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
+    getRowId: (row: TData, index: number) => idAccessor ? idAccessor(row) : String(index),
   });
 
   return (

@@ -226,18 +226,21 @@ def parse_llm_response(text: str) -> dict[str, Any] | None:
     drivers = data.get("drivers")
     if not isinstance(drivers, list) or not all(isinstance(d, dict) for d in drivers):
         return None
-    data["drivers"] = [
-        {
-            "feature": str(d.get("feature", "")),
-            "label": str(d.get("label", d.get("feature", ""))),
-            "value_text": str(d.get("value_text", "")),
-            "typical_text": str(d.get("typical_text", "")),
-            "contribution": float(d.get("contribution", 0.0)),
-            "direction": "fraud" if d.get("direction") == "fraud" else "safe",
-            "narration": str(d.get("narration", "")),
-        }
-        for d in drivers
-    ]
+    try:
+        data["drivers"] = [
+            {
+                "feature": str(d.get("feature", "")),
+                "label": str(d.get("label", d.get("feature", ""))),
+                "value_text": str(d.get("value_text", "")),
+                "typical_text": str(d.get("typical_text", "")),
+                "contribution": float(d.get("contribution", 0.0)),
+                "direction": "fraud" if d.get("direction") == "fraud" else "safe",
+                "narration": str(d.get("narration", "")),
+            }
+            for d in drivers
+        ]
+    except (TypeError, ValueError):
+        return None
     return data
 
 
@@ -317,6 +320,8 @@ def build_report(
     context: dict[str, Any],
     llm_text: str | None,
     transaction_id: str,
+    model_version: str | None = None,
+    policy_version: str | None = None,
 ) -> tuple[dict[str, Any], str]:
     """Assemble the final report; returns ``(report, source)``.
 
@@ -331,8 +336,8 @@ def build_report(
         "report_id": f"report-{transaction_id}",
         "transaction_id": transaction_id,
         "generated_at": datetime.now(timezone.utc).isoformat(),
-        "model_version": None,
-        "policy_version": None,
+        "model_version": context.get("model_version") or model_version,
+        "policy_version": context.get("policy_version") or policy_version,
         "decision": context["decision"],
         "score": context["score"],
         "risk_tier": context["risk_tier"],

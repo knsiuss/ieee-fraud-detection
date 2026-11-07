@@ -70,6 +70,7 @@ export const Simulator: React.FC = () => {
   const handleRunSimulation = async () => {
     setIsLoading(true);
     setError(null);
+    setExplanation(null);
     try {
       const req: SimulateRequest = {
         profile,
@@ -89,7 +90,7 @@ export const Simulator: React.FC = () => {
           const exp = await api.explain(res.mapped_values);
           setExplanation(exp);
         } catch {
-          // ignore explain error
+          setExplanation(null);
         }
       }
     } catch (err: any) {

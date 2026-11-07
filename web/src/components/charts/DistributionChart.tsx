@@ -35,16 +35,11 @@ export const DistributionChart: React.FC<DistributionChartProps> = ({
   ];
 
   if (scores.length === 0) {
-    buckets[0].count = 42;
-    buckets[1].count = 28;
-    buckets[2].count = 12;
-    buckets[3].count = 6;
-    buckets[4].count = 4;
-    buckets[5].count = 3;
-    buckets[6].count = 2;
-    buckets[7].count = 1;
-    buckets[8].count = 2;
-    buckets[9].count = 4;
+    return (
+      <div className="flex h-[220px] items-center justify-center text-xs text-muted">
+        Awaiting scored transactions
+      </div>
+    );
   } else {
     for (const s of scores) {
       const idx = Math.min(Math.floor(s * 10), 9);

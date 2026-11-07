@@ -62,25 +62,31 @@ export const BatchScanner: React.FC = () => {
   const handleExportCsv = () => {
     if (!response || !response.rows) return;
     const headers = ['id', 'transaction_id', 'probability', 'risk_tier', 'decision', 'action'];
+    const escapeCell = (v: unknown) => {
+      let s = String(v ?? '');
+      if (/^[=+\-@]/.test(s)) s = `'${s}`;
+      if (/[,"\n\r#]/.test(s)) s = `"${s.replace(/"/g, '""')}"`;
+      return s;
+    };
     const rows = response.rows.map((r) => [
-      r.id ?? '',
-      r.transaction_id ?? '',
+      escapeCell(r.id),
+      escapeCell(r.transaction_id),
       r.probability,
-      r.risk_tier,
-      r.decision ?? '',
-      r.action ?? '',
+      escapeCell(r.risk_tier),
+      escapeCell(r.decision),
+      escapeCell(r.action),
     ]);
 
-    const csvContent =
-      'data:text/csv;charset=utf-8,' +
-      [headers.join(','), ...rows.map((e) => e.join(','))].join('\n');
-    const encodedUri = encodeURI(csvContent);
+    const csvContent = [headers.join(','), ...rows.map((e) => e.join(','))].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
-    link.setAttribute('href', encodedUri);
+    link.setAttribute('href', url);
     link.setAttribute('download', `ledger_batch_scored_${Date.now()}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   };
 
   const columns: ColumnDef<BatchScoreRow, any>[] = [

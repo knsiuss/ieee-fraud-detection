@@ -3,6 +3,24 @@ import { createHashRouter } from 'react-router-dom';
 import { AppLayout } from './components/layout/AppLayout';
 import { Skeleton } from './components/ui/States';
 
+class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean }> {
+  state = { hasError: false };
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+  componentDidCatch() {}
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="panel p-6 m-4">
+          <p className="text-sm text-red-600">Something went wrong. Please refresh.</p>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 const LiveRadar = lazy(() =>
   import('./features/m1-live-radar/LiveRadar').then((m) => ({ default: m.LiveRadar }))
 );
@@ -40,7 +58,11 @@ const LoadingFallback = () => (
 export const router = createHashRouter([
   {
     path: '/',
-    element: <AppLayout />,
+    element: (
+      <ErrorBoundary>
+        <AppLayout />
+      </ErrorBoundary>
+    ),
     children: [
       {
         index: true,
