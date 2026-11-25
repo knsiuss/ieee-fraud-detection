@@ -189,6 +189,7 @@ def save_artefact(  # noqa: PLR0913
     model: Any,
     features: list[str],
     baseline: pd.DataFrame,
+    *,
     meta: dict[str, Any] | None = None,
     profiles: dict[str, pd.DataFrame] | None = None,
 ) -> Path:

@@ -39,7 +39,7 @@ def _tiny_lightgbm(path, n: int = 200):
     )
     features = ["a", "b", "extra"]
     baseline = median_baseline(features, x)
-    save_artefact(path, model, features, baseline, {"roc_auc": 0.9, "seed": 1})
+    save_artefact(path, model, features, baseline, meta={"roc_auc": 0.9, "seed": 1})
     return model, features
 
 

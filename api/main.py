@@ -58,7 +58,6 @@ from fastapi import (
 )
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
-from fastapi.staticfiles import StaticFiles
 
 from fraud_detect import bandit_policy
 from fraud_detect import sim as simmod
@@ -114,7 +113,9 @@ async def _background_traffic_loop():
             art = _current()
             profile = profiles[i % len(profiles)]
             amount = 820.0 + ((i % 12) * 65.0) if profile == "fraud" else 15.5 + ((i % 30) * 9.5)
-            card_brand = "discover" if profile == "fraud" else ("visa" if i % 2 == 0 else "mastercard")
+            card_brand = (
+                "discover" if profile == "fraud" else ("visa" if i % 2 == 0 else "mastercard")
+            )
             data = {
                 "profile": profile,
                 "amount": round(amount, 2),
@@ -181,7 +182,7 @@ def _seed_initial_decisions():
                 )
     except Exception as e:
         print("Startup seed skipped:", e)
-    
+
     # Launch continuous live traffic generator in background
     asyncio.create_task(_background_traffic_loop())
 
@@ -1001,6 +1002,7 @@ _INDEX_FILE = os.path.join(_DIST_DIR, "index.html")
 
 if os.path.isdir(_DIST_DIR) and os.path.isfile(_INDEX_FILE):
     _ASSETS_DIR = os.path.join(_DIST_DIR, "assets")
+
     @app.get("/config", include_in_schema=False)
     @app.get("/info", include_in_schema=False)
     @app.get("/heartbeat", include_in_schema=False)
@@ -1024,7 +1026,10 @@ if os.path.isdir(_DIST_DIR) and os.path.isfile(_INDEX_FILE):
     @app.get("/{full_path:path}", include_in_schema=False)
     async def _spa_catchall(full_path: str):
         path_clean = full_path.strip("/")
-        if any(path_clean == prefix or path_clean.startswith(f"{prefix}/") for prefix in _EXCLUDED_SPA_PREFIXES):
+        if any(
+            path_clean == prefix or path_clean.startswith(f"{prefix}/")
+            for prefix in _EXCLUDED_SPA_PREFIXES
+        ):
             raise HTTPException(status_code=404, detail="Not Found")
         file_path = os.path.join(_DIST_DIR, full_path)
         if full_path and os.path.isfile(file_path):

@@ -108,7 +108,7 @@ def main() -> None:
         result.model,
         features,
         baseline,
-        meta,
+        meta=meta,
         profiles=profiles,
     )
     print(f"Artefact written to {out}")

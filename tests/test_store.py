@@ -44,7 +44,11 @@ def _isolated(tmp_path, monkeypatch):
         res.model,
         feats,
         serving.median_baseline(feats, df),
-        {"roc_auc": res.val_auc, "version": "test-current", "trained_at": "2026-08-06T00:00:00"},
+        meta={
+            "roc_auc": res.val_auc,
+            "version": "test-current",
+            "trained_at": "2026-08-06T00:00:00",
+        },
     )
     monkeypatch.setattr(store, "CURRENT_DIR", current)
     monkeypatch.setattr(store, "CANDIDATES_DIR", tmp_path / "models" / "candidates")
@@ -125,7 +129,7 @@ class TestRetrainGate:
             res_w.model,
             feats_w,
             serving.median_baseline(feats_w, weak),
-            {"version": "weak"},
+            meta={"version": "weak"},
         )
         # Perfectly separable feedback rows: x1 < 0 → safe, x1 > 0 → fraud.
         fb = pd.DataFrame(

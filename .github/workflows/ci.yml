@@ -32,5 +32,5 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-      - run: pip install -e ".[lgbm,dev]"
+      - run: pip install -e ".[lgbm,xgb,dev]"
       - run: pytest --cov=fraud_detect --cov-report=term-missing --cov-fail-under=75

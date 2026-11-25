@@ -170,7 +170,7 @@ def build_voting_ensemble(
     return _VotingEnsemble()
 
 
-def build_stacking_ensemble(
+def build_stacking_ensemble(  # noqa: PLR0917
     models_dict: dict[ModelBackend, ModelResult],
     config_obj: EnsembleConfig,
     X_train: pd.DataFrame,

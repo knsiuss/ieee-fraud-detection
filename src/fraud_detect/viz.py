@@ -237,6 +237,7 @@ def plot_pr_curves(
 def plot_confusion_matrix(
     y_true: pd.Series | np.ndarray,
     y_pred: np.ndarray,
+    *,
     labels: tuple[str, str] = ("Not Fraud", "Fraud"),
     normalize: bool = True,
     figsize: tuple[int, int] = (5, 4),
@@ -468,6 +469,7 @@ def plot_cumulative_gain(
 def plot_error_rate_by_category(
     profile: Any,
     cat_col: str,
+    *,
     top_n: int = 15,
     min_samples: int = 10,
     figsize: tuple[int, int] = (8, 6),
@@ -571,6 +573,7 @@ def plot_confusion_by_amount(
     df: pd.DataFrame,
     y_true: pd.Series | np.ndarray,
     y_pred: np.ndarray,
+    *,
     amt_col: str = "TransactionAmt",
     n_bins: int = 10,
     figsize: tuple[int, int] = (10, 5),

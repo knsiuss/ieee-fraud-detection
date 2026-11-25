@@ -314,11 +314,11 @@ def retrain_and_swap(data_df: pd.DataFrame | None = None) -> dict[str, Any]:
             "trained_at": datetime.now(timezone.utc).isoformat(),
             "gate": "passed",
         }
-        save_artefact(CURRENT_DIR, candidate, features, baseline, meta, profiles=profiles)
+        save_artefact(CURRENT_DIR, candidate, features, baseline, meta=meta, profiles=profiles)
     else:
         # Keep a trace of the rejected candidate for reproducibility.
         stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S")
-        save_artefact(CANDIDATES_DIR / f"rejected_{stamp}", candidate, features, baseline, {})
+        save_artefact(CANDIDATES_DIR / f"rejected_{stamp}", candidate, features, baseline, meta={})
 
     return {
         "swapped": bool(swapped),
