@@ -71,13 +71,14 @@ def _suggest_from_space(trial: Any, space: dict[str, dict[str, Any]]) -> dict[st
     return params
 
 
-def _objective_wrapper(
+def _objective_wrapper(  # noqa: PLR0917
     trial: Any,
     backend: ModelBackend,
     X_train: pd.DataFrame,
     y_train: pd.Series,
     X_val: pd.DataFrame,
     y_val: pd.Series,
+    /,
     base_params: dict[str, Any] | None = None,
 ) -> float:
     """Optuna objective: train a model and return validation AUC."""
@@ -106,6 +107,7 @@ def _objective_wrapper(
 def tune_model(
     df: pd.DataFrame,
     backend: ModelBackend = ModelBackend.LIGHTGBM,
+    *,
     n_trials: int = config.OPTUNA_N_TRIALS,
     study_name: str | None = None,
     direction: str = "maximize",

@@ -46,7 +46,7 @@ def client(tmp_path, monkeypatch):
         res.model,
         feats,
         serving.median_baseline(feats, df),
-        {"roc_auc": res.val_auc, "version": "smoke", "trained_at": "2026-08-06T00:00:00"},
+        meta={"roc_auc": res.val_auc, "version": "smoke", "trained_at": "2026-08-06T00:00:00"},
         profiles={
             "nonfraud": serving.median_baseline(feats, df[df["isFraud"] == 0]),
             "fraud": serving.median_baseline(feats, df[df["isFraud"] == 1]),
